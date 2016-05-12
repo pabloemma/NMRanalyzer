@@ -136,10 +136,10 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 // check if the particular type of run is in the file list
 	if(!InputSignalFile.empty() ){
 		// iterate over file list
-		for(Int_t pos = 0 ; pos < InputSignalFile.size() ; pos++)
+		/*for(Int_t pos = 0 ; pos < InputSignalFile.size() ; pos++)
 		{
 			cout<<InputSignalFile[pos]<<"   filename \n";
-		}
+		}*/
 // Open ROOT file
 			if(InputSignalFile.size()>1){
 				SIG.OpenChain(InputSignalFile);  // we will create a TChain
@@ -151,8 +151,8 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			SIG.SetupHistos();
 			SIG.Loop();
 			SIG.DrawHistos();
-// Close this file
-			SIG.CloseFile();
+// Close the file if only one
+			if(InputSignalFile.size() == 1)SIG.CloseFile();
 
 
 	}
