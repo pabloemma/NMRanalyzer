@@ -139,16 +139,21 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 		for(Int_t pos = 0 ; pos < InputSignalFile.size() ; pos++)
 		{
 			cout<<InputSignalFile[pos]<<"   filename \n";
-
+		}
 // Open ROOT file
-			SIG.OpenFile(InputSignalFile[pos]);
+			if(InputSignalFile.size()>1){
+				SIG.OpenChain(InputSignalFile);  // we will create a TChain
+			}
+			else {
+				SIG.OpenFile(InputSignalFile[0]); // just one spectrum
+			}
 // Do stuff with it
 			SIG.SetupHistos();
 			SIG.Loop();
 			SIG.DrawHistos();
 // Close this file
 			SIG.CloseFile();
-		}
+
 
 	}
 

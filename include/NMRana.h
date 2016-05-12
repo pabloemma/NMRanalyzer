@@ -49,6 +49,8 @@ public :
 
    Double_t MinFreq ; // limits of frequency sweep
    Double_t MaxFreq ;
+   std::vector<TString> RootFileArray ; // if there is a list of input files it will put them into vector
+
 
 
    // List of branches
@@ -66,8 +68,13 @@ public :
    TFile		  *f;
 
    TTree 		   *tree;
-   TH1D 	*NMR1; // Signal histogram
-   TCanvas	*c1;
+   TH1D 	 *NMR1; // Signal histogram
+   TCanvas	 *c1;
+   TChain    *NMRchain; // if we have more than one root file
+
+
+
+
 
    NMRana();
    virtual ~NMRana();
@@ -82,6 +89,7 @@ public :
    virtual void	    SetupHistos();
    virtual void		CloseFile();
    virtual void		DrawHistos();
+   virtual int      OpenChain(std::vector<TString> );
 };
 
 #endif
@@ -100,6 +108,26 @@ int NMRana::OpenFile(TString rootfile){
 
      f->GetObject("NMRtree",tree);
      Init(tree);
+
+   return 0;
+
+}
+int NMRana::OpenChain(std::vector<TString> RootFileArray){
+
+	// This creates a chain fo trees instead of just one
+
+	 NMRchain = new TChain("NMRtree");
+	 // Now loop over all the rootfiles we have
+		for(Int_t pos = 0 ; pos < RootFileArray.size() ; pos++)
+		{
+			cout<<RootFileArray[pos]<<"   filename \n";
+			NMRchain->Add(RootFileArray[pos]);
+		}
+
+
+
+     //NMRchain->GetObject("NMRtree",tree);
+     Init(NMRchain);
 
    return 0;
 
