@@ -134,12 +134,55 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 // Here starts the main activity
 // check if the particular type of run is in the file list
+// First any possible QCurve run
+
+	if(!InputQcurveFile.empty() ){
+
+// Open ROOT file
+			if(InputQcurveFile.size()>1){
+				QCU.OpenChain(InputQcurveFile);  // we will create a TChain
+			}
+			else {
+				QCU.OpenFile(InputQcurveFile[0]); // just one spectrum
+			}
+// Do stuff with it
+			QCU.SetupHistos();
+			QCU.Loop();
+			QCU.DrawHistos();
+// Close the file if only one
+			if(InputQcurveFile.size() == 1)QCU.CloseFile();
+	}
+
+
+
+
+	if(!InputTEFile.empty() ){
+
+// Open ROOT file
+			if(InputTEFile.size()>1){
+				TE.OpenChain(InputTEFile);  // we will create a TChain
+			}
+			else {
+				TE.OpenFile(InputTEFile[0]); // just one spectrum
+			}
+// Do stuff with it
+			TE.SetupCanvas();
+			TE.SetupHistos();
+			TE.Loop();
+			TE.DrawHistos();
+// Close the file if only one
+			if(InputTEFile.size() == 1)TE.CloseFile();
+	}
+
+
+
+
+
+
+
+
 	if(!InputSignalFile.empty() ){
-		// iterate over file list
-		/*for(Int_t pos = 0 ; pos < InputSignalFile.size() ; pos++)
-		{
-			cout<<InputSignalFile[pos]<<"   filename \n";
-		}*/
+
 // Open ROOT file
 			if(InputSignalFile.size()>1){
 				SIG.OpenChain(InputSignalFile);  // we will create a TChain
@@ -148,6 +191,13 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 				SIG.OpenFile(InputSignalFile[0]); // just one spectrum
 			}
 // Do stuff with it
+			//!!!!!!!!!!!warning, has to be set differently, right now for testing hard coded limits
+			SIG.AreaSetLimits(212.83,213.21);
+			//!!!!!!!!!!!!!!!!!!
+
+
+			SIG.SetupCanvas();
+
 			SIG.SetupHistos();
 			SIG.Loop();
 			SIG.DrawHistos();

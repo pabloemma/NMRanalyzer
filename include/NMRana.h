@@ -20,17 +20,28 @@
 #include <TFile.h>
 #include <TH1D.h>
 #include <TCanvas.h>
+#include <TDatime.h>
+#include <TStyle.h>  // so we can use gStyle
 
 
 // Header file for the classes stored in the TTree if any.
 #include <vector>
 #include <iostream>
+#include <string>
 
 using namespace std;
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
 class NMRana {
+
+private:
+	Double_t LowArea_X; // lower bound for area calculation
+	Double_t HighArea_X;// upper bound for area claculation
+	Int_t low_id;		// determines lower and upper index of array for integration
+	Int_t high_id;
+
+
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
@@ -44,14 +55,20 @@ public :
    Double_t        TuneV;
    Double_t        Offset;
    Double_t        ControllerV;
-   Char_t          time[11];
+   Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
+
    std::vector<double>  *array;
 
    Double_t MinFreq ; // limits of frequency sweep
    Double_t MaxFreq ;
+   Double_t low_x;  //area limits
+   Double_t high_x;
+   Double_t SignalArea ; // the summed area of every signal // not normalized yet
+   Double_t SignalAreaNormalized ; // aka polarization
    std::vector<TString> RootFileArray ; // if there is a list of input files it will put them into vector
+   Int_t TimeStamp;  // timestamp in seconds on UNIX time 0
 
-
+   	   char *timel_ptr; // because  Root stored the string as a charcater array
 
    // List of branches
    TBranch        *b_IntScanPoints;   //!
@@ -63,14 +80,20 @@ public :
    TBranch        *b_TuneV;   //!
    TBranch        *b_Offset;   //!
    TBranch        *b_ControllerV;   //!
-   TBranch        *b_time;   //!
+   TBranch        *b_timel;   //!
    TBranch        *b_array;   //!
    TFile		  *f;
 
    TTree 		   *tree;
+   // the block for the histograms
    TH1D 	 *NMR1; // Signal histogram
-   TCanvas	 *c1;
+   TH1D		 *PolTime; // polarization vs time
+   //
+   TCanvas	 *GeneralCanvas;
+   TCanvas	 *StripCanvas;
    TChain    *NMRchain; // if we have more than one root file
+   TString timestring; // from labview time
+   TDatime *td ; // Datetime for time histogram
 
 
 
@@ -90,6 +113,12 @@ public :
    virtual void		CloseFile();
    virtual void		DrawHistos();
    virtual int      OpenChain(std::vector<TString> );
+   virtual void		AreaSetLimits(Double_t , Double_t);
+   virtual Double_t CalculateArea(std::vector<Double_t> *);
+   virtual void		PrintTime();  // prints time from Labview time stamp
+   virtual void		SetupCanvas();
+   virtual TH1D * 	SetupStripChart(TString);
+
 };
 
 #endif
@@ -136,6 +165,7 @@ int NMRana::OpenChain(std::vector<TString> RootFileArray){
 void NMRana::CloseFile(){
 	f->Close();
 }
+
 NMRana::~NMRana()
 {
    if (!fChain) return;
@@ -148,6 +178,7 @@ Int_t NMRana::GetEntry(Long64_t entry)
    if (!fChain) return 0;
    return fChain->GetEntry(entry);
 }
+
 Long64_t NMRana::LoadTree(Long64_t entry)
 {
 // Set the environment to read one entry
@@ -179,16 +210,17 @@ void NMRana::Init(TTree *tree)
    fCurrent = -1;
    fChain->SetMakeClass(1);
 
-   fChain->SetBranchAddress("IntScanPoints", &IntScanPoints, &b_IntScanPoints);
    fChain->SetBranchAddress("FreqStep", &FreqStep, &b_FreqStep);
+   fChain->SetBranchAddress("FreqCenter", &FreqCenter, &b_FreqCenter);
    fChain->SetBranchAddress("Temperature", &Temperature, &b_Temperature);
    fChain->SetBranchAddress("ScanPoints", &ScanPoints, &b_ScanPoints);
    fChain->SetBranchAddress("ControllerV", &ControllerV, &b_ControllerV);
    fChain->SetBranchAddress("TuneV", &TuneV, &b_TuneV);
    fChain->SetBranchAddress("Offset", &Offset, &b_Offset);
 //    fChain->SetBranchAddress("ControllerV", &ControllerV, &b_ControllerV);
-   fChain->SetBranchAddress("time", time, &b_time);
+   fChain->SetBranchAddress("timel", &timel, &b_timel);
    fChain->SetBranchAddress("array", &array, &b_array);
+   fChain->SetBranchAddress("IntScanPoints", &IntScanPoints, &b_IntScanPoints);
    Notify();
 }
 
@@ -220,7 +252,7 @@ Int_t NMRana::Cut(Long64_t entry)
 void NMRana::SetupHistos(){
 // Here we setup histos if needed
 // first we get the first entry to calculate the limits
-/*	   if (fChain == 0) return;
+	   if (fChain == 0) return;
 
 	   Long64_t nentries = fChain->GetEntriesFast();
 
@@ -228,27 +260,79 @@ void NMRana::SetupHistos(){
 
 	   Long64_t ientry = LoadTree(0);
 
-	   fChain->GetEntry(jentry);
+	   fChain->GetEntry(0);
 
-	   fchain->Show(0);
-*/
-	   GetEntry(0);
-	   Show(0);
+	   fChain->Show(0);
+
+
+	   //GetEntry(0);
+	   //Show(0);
+
 
 	   // histo limits
-	   MinFreq = FreqCenter - (ScanPoints-1)/2 * FreqStep;
-	   MaxFreq = FreqCenter + (ScanPoints-1)/2 * FreqStep;
+	   MinFreq = (FreqCenter) - (ScanPoints-1.)/2. * FreqStep;
+	   MaxFreq = FreqCenter + (ScanPoints-1.)/2. * FreqStep;
 
 	   NMR1 = new TH1D("NMR1","Signal histogram",IntScanPoints,MinFreq,MaxFreq);
 
+	   // Determine the Integration or summation limits for peak in terms of channels.
+	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
+	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
+
+       //
+
+
+
+
+	   // Now setup the time versus polarization histo
+	   // the time is in 100 microseconds, which is much more precise than what we need
+	   // so I didvide by 10000  with an integer division, also the time and date is now in UNIX time
+	   TimeStamp = Int_t((timel)/10000 -2082844800); // cast into Int_t
+	   cout<<"timestamp   "<<TimeStamp<<"\n";
+	   time_t timm = TimeStamp;
+	   td = new TDatime(timm);
+	   // we set the time stamp to 0
+	   gStyle->SetTimeOffset(td->Convert());
+	   PolTime = SetupStripChart("Polarization vs time");
+	   PolTime->SetMaximum(100.);
+	   PolTime->SetMinimum(-100.);
+	   PolTime->SetLineColor(2);
+
+
+
+
+	   // Print original time
+	   PrintTime();
+
+
+	   Int_t timewindow = 644;
+	   PolTime = new TH1D("PolTime","Polarization vs time",timewindow,(TimeStamp),(TimeStamp)+timewindow);
+	   //PolTime = new TH1D("PolTime","Polarization vs time",timewindow,0,timewindow);
+	   PolTime->GetXaxis()->SetTimeDisplay(1);
+
+}
+void NMRana::SetupCanvas(){
+	// creates the different Canvas
+	// master canvas for all histograms
+	GeneralCanvas = new TCanvas("GeneralCanvas","NMR signal",200,200,1000,800);
+
+
+	//canvas for all strip charts
+	StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",800,50,1000,600);
+	StripCanvas->SetFillColor(42);
+	StripCanvas->SetFrameFillColor(33);
+	StripCanvas->SetGrid();
 
 }
 
 void NMRana::DrawHistos(){
 // draw histos, mainly for debug purpose
-	c1 = new TCanvas("c1","NMR signal",200,200,1000,800);
+	GeneralCanvas->Divide(1,2);
+	GeneralCanvas->cd(1);
 	NMR1->Draw();
-	c1->Update();
+	GeneralCanvas->cd(2);
+	PolTime->Draw();
+	GeneralCanvas->Update();
 }
 void NMRana::Loop()
 {
@@ -277,6 +361,10 @@ void NMRana::Loop()
 //by  b_branchname->GetEntry(ientry); //read only this branch
    if (fChain == 0) return;
 
+
+   	   // go to strip chart
+   StripCanvas->cd();
+
    Long64_t nentries = fChain->GetEntriesFast();
 
    Long64_t nbytes = 0, nb = 0;
@@ -286,8 +374,8 @@ void NMRana::Loop()
       nb = fChain->GetEntry(jentry);   nbytes += nb;
       // if (Cut(ientry) < 0) continue;
 
-      //	now fill histogram
-      // reset freq_temp to lower bound
+//	now fill histogram
+// reset freq_temp to lower bound
       Double_t freq_temp = MinFreq;
 
       for (UInt_t j = 0; j < array->size(); ++j) {
@@ -295,7 +383,75 @@ void NMRana::Loop()
           freq_temp = freq_temp+FreqStep;
       	  }
 
-   }
+//sum the peak area
+      SignalArea = CalculateArea(array);
+      // file polarization vs time
+	  TimeStamp = Int_t((timel)/10000 -2082844800);
+      //PolTime->Fill((TimeStamp),SignalArea*100.);
+      //PolTime->Fill(jentry,SignalArea*100.);
+	  PolTime->SetBinContent(jentry,SignalArea*100.);
+	  PolTime->GetXaxis()->SetRange(jentry-500,jentry+500);
+	  StripCanvas->Modified();
+	  StripCanvas->Update();
+
+
+//      cout<<timel<<"another one \n";
+
+   }// end of entry loop
+}
+
+Double_t NMRana::CalculateArea(std::vector<Double_t> *array){
+	// this function calculates the area of the NMR perak by simpy summing it in
+	//  limits given by AreaSetLimits in the main program
+	// the area is calculated as sum i_low to i_high (a(i)*binwidth)
+
+	Double_t sum = 0.;
+    for (Int_t j = low_id; j < high_id; ++j) {
+         sum = sum + array->at(j);
+     	  }
+    return sum * FreqStep;
+
+
+
+
+}
+
+void NMRana::AreaSetLimits(Double_t low_x, Double_t high_x){
+		LowArea_X = low_x;
+		HighArea_X = high_x;
+}
+
+void NMRana::PrintTime(){
+	// prints time from time stamp
+	   time_t timm = TimeStamp;
+
+	   tm *ltm = localtime(&timm);
+	    cout<<" \n \n ******************************************\n\n";
+	    cout << "Year: "<< 1900 + ltm->tm_year << endl;
+	       cout << "Month: "<< 1 + ltm->tm_mon<< endl;
+	       cout << "Day: "<<  ltm->tm_mday << endl;
+	       cout << "Time: "<< 1 + ltm->tm_hour << ":";
+	       cout << 1 + ltm->tm_min << ":";
+	       cout << 1 + ltm->tm_sec << endl;
+
+	      cout<<asctime(ltm)<< " \n";
+	      cout<<" \n \n ******************************************\n\n";
+
+}
+
+TH1D *NMRana::SetupStripChart(TString Title){
+	// this routine sets up a strip chart for time vs value
+	Float_t bintime =1.;
+	TH1D *ht = new TH1D("ht",Title,10,0,10*bintime);
+	ht->SetStats(0);
+	ht->SetLineColor(2);
+	ht->GetXaxis()->SetTimeDisplay(1);
+	ht->GetYaxis()->SetNdivisions(520);
+
+	return ht;
+
+
+
 }
 
 #endif // #ifdef NMRana_cxx
