@@ -391,6 +391,8 @@ void NMRana::Loop()
       //PolTime->Fill(jentry,SignalArea*100.);
 	  PolTime->SetBinContent(jentry,SignalArea*100.);
 	  PolTime->GetXaxis()->SetRange(jentry-500,jentry+500);
+	  StripCanvas->Clear();
+	  PolTime->Draw();
 	  StripCanvas->Modified();
 	  StripCanvas->Update();
 
