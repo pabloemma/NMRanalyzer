@@ -29,6 +29,9 @@
 #include <iostream>
 #include <string>
 
+
+#include "Ana.h"
+
 using namespace std;
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
@@ -126,6 +129,9 @@ public :
 #ifdef NMRana_cxx
 NMRana::NMRana(){
 
+
+	// create analyzer
+	Ana Analyz;
 }
 
 int NMRana::OpenFile(TString rootfile){
