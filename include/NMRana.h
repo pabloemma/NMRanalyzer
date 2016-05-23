@@ -36,7 +36,7 @@ using namespace std;
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
-class NMRana {
+class NMRana : public Ana {  //inherit from analysis
 
 private:
 	Double_t LowArea_X; // lower bound for area calculation
@@ -127,6 +127,8 @@ public :
 #endif
 
 #ifdef NMRana_cxx
+
+
 NMRana::NMRana(){
 
 
@@ -332,6 +334,9 @@ void NMRana::SetupCanvas(){
 }
 
 void NMRana::DrawHistos(){
+
+	// analyze spectra
+	FindPeak(NMR1);
 // draw histos, mainly for debug purpose
 	GeneralCanvas->Divide(1,2);
 	GeneralCanvas->cd(1);
@@ -461,6 +466,8 @@ TH1D *NMRana::SetupStripChart(TString Title){
 
 
 }
+
+
 
 #endif // #ifdef NMRana_cxx
 
