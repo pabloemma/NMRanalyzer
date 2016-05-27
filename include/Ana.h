@@ -40,6 +40,7 @@ public:
 	TSpectrum *spec;
 	TF1 *FitFcn;  // convoluted fit function
 	TF1 *FitGaus; // first Gauss fit
+	TF1 *FitBck; // background fit
 	Int_t npeaks;	//number of peaks to find
 
 	Float_t *xpeaks; // xpositions of peaks
@@ -52,6 +53,7 @@ public:
 
 	Double_t par[6]; // the fit parameters
 	Double_t gaus_par[3];// for initial gaus fit
+	Double_t bck_par[2]; // background polynomial
 
 
 
@@ -66,6 +68,8 @@ public:
 	static Double_t CombinedFit(Double_t *, Double_t *); // Gaus folded with Lorentzian distribution
 	Int_t FitSpectrum(TH1D *, Int_t  );
 	static Double_t GausPeak(Double_t *, Double_t *);
+	static Double_t Background(Double_t *, Double_t *);
+	virtual void FitBackground(TH1D*);
 
 
 }; //end of class definition
@@ -141,6 +145,19 @@ Double_t Ana::GausPeak(Double_t *x, Double_t *par){
 	return par[0]*TMath::Exp(-.5*arg*arg);
 }
 
+// Quadratic background function
+Double_t Ana::Background(Double_t *x, Double_t *par) {
+	// new version with point rejection, the idea being that
+	// I will not fit background in the peak area but on left and right side of it
+	// see fit descrition in Root reference manual
+	/*if(x[0]>212.884  && x[0] < 213.093){
+	     TF1::RejectPoint();
+	 }*/
+
+   return (par[0] + par[1]*x[0] + par[2]*x[0]*x[0]);
+   //return par[0] + par[1]*x[0] ;
+
+}
 
 
 int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
@@ -165,6 +182,9 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 
 	Spectrum->Fit("FitGaus","RE","C");
 
+	// lets fit the background
+	FitBackground(Spectrum);
+
 
 	FitFcn->SetParameters(1,1,1,FitGaus->GetParameter(0),FitGaus->GetParameter(1),FitGaus->GetParameter(2));
 
@@ -174,6 +194,7 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	Spectrum->Fit("FitFcn","MRE+","C");
 	//Spectrum->Draw();
 	FitFcn->Draw("SAME");
+	FitBck->Draw("SAME");
 
 
 
@@ -185,7 +206,7 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	   legend->SetTextFont(72);
 	   legend->SetTextSize(0.04);
 	   legend->AddEntry(Spectrum,"NMR corrected","lpe");
-//	   legend->AddEntry(BackGround,"Background fit","l");
+	   legend->AddEntry(FitBck,"Background fit","l");
 	   legend->AddEntry(FitGaus,"Gaus fit","l");
 	   legend->AddEntry(FitFcn,"Global Fit","l");
 	   legend->Draw();
@@ -199,7 +220,22 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	return 1;
 }
 
+void Ana::FitBackground(TH1D *spectrum){
+	// this just determines the backgtound parameters of the spectrum
+	// Currently it is a simple 2degree polynomial
 
+	FitBck =  new TF1("FitBck",Background,fit_low_overall-.2,fit_high_overall+.2,2);
+	FitBck->SetNpx(1000);
+	FitBck->SetLineWidth(4);
+	FitBck->SetLineColor(kYellow);
+
+	FitBck->SetParameters(1.,1.); // initialze parameters
+
+	spectrum->Fit(FitBck);
+	FitBck->GetParameters(bck_par);
+
+    //return 1;
+}
 
 
 #endif /* ANA_H_ */

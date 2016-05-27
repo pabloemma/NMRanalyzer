@@ -216,6 +216,11 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
     theApp->Run();
 
     theApp->Terminate();
+
+    // close file
+    // Close the file if only one
+    			//if(InputSignalFile.size() == 1)SIG.CloseFile();
+
     return 0;
 
 

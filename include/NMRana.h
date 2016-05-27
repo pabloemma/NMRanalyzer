@@ -345,6 +345,8 @@ void NMRana::DrawHistos(){
 	GeneralCanvas->cd(2);
 	PolTime->Draw();
 	GeneralCanvas->Update();
+
+
 }
 void NMRana::Loop()
 {
@@ -407,6 +409,7 @@ void NMRana::Loop()
 	  PolTime->Draw();
 	  StripCanvas->Modified();
 	  StripCanvas->Update();
+
 
 
 //      cout<<timel<<"another one \n";
