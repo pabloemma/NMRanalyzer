@@ -150,9 +150,10 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
 	// new version with point rejection, the idea being that
 	// I will not fit background in the peak area but on left and right side of it
 	// see fit descrition in Root reference manual
-	/*if(x[0]>212.884  && x[0] < 213.093){
+	if(x[0]>212.8  && x[0] < 213.2){
+		//if(x[0]>fit_low_overall  && x[0] < fit_high_overall){
 	     TF1::RejectPoint();
-	 }*/
+	 }
 
    return (par[0] + par[1]*x[0] + par[2]*x[0]*x[0]);
    //return par[0] + par[1]*x[0] ;
@@ -224,14 +225,14 @@ void Ana::FitBackground(TH1D *spectrum){
 	// this just determines the backgtound parameters of the spectrum
 	// Currently it is a simple 2degree polynomial
 
-	FitBck =  new TF1("FitBck",Background,fit_low_overall-.2,fit_high_overall+.2,2);
+	FitBck =  new TF1("FitBck",Background,fit_low_overall-.1,fit_high_overall+.1,2);
 	FitBck->SetNpx(1000);
 	FitBck->SetLineWidth(4);
 	FitBck->SetLineColor(kYellow);
 
 	FitBck->SetParameters(1.,1.); // initialze parameters
 
-	spectrum->Fit(FitBck);
+	spectrum->Fit(FitBck,"R");
 	FitBck->GetParameters(bck_par);
 
     //return 1;
