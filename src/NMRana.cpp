@@ -38,9 +38,9 @@
  // add windows includes
 #endif
 
- //NMRana SIG;			// create object for signal
- //NMRana TE;			// create object for TE
- //NMRana QCU;			// create object QCU
+ NMRana SIG;			// create object for signal
+ NMRana TE;			// create object for TE
+ NMRana QCU;			// create object QCU
 
 
 
@@ -137,7 +137,6 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 // First any possible QCurve run
 
 	if(!InputQcurveFile.empty() ){
-	    NMRana QCU;			// create object for signal
 
 // Open ROOT file
 			if(InputQcurveFile.size()>1){
@@ -151,14 +150,12 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			QCU.Loop();
 			QCU.DrawHistos();
 // Close the file if only one
-			if(InputQcurveFile.size() == 1)QCU.CloseFile();
 	}
 
 
 
 
 	if(!InputTEFile.empty() ){
-    NMRana TE;			// create object for signal
 // Open ROOT file
 			if(InputTEFile.size()>1){
 				TE.OpenChain(InputTEFile);  // we will create a TChain
@@ -171,8 +168,6 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			TE.SetupHistos();
 			TE.Loop();
 			TE.DrawHistos();
-// Close the file if only one
-			if(InputTEFile.size() == 1)TE.CloseFile();
 	}
 
 
@@ -183,7 +178,6 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 	if(!InputSignalFile.empty() ){
-	    NMRana SIG;			// create object for signal
 
 // Open ROOT file
 			if(InputSignalFile.size()>1){
@@ -204,7 +198,6 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			SIG.Loop();
 			SIG.DrawHistos();
 // Close the file if only one
-			if(InputSignalFile.size() == 1)SIG.CloseFile();
 
 
 	}
@@ -218,8 +211,10 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
     theApp->Terminate();
 
     // close file
-    // Close the file if only one
-    			//if(InputSignalFile.size() == 1)SIG.CloseFile();
+     // Close the file if only one
+    if(InputTEFile.size() == 1)TE.CloseFile();
+	if(InputQcurveFile.size() == 1)QCU.CloseFile();
+	if(InputSignalFile.size() == 1)SIG.CloseFile();
 
     return 0;
 

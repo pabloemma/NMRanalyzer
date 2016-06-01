@@ -132,8 +132,6 @@ public :
 NMRana::NMRana(){
 
 
-	// create analyzer
-	Ana Analyz;
 }
 
 int NMRana::OpenFile(TString rootfile){
@@ -260,6 +258,7 @@ Int_t NMRana::Cut(Long64_t entry)
 void NMRana::SetupHistos(){
 // Here we setup histos if needed
 // first we get the first entry to calculate the limits
+	   //gROOT->cd(); //this prevents from histos being deleted once files are closed
 	   if (fChain == 0) return;
 
 	   Long64_t nentries = fChain->GetEntriesFast();
@@ -345,6 +344,8 @@ void NMRana::DrawHistos(){
 	GeneralCanvas->cd(2);
 	PolTime->Draw();
 	GeneralCanvas->Update();
+
+
 
 
 }
