@@ -29,8 +29,8 @@ class Ana
 {
 private:
 	Bool_t peakfind;
-	Double_t  fit_low_overall; // fit limits
-	Double_t fit_high_overall;
+	 Double_t  fit_low_overall; // fit limits
+	 Double_t fit_high_overall;
 
 public:
 	std::string Ana_pr ="NMR_ana> ";
@@ -53,7 +53,7 @@ public:
 
 	Double_t par[6]; // the fit parameters
 	Double_t gaus_par[3];// for initial gaus fit
-	Double_t bck_par[2]; // background polynomial
+	Double_t bck_par[3]; // background polynomial
 
 
 
@@ -65,10 +65,10 @@ public:
 	virtual void FindPeak(TH1D* );
 	virtual void FindOffset(TH1D* );
 
-	static Double_t CombinedFit(Double_t *, Double_t *); // Gaus folded with Lorentzian distribution
+	 static Double_t CombinedFit(Double_t *, Double_t *); // Gaus folded with Lorentzian distribution
 	Int_t FitSpectrum(TH1D *, Int_t  );
-	static Double_t GausPeak(Double_t *, Double_t *);
-	static Double_t Background(Double_t *, Double_t *);
+	 static Double_t GausPeak(Double_t *, Double_t *);
+	 static Double_t Background(Double_t *, Double_t *);
 	virtual void FitBackground(TH1D*);
 
 
@@ -150,9 +150,10 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
 	// new version with point rejection, the idea being that
 	// I will not fit background in the peak area but on left and right side of it
 	// see fit descrition in Root reference manual
-	if(x[0]>212.8  && x[0] < 213.2){
+	if(x[0]> 213.80  && x[0] < 213.1){
 		//if(x[0]>fit_low_overall  && x[0] < fit_high_overall){
 	     TF1::RejectPoint();
+	     //return 0;
 	 }
 
    return (par[0] + par[1]*x[0] + par[2]*x[0]*x[0]);
@@ -166,10 +167,19 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	// since it relies on finding the parameters.
 
 
-
+   // correct for negative
+	FindOffset(Spectrum);
+	FitBackground(Spectrum);
 
 	fit_low_overall = *xpeaks-.2;
 	fit_high_overall = *xpeaks +.2;
+
+	   // correct for negative
+		FindOffset(Spectrum);
+		FitBackground(Spectrum);
+
+
+
 	FitFcn =  new TF1("FitFcn",CombinedFit,fit_low_overall,fit_high_overall,6);
 
 	FitFcn->SetNpx(1000);
@@ -184,7 +194,7 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	Spectrum->Fit("FitGaus","RE","C");
 
 	// lets fit the background
-	FitBackground(Spectrum);
+	//FitBackground(Spectrum);
 
 
 	FitFcn->SetParameters(1,1,1,FitGaus->GetParameter(0),FitGaus->GetParameter(1),FitGaus->GetParameter(2));
@@ -225,12 +235,12 @@ void Ana::FitBackground(TH1D *spectrum){
 	// this just determines the backgtound parameters of the spectrum
 	// Currently it is a simple 2degree polynomial
 
-	FitBck =  new TF1("FitBck",Background,fit_low_overall-.1,fit_high_overall+.1,2);
+	FitBck =  new TF1("FitBck",Background,fit_low_overall-.1,fit_high_overall+.1,3);
 	FitBck->SetNpx(1000);
 	FitBck->SetLineWidth(4);
 	FitBck->SetLineColor(kYellow);
 
-	FitBck->SetParameters(1.,1.); // initialze parameters
+	FitBck->SetParameters(1.,1.,1.); // initialze parameters
 
 	spectrum->Fit(FitBck,"R");
 	FitBck->GetParameters(bck_par);
