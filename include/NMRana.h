@@ -22,6 +22,7 @@
 #include <TCanvas.h>
 #include <TDatime.h>
 #include <TStyle.h>  // so we can use gStyle
+#include <TTimeStamp.h>
 
 
 // Header file for the classes stored in the TTree if any.
@@ -59,7 +60,7 @@ public :
    Double_t        Offset;
    Double_t        ControllerV;
    Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
-
+   Long64_t	        time_offset;
    std::vector<double>  *array;
 
    Double_t MinFreq ; // limits of frequency sweep
@@ -69,7 +70,8 @@ public :
    Double_t SignalArea ; // the summed area of every signal // not normalized yet
    Double_t SignalAreaNormalized ; // aka polarization
    std::vector<TString> RootFileArray ; // if there is a list of input files it will put them into vector
-   Int_t TimeStamp;  // timestamp in seconds on UNIX time 0
+   time_t TimeStamp;  // timestamp in seconds on UNIX time 0
+   Long64_t TimeStamp_usec;  // timestamp in 100 musec
 
    	   char *timel_ptr; // because  Root stored the string as a charcater array
 
@@ -97,6 +99,8 @@ public :
    TChain    *NMRchain; // if we have more than one root file
    TString timestring; // from labview time
    TDatime *td ; // Datetime for time histogram
+   TTimeStamp *RootTimeStamp;
+
 
 
 
@@ -130,6 +134,7 @@ public :
 
 
 NMRana::NMRana(){
+	time_offset = 2082852019 ; // unix offset in seconds
 
 
 }
@@ -294,9 +299,9 @@ void NMRana::SetupHistos(){
 	   // Now setup the time versus polarization histo
 	   // the time is in 100 microseconds, which is much more precise than what we need
 	   // so I didvide by 10000  with an integer division, also the time and date is now in UNIX time
-	   TimeStamp = Int_t((timel)/10000 -2082844800); // cast into Int_t
-	   cout<<"timestamp   "<<TimeStamp<<"\n";
-	   time_t timm = TimeStamp;
+	   TimeStamp_usec = timel -time_offset; //
+	   //cout<<"timestamp   "<<TimeStamp<<"\n";
+	   time_t timm = Int_t(TimeStamp_usec/10000);
 	   td = new TDatime(timm);
 	   // we set the time stamp to 0
 	   gStyle->SetTimeOffset(td->Convert());
@@ -381,7 +386,7 @@ void NMRana::Loop()
    StripCanvas->cd();
 
    Long64_t nentries = fChain->GetEntriesFast();
-
+   Long64_t time_prev = 0;
    Long64_t nbytes = 0, nb = 0;
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
       Long64_t ientry = LoadTree(jentry);
@@ -401,7 +406,16 @@ void NMRana::Loop()
 //sum the peak area
       SignalArea = CalculateArea(array);
       // file polarization vs time
-	  TimeStamp = Int_t((timel)/10000 -2082844800);
+/*      Long64_t timediff =timel - time_prev;
+      time_prev = timel;
+      cout<<"time difference"<<timediff<< "\n";
+//      TimeStamp = time_t((timel)/10000 -2082844800);
+      TimeStamp_usec = timel - time_offset;
+      TimeStamp = TimeStamp_usec/10000;
+//      TimeStamp = timel-2082844800;
+      cout<<"Timestamp"<<TimeStamp<<"\n";
+      */
+	  PrintTime();
       //PolTime->Fill((TimeStamp),SignalArea*100.);
       //PolTime->Fill(jentry,SignalArea*100.);
 	  PolTime->SetBinContent(jentry,SignalArea*100.);
@@ -441,7 +455,15 @@ void NMRana::AreaSetLimits(Double_t low_x, Double_t high_x){
 
 void NMRana::PrintTime(){
 	// prints time from time stamp
-	   time_t timm = TimeStamp;
+	   TimeStamp = timel/10000 -time_offset; //
+	   TimeStamp_usec = timel-time_offset*10000;
+	   // now split the time in sec and musec
+	   Int_t nsec = Int_t(TimeStamp_usec % 10000);
+
+
+
+//	   cout<<timel<<"   "<<nsec<<"   "<<TimeStamp_usec<<"   \n";
+	   time_t timm = Int_t(TimeStamp);
 
 	   tm *ltm = localtime(&timm);
 	    cout<<" \n \n ******************************************\n\n";
@@ -455,6 +477,10 @@ void NMRana::PrintTime(){
 	      cout<<asctime(ltm)<< " \n";
 	      cout<<" \n \n ******************************************\n\n";
 
+/*       cout << "Time: "<< 1 + ltm->tm_hour << ":";
+       cout << 1 + ltm->tm_min << ":";
+       cout << 1 + ltm->tm_sec << endl;
+*/
 }
 
 TH1D *NMRana::SetupStripChart(TString Title){
