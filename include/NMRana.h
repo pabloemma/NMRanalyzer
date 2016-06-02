@@ -72,6 +72,7 @@ public :
    std::vector<TString> RootFileArray ; // if there is a list of input files it will put them into vector
    time_t TimeStamp;  // timestamp in seconds on UNIX time 0
    Long64_t TimeStamp_usec;  // timestamp in 100 musec
+   timespec root_time; // timespec for root time stamp
 
    	   char *timel_ptr; // because  Root stored the string as a charcater array
 
@@ -125,9 +126,10 @@ public :
    virtual void		PrintTime();  // prints time from Labview time stamp
    virtual void		SetupCanvas();
    virtual TH1D * 	SetupStripChart(TString);
+   virtual void 	GetTimeStamp();
+
 
 };
-
 #endif
 
 #ifdef NMRana_cxx
@@ -415,7 +417,8 @@ void NMRana::Loop()
 //      TimeStamp = timel-2082844800;
       cout<<"Timestamp"<<TimeStamp<<"\n";
       */
-	  PrintTime();
+	  GetTimeStamp();
+	  // RootTimeStamp->Print();
       //PolTime->Fill((TimeStamp),SignalArea*100.);
       //PolTime->Fill(jentry,SignalArea*100.);
 	  PolTime->SetBinContent(jentry,SignalArea*100.);
@@ -453,13 +456,30 @@ void NMRana::AreaSetLimits(Double_t low_x, Double_t high_x){
 		HighArea_X = high_x;
 }
 
+void NMRana::GetTimeStamp(){
+	// creates time stamp
+	   TimeStamp = timel/10000 -time_offset; //
+	   TimeStamp_usec = timel-time_offset*10000;
+	   // now split the time in sec and musec
+	   long nsec = Int_t(TimeStamp_usec % 10000)*100000;// cpnverts 100 musec into nsek
+	   // fell the timespect tructure
+	   root_time.tv_sec = TimeStamp;
+	   root_time.tv_nsec = nsec;
+
+
+	   RootTimeStamp = new TTimeStamp(root_time);
+}
+
 void NMRana::PrintTime(){
 	// prints time from time stamp
 	   TimeStamp = timel/10000 -time_offset; //
 	   TimeStamp_usec = timel-time_offset*10000;
 	   // now split the time in sec and musec
-	   Int_t nsec = Int_t(TimeStamp_usec % 10000);
-
+	   long nsec = Int_t(TimeStamp_usec % 10000)*100000;// cpnverts 100 musec into nsek
+	   // fell the timespect tructure
+	   root_time.tv_sec = TimeStamp;
+	   root_time.tv_nsec = nsec;
+	   RootTimeStamp=new TTimeStamp(root_time);
 
 
 //	   cout<<timel<<"   "<<nsec<<"   "<<TimeStamp_usec<<"   \n";
