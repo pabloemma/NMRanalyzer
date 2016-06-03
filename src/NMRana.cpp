@@ -178,7 +178,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 	if(!InputSignalFile.empty() ){
-
+			SIG.ReadParameterFile("/Volumes/FastDisk/NMR/ParameterFiles/test.txt");
 // Open ROOT file
 			if(InputSignalFile.size()>1){
 				SIG.OpenChain(InputSignalFile);  // we will create a TChain

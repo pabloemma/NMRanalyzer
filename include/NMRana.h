@@ -28,7 +28,10 @@
 // Header file for the classes stored in the TTree if any.
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <string>
+#include <stdio.h>
+
 
 
 #include "Ana.h"
@@ -76,6 +79,13 @@ public :
 
    	   char *timel_ptr; // because  Root stored the string as a charcater array
 
+   TTree *QCUtree;
+
+
+
+
+
+
    // List of branches
    TBranch        *b_IntScanPoints;   //!
    TBranch        *b_FreqStep;   //!
@@ -101,6 +111,8 @@ public :
    TString timestring; // from labview time
    TDatime *td ; // Datetime for time histogram
    TTimeStamp *RootTimeStamp;
+   TFile * QcurveFile ; // Qcurve file name
+
 
 
 
@@ -127,6 +139,8 @@ public :
    virtual void		SetupCanvas();
    virtual TH1D * 	SetupStripChart(TString);
    virtual void 	GetTimeStamp();
+   virtual void		ReadParameterFile(char*);
+   virtual void     GetQcurve(std::string );
 
 
 };
@@ -140,6 +154,54 @@ NMRana::NMRana(){
 
 
 }
+void NMRana::ReadParameterFile(char* ParameterFile){
+	// reads in parameters for running the NMRanalyzer
+	// needs the Qcurve file
+	// calibration constants from TE measurements
+	// line length is a maximum of 80
+
+	// the format of the file is  name , value
+	// example: Qcurve   Qcurve.root
+	char temp_string[81];
+	std::string temp;
+	std::string string1, string2;
+
+	ifstream ParFile; // create instream file
+	ParFile.open(ParameterFile);
+	// check if found and opened
+	if(!ParFile.is_open()){
+		exit(EXIT_FAILURE);
+	}
+	// read the lines
+
+
+	while(ParFile.good()){
+		ParFile >>string1 >> string2;
+        //cout<<string1.find("QCurve")<<"  tsring pos \n";
+		if(string1.find("QCurve") != std::string::npos){
+			// we have a QCurve file
+			GetQcurve(string2);
+		}
+
+	}
+
+}
+
+void NMRana::GetQcurve(std::string filename) {
+
+	cout<<" QCurve file "<<filename<<"\n";
+
+	QcurveFile = new TFile(filename.c_str());
+	// now create a new tree, so that we have a different name
+	QCUtree = (TTree*)QcurveFile->Get("NMRtree");
+	Init(QCUtree);
+	QCUtree->Print();
+}
+
+
+
+
+
 
 int NMRana::OpenFile(TString rootfile){
 
@@ -301,12 +363,13 @@ void NMRana::SetupHistos(){
 	   // Now setup the time versus polarization histo
 	   // the time is in 100 microseconds, which is much more precise than what we need
 	   // so I didvide by 10000  with an integer division, also the time and date is now in UNIX time
-	   TimeStamp_usec = timel -time_offset; //
-	   //cout<<"timestamp   "<<TimeStamp<<"\n";
-	   time_t timm = Int_t(TimeStamp_usec/10000);
-	   td = new TDatime(timm);
+	   //####################Note the time is only correct if the updates take about 1 second.
+	   // if it is longer or shorter it is not correct, since tickmaks assue 1 second.######
+	   GetTimeStamp();
+	   td = new TDatime(TimeStamp);
+	   td->Print();
 	   // we set the time stamp to 0
-	   gStyle->SetTimeOffset(td->Convert());
+	   //gStyle->SetTimeOffset(td->Convert());
 	   PolTime = SetupStripChart("Polarization vs time");
 	   PolTime->SetMaximum(100.);
 	   PolTime->SetMinimum(-100.);
@@ -319,10 +382,12 @@ void NMRana::SetupHistos(){
 	   PrintTime();
 
 
-	   Int_t timewindow = 644;
-	   PolTime = new TH1D("PolTime","Polarization vs time",timewindow,(TimeStamp),(TimeStamp)+timewindow);
-	   //PolTime = new TH1D("PolTime","Polarization vs time",timewindow,0,timewindow);
+	   Int_t timewindow = 1;
+	   PolTime = new TH1D("PolTime","Polarization vs time",timewindow,0,10*timewindow);
 	   PolTime->GetXaxis()->SetTimeDisplay(1);
+	   PolTime->GetXaxis()->SetTimeOffset(TimeStamp);
+	   PolTime->GetXaxis()->SetTimeFormat("%d\/%m\ %H\:%M \:%S");
+	   PolTime->GetXaxis()->SetNdivisions(405) ;
 
 }
 void NMRana::SetupCanvas(){
@@ -419,10 +484,8 @@ void NMRana::Loop()
       */
 	  GetTimeStamp();
 	  // RootTimeStamp->Print();
-      //PolTime->Fill((TimeStamp),SignalArea*100.);
-      //PolTime->Fill(jentry,SignalArea*100.);
 	  PolTime->SetBinContent(jentry,SignalArea*100.);
-	  PolTime->GetXaxis()->SetRange(jentry-500,jentry+500);
+	  PolTime->GetXaxis()->SetRange(jentry-10000,jentry+5);
 	  StripCanvas->Clear();
 	  PolTime->Draw();
 	  StripCanvas->Modified();
