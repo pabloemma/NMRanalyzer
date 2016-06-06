@@ -141,6 +141,7 @@ public :
    virtual void 	GetTimeStamp();
    virtual void		ReadParameterFile(char*);
    virtual void     GetQcurve(std::string );
+   virtual void		FillQcurveArray();
 
 
 };
@@ -421,6 +422,31 @@ void NMRana::DrawHistos(){
 
 
 }
+void NMRana::FillQcurveArray(){
+	// this function fill the Qcurve array and normalizes it
+	   Long64_t nentries = QCUtree->GetEntriesFast();
+	   Long64_t nbytes = 0, nb = 0;
+	   for (Long64_t jentry=0; jentry<nentries;jentry++) {
+	      Long64_t ientry = LoadTree(jentry);
+	      if (ientry < 0) break;
+	      nb = QCUtree->GetEntry(jentry);   nbytes += nb;
+	      Double_t freq_temp = MinFreq;
+
+	      for (UInt_t j = 0; j < array->size(); ++j) {
+	          //NMR1->Fill(freq_temp,array->at(j));
+	    	  // I have to decide if I want to subtract ROOT histos or arrays.
+	    	  // I think arrays is better.
+	    	  // so create new array vetcor and continuosly add and ifinally mormalize it to number of
+	    	  //sweps.
+	          freq_temp = freq_temp+FreqStep;
+	      	  }
+
+
+	   }// end of entry loop
+
+
+}
+
 void NMRana::Loop()
 {
 //   In a ROOT session, you can do:
@@ -472,18 +498,7 @@ void NMRana::Loop()
 
 //sum the peak area
       SignalArea = CalculateArea(array);
-      // file polarization vs time
-/*      Long64_t timediff =timel - time_prev;
-      time_prev = timel;
-      cout<<"time difference"<<timediff<< "\n";
-//      TimeStamp = time_t((timel)/10000 -2082844800);
-      TimeStamp_usec = timel - time_offset;
-      TimeStamp = TimeStamp_usec/10000;
-//      TimeStamp = timel-2082844800;
-      cout<<"Timestamp"<<TimeStamp<<"\n";
-      */
-	  GetTimeStamp();
-	  // RootTimeStamp->Print();
+ 	  GetTimeStamp();
 	  PolTime->SetBinContent(jentry,SignalArea*100.);
 	  PolTime->GetXaxis()->SetRange(jentry-10000,jentry+5);
 	  StripCanvas->Clear();
