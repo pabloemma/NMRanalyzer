@@ -58,6 +58,9 @@ public :
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
    virtual Int_t 	OpenFile(TString);
+   virtual int      OpenChain(std::vector<TString> );
+   virtual void CloseFile();
+
 };
 
 
@@ -98,6 +101,34 @@ TEana::~TEana()
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
+
+int TEana::OpenChain(std::vector<TString> RootFileArray){
+
+	// This creates a chain fo trees instead of just one
+
+	 NMRchain = new TChain("NMRtree");
+	 // Now loop over all the rootfiles we have
+		for(Int_t pos = 0 ; pos < RootFileArray.size() ; pos++)
+		{
+			cout<<RootFileArray[pos]<<"   filename \n";
+			NMRchain->Add(RootFileArray[pos]);
+		}
+
+
+
+     //NMRchain->GetObject("NMRtree",tree);
+     Init(NMRchain);
+
+   return 0;
+
+}
+
+void TEana::CloseFile(){
+	f->Close();
+}
+
+
+
 
 Int_t TEana::GetEntry(Long64_t entry)
 {
