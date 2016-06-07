@@ -62,9 +62,11 @@ public :
    Double_t        TuneV;
    Double_t        Offset;
    Double_t        ControllerV;
+   Double_t			Qamp; // amplifier setting for Qcurve
    Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
    Long64_t	        time_offset;
    std::vector<double>  *array;
+   std::vector<double>  Qcurve_array; // this will contain the QCurve normalized to the sweep number
 
    Double_t MinFreq ; // limits of frequency sweep
    Double_t MaxFreq ;
@@ -78,6 +80,7 @@ public :
    timespec root_time; // timespec for root time stamp
 
    	   char *timel_ptr; // because  Root stored the string as a charcater array
+   Bool_t QC; // set true for qcurve subtraction
 
    TTree *QCUtree;
 
@@ -103,10 +106,15 @@ public :
    TTree 		   *tree;
    // the block for the histograms
    TH1D 	 *NMR1; // Signal histogram
+   TH1D		 *NMR1_NoQ ; // Signal without Qcurve subtraction
    TH1D		 *PolTime; // polarization vs time
+   TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
    //
-   TCanvas	 *GeneralCanvas;
-   TCanvas	 *StripCanvas;
+   TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
+   TCanvas	 *StripCanvas;   // shows polarization vs time
+   TCanvas	 *AuxCanvas;   // all the auxiliary plots, like Qcurve
+
+
    TChain    *NMRchain; // if we have more than one root file
    TString timestring; // from labview time
    TDatime *td ; // Datetime for time histogram
@@ -166,6 +174,7 @@ void NMRana::ReadParameterFile(char* ParameterFile){
 	char temp_string[81];
 	std::string temp;
 	std::string string1, string2;
+	std::string temp_file;
 
 	ifstream ParFile; // create instream file
 	ParFile.open(ParameterFile);
@@ -176,28 +185,29 @@ void NMRana::ReadParameterFile(char* ParameterFile){
 	// read the lines
 
 
-	while(ParFile.good()){
+	do{
 		ParFile >>string1 >> string2;
-        //cout<<string1.find("QCurve")<<"  tsring pos \n";
+//		cout<<string1<<"   "<<string2<<"  \n";
+		if (ParFile.eof()) break;  // get out of the loop
+
 		if(string1.find("QCurve") != std::string::npos){
 			// we have a QCurve file
-			GetQcurve(string2);
+			QC=true;
+			temp_file = string2;
+
 		}
 
-	}
+		if(string1.find("QAMP") != std::string::npos){
+			// amplifier setting for QCurve
+			Qamp = std::stod(string2);
 
+		}
+
+	}while(ParFile.good());
+
+	if(QC) GetQcurve(temp_file);
 }
 
-void NMRana::GetQcurve(std::string filename) {
-
-	cout<<" QCurve file "<<filename<<"\n";
-
-	QcurveFile = new TFile(filename.c_str());
-	// now create a new tree, so that we have a different name
-	QCUtree = (TTree*)QcurveFile->Get("NMRtree");
-	Init(QCUtree);
-	QCUtree->Print();
-}
 
 
 
@@ -389,20 +399,34 @@ void NMRana::SetupHistos(){
 	   PolTime->GetXaxis()->SetTimeOffset(TimeStamp);
 	   PolTime->GetXaxis()->SetTimeFormat("%d\/%m\ %H\:%M \:%S");
 	   PolTime->GetXaxis()->SetNdivisions(405) ;
+	   // Now setup a Canvas for Qcurve
+
+	   if(Qcurve_array.size()!=0){
+		   Qcurve_histo = new TH1D("Qcurve_hist","Normalized Qcurve histogram",IntScanPoints,MinFreq,MaxFreq);
+		   NMR1_NoQ = new TH1D("NMR1_NoQ","Signal without QCurve subtraction",IntScanPoints,MinFreq,MaxFreq);
+	   }
+
+
 
 }
 void NMRana::SetupCanvas(){
 	// creates the different Canvas
 	// master canvas for all histograms
-	GeneralCanvas = new TCanvas("GeneralCanvas","NMR signal",200,200,1000,800);
+	GeneralCanvas = new TCanvas("GeneralCanvas","NMR signal",200,50,800,800);
 
 
 	//canvas for all strip charts
-	StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",800,50,1000,600);
+	StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1020,50,1000,600);
 	StripCanvas->SetFillColor(42);
 	StripCanvas->SetFrameFillColor(33);
 	StripCanvas->SetGrid();
 
+
+	if(Qcurve_array.size()!=0){
+
+	AuxCanvas = new TCanvas("AuxCanvas","Auxiliary plots",1020,700,1000,600);
+	AuxCanvas->Divide(1,2);
+	}
 }
 
 void NMRana::DrawHistos(){
@@ -418,31 +442,16 @@ void NMRana::DrawHistos(){
 	PolTime->Draw();
 	GeneralCanvas->Update();
 
+	if(Qcurve_array.size()!=0){
+		AuxCanvas->cd(1);
+		Qcurve_histo->Draw();
+		AuxCanvas->cd(2);
+		NMR1_NoQ->Draw();
+
+		AuxCanvas->Update();
+	}
 
 
-
-}
-void NMRana::FillQcurveArray(){
-	// this function fill the Qcurve array and normalizes it
-	   Long64_t nentries = QCUtree->GetEntriesFast();
-	   Long64_t nbytes = 0, nb = 0;
-	   for (Long64_t jentry=0; jentry<nentries;jentry++) {
-	      Long64_t ientry = LoadTree(jentry);
-	      if (ientry < 0) break;
-	      nb = QCUtree->GetEntry(jentry);   nbytes += nb;
-	      Double_t freq_temp = MinFreq;
-
-	      for (UInt_t j = 0; j < array->size(); ++j) {
-	          //NMR1->Fill(freq_temp,array->at(j));
-	    	  // I have to decide if I want to subtract ROOT histos or arrays.
-	    	  // I think arrays is better.
-	    	  // so create new array vetcor and continuosly add and ifinally mormalize it to number of
-	    	  //sweps.
-	          freq_temp = freq_temp+FreqStep;
-	      	  }
-
-
-	   }// end of entry loop
 
 
 }
@@ -491,7 +500,15 @@ void NMRana::Loop()
 // reset freq_temp to lower bound
       Double_t freq_temp = MinFreq;
 
+
       for (UInt_t j = 0; j < array->size(); ++j) {
+    	  // subtract QCurve if existing
+
+    	  if(Qcurve_array.size()!=0) {
+              NMR1_NoQ->Fill(freq_temp,array->at(j));
+              array->at(j) = array->at(j) - Qcurve_array.at(j);
+    	  }
+
           NMR1->Fill(freq_temp,array->at(j));
           freq_temp = freq_temp+FreqStep;
       	  }
@@ -511,6 +528,20 @@ void NMRana::Loop()
 //      cout<<timel<<"another one \n";
 
    }// end of entry loop
+   // Now fill the QCurve histo if it is used
+	  if(Qcurve_array.size()!=0){
+	      Double_t freq_temp = MinFreq;
+
+
+	      for (UInt_t j = 0; j < Qcurve_array.size(); ++j) {
+	    	  // subtract QCurve if existing
+
+	          Qcurve_histo->Fill(freq_temp,Qcurve_array.at(j));
+	          freq_temp = freq_temp+FreqStep;
+	      	  }
+
+	  }
+
 }
 
 Double_t NMRana::CalculateArea(std::vector<Double_t> *array){
@@ -596,6 +627,61 @@ TH1D *NMRana::SetupStripChart(TString Title){
 
 }
 
+void NMRana::GetQcurve(std::string filename) {
+
+	cout<<" QCurve file "<<filename<<"\n";
+
+	QcurveFile = new TFile(filename.c_str());
+	// now create a new tree, so that we have a different name
+	QCUtree = (TTree*)QcurveFile->Get("NMRtree");
+	Init(QCUtree);
+	FillQcurveArray();
+}
+
+void NMRana::FillQcurveArray(){
+	// this function fill the Qcurve array and normalizes it
+	   Long64_t nentries = QCUtree->GetEntriesFast();
+	   Long64_t nbytes = 0, nb = 0;
+       cout<<" nentries"<< nentries<<" \n";
+       Qcurve_array.clear();
+	   for (Long64_t jentry=0; jentry<nentries;jentry++) {
+	      Long64_t ientry = LoadTree(jentry);
+	      if (ientry < 0) break;
+	      nb = QCUtree->GetEntry(jentry);   nbytes += nb;
+	      Double_t freq_temp = MinFreq;
+
+
+	      for (UInt_t j = 0; j < array->size(); ++j) {
+	          //NMR1->Fill(freq_temp,array->at(j));
+	    	  // I have to decide if I want to subtract ROOT histos or arrays.
+	    	  // I think arrays is better.
+	    	  // so create new array vetcor and continuosly add and ifinally mormalize it to number of
+	    	  //sweps.
+	          freq_temp = freq_temp+FreqStep;
+	          if(jentry ==0){  // the first time we create the array
+        	  Qcurve_array.push_back(array->at(j));
+
+	          }
+	          else {
+	        	  Qcurve_array.at(j) = Qcurve_array.at(j)+array->at(j);
+	          }
+	      	  }
+
+
+
+	   }// end of entry loop
+
+	   //now we need to normalize the QCurve to the number of sweeps, which is nentries
+	   cout<<" qamp"<<Qamp<<"\n";
+	   for (UInt_t j = 0; j < array->size(); ++j) {
+
+		   Qcurve_array.at(j)= Qcurve_array.at(j)/nentries/Qamp;
+
+	   }
+
+
+
+}
 
 
 #endif // #ifdef NMRana_cxx
