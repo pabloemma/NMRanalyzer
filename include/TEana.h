@@ -7,15 +7,29 @@
  *      * will calculate the calibration constant
  */
 
-#ifndef TEANA_H_
-#define TEANA_H_
+#ifndef TEana_h
+#define TEana_h
 
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
+#include <TH1D.h>
+#include <TCanvas.h>
+#include <TDatime.h>
+#include <TStyle.h>  // so we can use gStyle
+#include <TTimeStamp.h>
+
 
 // Header file for the classes stored in the TTree if any.
 #include <vector>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <stdio.h>
+
+
+
+
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
@@ -35,6 +49,12 @@ public :
    vector<double>  *array;
    Long64_t        timel;
    Int_t           IntScanPoints;
+   TFile		   *f;
+   TTree           *tree;
+   TChain    	   *NMRchain; // if we have more than one root file
+
+
+
 
    // List of branches
    TBranch        *b_FreqCenter;   //!
@@ -50,13 +70,13 @@ public :
 
    TEana();
    virtual ~TEana();
-   virtual Int_t    Cut(Long64_t entry);
+ //  virtual Int_t    Cut(Long64_t entry);
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
    virtual void     Loop();
    virtual Bool_t   Notify();
-   virtual void     Show(Long64_t entry = -1);
+//   virtual void     Show(Long64_t entry = -1);
    virtual Int_t 	OpenFile(TString);
    virtual int      OpenChain(std::vector<TString> );
    virtual void CloseFile();
@@ -71,7 +91,9 @@ public :
 
 
 
-#endif /* TEANA_H_ */
+#endif /* TEana_h */
+
+
 #ifdef TEana_cxx
 
 

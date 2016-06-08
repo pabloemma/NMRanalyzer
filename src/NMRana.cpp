@@ -7,6 +7,7 @@
  */
 
 #define NMRana_cxx
+#define TEana_cxx
 
 
 #include <unistd.h>  // to get gnu getoption
@@ -19,6 +20,7 @@
 
 #include "NMRana.h"
 #include "NMRana_main.h"
+#include "TEana.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
@@ -39,7 +41,7 @@
 #endif
 
  NMRana SIG;			// create object for signal
- NMRana TE;			// create object for TE
+ TEana TE;			// create object for TE
  NMRana QCU;			// create object QCU
 
 
@@ -164,10 +166,10 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 				TE.OpenFile(InputTEFile[0]); // just one spectrum
 			}
 // Do stuff with it
-			TE.SetupCanvas();
-			TE.SetupHistos();
+//			TE.SetupCanvas();
+//			TE.SetupHistos();
 			TE.Loop();
-			TE.DrawHistos();
+//			TE.DrawHistos();
 	}
 
 

@@ -31,6 +31,7 @@
 #include <fstream>
 #include <string>
 #include <stdio.h>
+#include <map>
 
 
 
@@ -83,6 +84,7 @@ public :
    Bool_t QC; // set true for qcurve subtraction
 
    TTree *QCUtree;
+   std::map<std::string,std::string> Parameters; // input parameters
 
 
 
@@ -189,7 +191,7 @@ void NMRana::ReadParameterFile(char* ParameterFile){
 		ParFile >>string1 >> string2;
 //		cout<<string1<<"   "<<string2<<"  \n";
 		if (ParFile.eof()) break;  // get out of the loop
-
+		Parameters[string1] = string2;
 		if(string1.find("QCurve") != std::string::npos){
 			// we have a QCurve file
 			QC=true;
@@ -206,6 +208,11 @@ void NMRana::ReadParameterFile(char* ParameterFile){
 	}while(ParFile.good());
 
 	if(QC) GetQcurve(temp_file);
+
+	// Now print out parameter map
+	for( std::map<string,string>::iterator pos=Parameters.begin(); pos !=  Parameters.end(); ++pos){
+		cout<<"parameters from file  :"<<pos->first<<"\t"<<pos->second <<"\n";
+	}
 }
 
 
