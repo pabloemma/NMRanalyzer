@@ -191,28 +191,32 @@ void NMRana::ReadParameterFile(char* ParameterFile){
 		ParFile >>string1 >> string2;
 //		cout<<string1<<"   "<<string2<<"  \n";
 		if (ParFile.eof()) break;  // get out of the loop
-		Parameters[string1] = string2;
-		if(string1.find("QCurve") != std::string::npos){
-			// we have a QCurve file
-			QC=true;
-			temp_file = string2;
+		if(string1.find("#") == std::string::npos) Parameters[string1] = string2;  // check for comments
 
+	}while(ParFile.good());
+
+
+	// Now print out parameter map
+	for( std::map<string,string>::iterator pos=Parameters.begin(); pos !=  Parameters.end(); ++pos){
+		cout<<"parameters from file  :"<<pos->first<<"\t"<<pos->second <<"\n";
+
+
+		if(pos->first.find("QCurve")!= std::string::npos){
+			QC=true;
+			temp_file = pos->second;
 		}
 
-		if(string1.find("QAMP") != std::string::npos){
+
+		if(pos->first.find("QAMP")!= std::string::npos){
 			// amplifier setting for QCurve
 			Qamp = std::stod(string2);
 
 		}
 
-	}while(ParFile.good());
 
+	}
 	if(QC) GetQcurve(temp_file);
 
-	// Now print out parameter map
-	for( std::map<string,string>::iterator pos=Parameters.begin(); pos !=  Parameters.end(); ++pos){
-		cout<<"parameters from file  :"<<pos->first<<"\t"<<pos->second <<"\n";
-	}
 }
 
 

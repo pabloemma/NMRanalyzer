@@ -18,6 +18,8 @@
 #include <TDatime.h>
 #include <TStyle.h>  // so we can use gStyle
 #include <TTimeStamp.h>
+#include <TMath.h>
+#include <TGraph.h>
 
 
 // Header file for the classes stored in the TTree if any.
@@ -34,6 +36,26 @@
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
 class TEana {
+private:
+	Double_t deuteron_g;
+	Double_t nucleon_mag_moment;
+	Double_t proton_g;
+	Double_t neutron_g;
+	Double_t boltzmann ; // J/K
+	Double_t proton_fact;
+	Double_t deuteron_fact;
+
+
+	// coefficiewnts for helium pressute to T calculation
+	Double_t aLowT[10];
+	Double_t bLow;
+	Double_t cLow;
+	Double_t aHighT[10];
+	Double_t bHigh;
+	Double_t cHigh;
+	TGraph *lowT;  // used for temp calulation at low pressure
+
+
 public :
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
@@ -80,6 +102,9 @@ public :
    virtual Int_t 	OpenFile(TString);
    virtual int      OpenChain(std::vector<TString> );
    virtual void CloseFile();
+   virtual Double_t  CalculateTEP(std::string, Double_t,Double_t , Double_t );
+   virtual Double_t	CalcT(Double_t); // calculates temperature from pressure, input in TORR
+   virtual Double_t CalculateT(Double_t *, Double_t , Double_t, Double_t);
 
 };
 
@@ -102,6 +127,49 @@ TEana::TEana()
 {
 
 		cout<<"**************       Initialize TE analyzer **************** \n\n\n";
+		proton_g    =  5.585694702;
+		neutron_g   = -3.82608545;
+		deuteron_g = 0.85741; // needs to be multiplied with nucleon mag moment (kind of a g factor)
+		nucleon_mag_moment  = 5.05078353e-27;  //SI J/T
+		boltzmann = 1.38064852e-23 ; // SI units J/K
+		proton_fact = nucleon_mag_moment * proton_g /boltzmann;
+		deuteron_fact =  nucleon_mag_moment * deuteron_g /boltzmann;
+
+		// setup the coefficients for P to T calculation
+
+		aLowT[0] =1.392408;
+		aLowT[1] =0.527153;
+		aLowT[2] =0.166756;
+		aLowT[3] =0.050988;
+		aLowT[4] =0.026514;
+		aLowT[5] =0.001975;
+		aLowT[6] =-.017976;
+		aLowT[7] =0.005409;
+		aLowT[8] =0.013259;
+		aLowT[9] =0.0;
+		bLow = 5.6;
+		cLow = 2.9;
+
+
+
+		aHighT[0] =3.146631;
+		aHighT[1] =1.357655;
+		aHighT[2] =0.413923;
+		aHighT[3] =0.091159;
+		aHighT[4] =0.016349;
+		aHighT[5] =0.001826;
+		aHighT[6] =-.004325;
+		aHighT[7] =-.004973;
+		aHighT[8] =0.0;
+		aHighT[9] =0.0;
+		bHigh = 10.3;
+		cHigh = 1.9;
+
+		// setup TGparh for our later interpolation
+		Double_t tt[13] = {.650,.7,.75,.8,.85,.9,.95,1.0,1.05,1.1,1.15,1.2,1.25};
+		Double_t pp[13] = {1.101e-01,2.923e-01,6.893e-01,1.475,2.914,5.380,9.381,15.58,24.79,38.02,56.47,81.52,114.7};
+		lowT = new TGraph(13,pp,tt);
+
 }
 
 int TEana::OpenFile(TString rootfile){
@@ -217,41 +285,85 @@ Bool_t TEana::Notify()
 
 void TEana::Loop()
 {
-//   In a ROOT session, you can do:
-//      Root > .L TEana.C
-//      Root > TEana t
-//      Root > t.GetEntry(12); // Fill t data members with entry number 12
-//      Root > t.Show();       // Show values of entry 12
-//      Root > t.Show(16);     // Read and show values of entry 16
-//      Root > t.Loop();       // Loop on all entries
-//
-
-//     This is the loop skeleton where:
-//    jentry is the global entry number in the chain
-//    ientry is the entry number in the current Tree
-//  Note that the argument to GetEntry must be:
-//    jentry for TChain::GetEntry
-//    ientry for TTree::GetEntry and TBranch::GetEntry
-//
-//       To read only selected branches, Insert statements like:
-// METHOD1:
-//    fChain->SetBranchStatus("*",0);  // disable all branches
-//    fChain->SetBranchStatus("branchname",1);  // activate branchname
-// METHOD2: replace line
-//    fChain->GetEntry(jentry);       //read all branches
-//by  b_branchname->GetEntry(ientry); //read only this branch
    if (fChain == 0) return;
 
    Long64_t nentries = fChain->GetEntriesFast();
 
+
+   	  Double_t press = .05;
+   	  Double_t p_step=.01;
    Long64_t nbytes = 0, nb = 0;
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
       Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
       nb = fChain->GetEntry(jentry);   nbytes += nb;
+
+
+      cout<<"pressure  "<<press<<"   temp:  "<<CalcT(press)<<"   Polarization:  "<<CalculateTEP("proton",.5,5.,press)<<" \n";
+      press = press+p_step;
       // if (Cut(ientry) < 0) continue;
    }
 }
+
+Double_t TEana::CalculateTEP(std::string particle ,Double_t spin, Double_t field, Double_t pressure){
+	// this routine calculates the TE polarization for a pressure P and a give field
+	// It calculates the Brouillouiin  function for p and d currently
+	Double_t TEPol;
+
+	//
+	Double_t fact; // calculates the constants
+	Double_t brill; //Brillouin function
+	Double_t Temp = CalcT(pressure); // get temperature from calculation
+	Double_t arg1 = (2.*spin+1.)/(2.*spin);
+	Double_t arg2 = (1.)/(2.*spin);
+	if(particle.find("proton") != std::string::npos){
+		fact = proton_fact *spin *field /Temp;
+	}
+	else if(particle.find("deuteron") != std::string::npos){
+		fact = deuteron_fact *spin *field /Temp;
+	}
+	else {
+		cout<<"TEana> No particle found for TE calculation************\n\n\n ";
+	}
+
+	TEPol = arg1*cosh(arg1*fact)/sinh(arg1*fact)-arg2*cosh(arg2*fact)/sinh(arg2*fact);
+
+
+
+	return TEPol;
+}
+
+Double_t TEana::CalcT(Double_t pressure){
+	// Calculates Temp as a function of pressure in Torr
+	// follows Journal of Physical and Chemical Ref. Data 27, 1217 (1998)
+	//
+	Double_t temp;
+	Double_t pa = pressure*133.322; // convert pressure into pascal
+	if(pressure>.0009 && pressure<.826)
+		temp = lowT->Eval(pa,0,"S");  //cubic spline
+
+	else if(pressure>=.826 && pressure<37.82)
+		temp = CalculateT(aLowT,bLow,cLow,pa);
+
+	else if(pressure>=72.82 && pressure<1471.)
+		temp = CalculateT(aHighT,bHigh,cHigh,pa);
+
+
+	return temp;
+}
+
+
+Double_t TEana::CalculateT(Double_t *a, Double_t b, Double_t c, Double_t press){
+	// calculate temperature
+	Double_t con = (TMath::Log(press)-b)/c;
+	Double_t t_i = 0.0;
+	for(Int_t k=0 ;k<10;k++){
+		t_i = t_i+a[k]*pow(con,k);
+	}
+	return t_i;
+
+}
+
 
 #endif // #ifdef TEana_cxx
 
