@@ -19,7 +19,7 @@
 #include <TStyle.h>  // so we can use gStyle
 #include <TTimeStamp.h>
 #include <TMath.h>
-//#include <TGraph.h>
+#include <TGraph.h>
 
 
 // Header file for the classes stored in the TTree if any.
