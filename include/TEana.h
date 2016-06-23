@@ -374,6 +374,10 @@ void TEana::Loop()
 
    Long64_t nentries = fChain->GetEntriesFast();
 
+     // this is a debig section
+	   TH1D * h1 = new TH1D("h1","pressure vst T", 1000,0.,5.);
+   	   TH1D * h2 = new TH1D("h2"," T  vs polarization", 1000,0.,5.);
+
 
    	  Double_t press = .05;
    	  Double_t p_step=.01;
@@ -385,9 +389,18 @@ void TEana::Loop()
 
 
       cout<<"pressure  "<<press<<"   temp:  "<<CalcT(press)<<"   Polarization:  "<<CalculateTEP("proton",.5,5.,press)<<" \n";
+      h1->Fill(press, CalcT(press));
+      h2->Fill(CalcT(press),CalculateTEP("proton",.5,5.,press));
       press = press+p_step;
       // if (Cut(ientry) < 0) continue;
    }
+   	   TCanvas *c1 = new TCanvas();
+   	   c1->Divide(1,2);
+   	   c1->cd(1);
+   	   h1->Draw();
+   	   c1->cd(2);
+   	   h2->Draw();
+   	   c1->Update();
 }
 
 Double_t TEana::CalculateTEP(std::string particle ,Double_t spin, Double_t field, Double_t pressure){
