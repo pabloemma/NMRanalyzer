@@ -33,9 +33,11 @@
 
 
 
+
+
 // Fixed size dimensions of array or collections stored in the TTree if any.
 
-class TEana {
+class TEana : NMRana {
 private:
 	Double_t deuteron_g;
 	Double_t nucleon_mag_moment;
@@ -47,7 +49,7 @@ private:
 	Int_t TimeControl;
 
 
-	// coefficiewnts for helium pressute to T calculation
+	// coefficiewnts for helium pressure to T calculation
 	Double_t aLowT[10];
 	Double_t bLow;
 	Double_t cLow;

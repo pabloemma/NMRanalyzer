@@ -128,13 +128,14 @@ public :
    // the block for the histograms
    TH1D 	 *NMR1; // Signal histogram
    TH1D		 *NMR1_NoQ ; // Signal without Qcurve subtraction
+   TH1D      *NMR_RT;// real time display of the NMR signal
    TH1D		 *PolTime; // polarization vs time
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
    //
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
    TCanvas	 *StripCanvas;   // shows polarization vs time
    TCanvas	 *AuxCanvas;   // all the auxiliary plots, like Qcurve
-
+   TCanvas	 *RTCanvas ;    // Life time display canvas, get used in Loop
 
    TChain    *NMRchain; // if we have more than one root file
    TString timestring; // from labview time
@@ -410,6 +411,9 @@ void NMRana::SetupHistos(){
 	   MaxFreq = FreqCenter + (ScanPoints-1.)/2. * FreqStep;
 
 	   NMR1 = new TH1D("NMR1","Signal histogram",IntScanPoints,MinFreq,MaxFreq);
+	   NMR_RT = new TH1D("NMR_RT","Real TimeSignal histogram",IntScanPoints,MinFreq,MaxFreq);
+	   NMR_RT->SetLineColor(kSpring-2);
+	   NMR_RT->SetLineWidth(3);
 
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
@@ -466,9 +470,16 @@ void NMRana::SetupCanvas(){
 
 	//canvas for all strip charts
 	StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1020,50,1000,600);
+	StripCanvas->SetGrid();
 	StripCanvas->SetFillColor(42);
 	StripCanvas->SetFrameFillColor(33);
-	StripCanvas->SetGrid();
+
+	RTCanvas =  new TCanvas("RTCanvas","Real Time charts",100,1000,600,400);
+	RTCanvas->SetGrid();
+	RTCanvas->SetFillColor(21);
+	RTCanvas->SetFrameFillColor(16);
+
+
 
 
 	if(Qcurve_array.size()!=0){
@@ -539,8 +550,12 @@ void NMRana::Loop()
    Long64_t nentries = fChain->GetEntriesFast();
    Long64_t time_prev = 0;
    Long64_t nbytes = 0, nb = 0;
+
+   RTCanvas->cd();
+   NMR_RT->Draw();
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
-      Long64_t ientry = LoadTree(jentry);
+	   NMR_RT->Reset();
+	   Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
       nb = fChain->GetEntry(jentry);   nbytes += nb;
       // if (Cut(ientry) < 0) continue;
@@ -559,10 +574,12 @@ void NMRana::Loop()
     	  }
 
           NMR1->Fill(freq_temp,array->at(j));
+          NMR_RT->Fill(freq_temp,array->at(j));
           freq_temp = freq_temp+FreqStep;
       	  }
 
 //sum the peak area
+      StripCanvas->cd();
       SignalArea = CalculateArea(array);
  	  GetTimeStamp();
 	  PolTime->SetBinContent(jentry,SignalArea*100.);
@@ -572,7 +589,10 @@ void NMRana::Loop()
 	  StripCanvas->Modified();
 	  StripCanvas->Update();
 
-
+// draw the signal histogram
+	  RTCanvas->cd();
+	  RTCanvas->Modified();
+	  RTCanvas->Update();
 
 //      cout<<timel<<"another one \n";
 
