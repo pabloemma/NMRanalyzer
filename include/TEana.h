@@ -118,6 +118,7 @@ public :
    virtual Double_t  CalculateTEP(std::string, Double_t,Double_t , Double_t );
    virtual Double_t	CalcT(Double_t); // calculates temperature from pressure, input in TORR
    virtual Double_t CalculateT(Double_t *, Double_t , Double_t, Double_t);
+   virtual TString  GetDate(TString);
 
 };
 
@@ -180,6 +181,10 @@ TEana::TEana(){
 		Double_t tt[13] = {.650,.7,.75,.8,.85,.9,.95,1.0,1.05,1.1,1.15,1.2,1.25};
 		Double_t pp[13] = {1.101e-01,2.923e-01,6.893e-01,1.475,2.914,5.380,9.381,15.58,24.79,38.02,56.47,81.52,114.7};
 		lowT = new TGraph(13,pp,tt);
+
+
+		TimeControl = 1;
+		cout<< "Using time control  "<<TimeControl<<"\n\n";
 
 }
 
@@ -382,6 +387,29 @@ Double_t TEana::CalculateT(Double_t *a, Double_t b, Double_t c, Double_t press){
 	return t_i;
 
 }
+
+TString TEana::GetDate(TString input) {
+
+
+	TString timestring = input;
+    time_t time_test = timestring.Atoi()-2082844800; // calculated with offset since stupid labview uses jan-1-1904
+    tm *ltm = localtime(&time_test);          //and unix uses jan-1-1970
+
+    cout<<" \n \n ******************************************\n\n";
+    cout << "Year: "<< 1900 + ltm->tm_year << endl;
+       cout << "Month: "<< 1 + ltm->tm_mon<< endl;
+       cout << "Day: "<<  ltm->tm_mday << endl;
+       cout << "Time: "<< 1 + ltm->tm_hour << ":";
+       cout << 1 + ltm->tm_min << ":";
+       cout << 1 + ltm->tm_sec << endl;
+
+      cout<<asctime(ltm)<<"  "<<time_test<<"   "<<"    \n";
+      cout<<" \n \n ******************************************\n\n";
+      if(Int_t(time_test) > 1465948800) TimeControl =1; // this gives a control value for which time the polarization file is from
+      return  asctime(ltm);
+}
+
+
 
 
 #endif // #ifdef TEana_cxx

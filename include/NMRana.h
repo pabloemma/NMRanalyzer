@@ -183,6 +183,7 @@ public :
 
 NMRana::NMRana(){
 	time_offset = 2082852019 ; // unix offset in seconds
+	TimeControl = 1; // always assume the file is from the newest generation // if not use TIMEC = value in parameter file
 
 
 }
@@ -231,6 +232,11 @@ void NMRana::ReadParameterFile(char* ParameterFile){
 		if(pos->first.find("QAMP")!= std::string::npos){
 			// amplifier setting for QCurve
 			Qamp = std::stod(string2);
+
+		}
+		if(pos->first.find("TIMEC")!= std::string::npos){
+			// amplifier setting for QCurve
+			TimeControl = std::stoi(string2);
 
 		}
 

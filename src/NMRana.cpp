@@ -118,7 +118,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 	TString temp = std::string(theApp->Argv(k));  //Argv with index is char*
 		if(temp.Contains(".root")) {
 			// Now check what kind of run it is
-			if(temp.BeginsWith("NMR")) {
+			if(temp.BeginsWith("POL")) {
 				InputSignalFile.push_back(InputRootDirectory+temp);
 			}
 			else if(temp.BeginsWith("TER")) {
@@ -180,7 +180,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 	if(!InputSignalFile.empty() ){
-			SIG.ReadParameterFile("/Volumes/FastDisk/NMR/ParameterFiles/test.txt");
+			SIG.ReadParameterFile("/Volumes/FastDisk/NMR/ParameterFiles/test_june16.txt");
 // Open ROOT file
 			if(InputSignalFile.size()>1){
 				SIG.OpenChain(InputSignalFile);  // we will create a TChain
