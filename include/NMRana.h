@@ -23,6 +23,7 @@
 #include <TDatime.h>
 #include <TStyle.h>  // so we can use gStyle
 #include <TTimeStamp.h>
+#include <TString.h>
 
 
 // Header file for the classes stored in the TTree if any.
@@ -48,6 +49,7 @@ private:
 	Double_t HighArea_X;// upper bound for area claculation
 	Int_t low_id;		// determines lower and upper index of array for integration
 	Int_t high_id;
+	Int_t Control;  			// determines the time reading (when has the file been created and what readout mechanism are we using
 
 
 public :
@@ -63,6 +65,13 @@ public :
    Double_t        TuneV;
    Double_t        Offset;
    Double_t        ControllerV;
+   Double_t        Phase_Voltage;
+   Double_t        Peak_Area;
+   Double_t        Pol_Calib_Const;
+   Double_t        Gain;
+   Double_t        Pol_Sign;
+   Double_t        Log_Channel;
+
    Double_t			Qamp; // amplifier setting for Qcurve
    Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
    Long64_t	        time_offset;
@@ -79,6 +88,10 @@ public :
    time_t TimeStamp;  // timestamp in seconds on UNIX time 0
    Long64_t TimeStamp_usec;  // timestamp in 100 musec
    timespec root_time; // timespec for root time stamp
+
+   Int_t TimeControl;// this is set to a value depending on the time of the file openin
+   	   	   	     // it is used to change the data format according to the evolution of the NMR files
+   	   	        // anything after June15 is Control=1, before it is control=0
 
    	   char *timel_ptr; // because  Root stored the string as a charcater array
    Bool_t QC; // set true for qcurve subtraction
@@ -101,6 +114,12 @@ public :
    TBranch        *b_TuneV;   //!
    TBranch        *b_Offset;   //!
    TBranch        *b_ControllerV;   //!
+   TBranch        *b_Phase_Voltage;   //!
+   TBranch        *b_Peak_Area;   //!
+   TBranch        *b_Pol_Calib_Const;   //!
+   TBranch        *b_Gain;   //!
+   TBranch        *b_Pol_Sign;   //!
+   TBranch        *b_Log_Channel;   //!
    TBranch        *b_timel;   //!
    TBranch        *b_array;   //!
    TFile		  *f;
@@ -152,6 +171,8 @@ public :
    virtual void		ReadParameterFile(char*);
    virtual void     GetQcurve(std::string );
    virtual void		FillQcurveArray();
+   virtual void	    SetTimeControl(int);
+   virtual TString  GetDate(TString input);
 
 
 };
@@ -314,6 +335,17 @@ void NMRana::Init(TTree *tree)
    fChain->SetBranchAddress("ControllerV", &ControllerV, &b_ControllerV);
    fChain->SetBranchAddress("TuneV", &TuneV, &b_TuneV);
    fChain->SetBranchAddress("Offset", &Offset, &b_Offset);
+   // add the new branches for the later data format
+   if(TimeControl == 1){
+	   fChain->SetBranchAddress("Phase_Voltage", &Phase_Voltage, &b_Phase_Voltage);
+	   fChain->SetBranchAddress("Peak_Area", &Peak_Area, &b_Peak_Area);
+	   fChain->SetBranchAddress("Pol_Calib_Const", &Pol_Calib_Const, &b_Pol_Calib_Const);
+	   fChain->SetBranchAddress("Gain", &Gain, &b_Gain);
+	   fChain->SetBranchAddress("Pol_Sign", &Pol_Sign, &b_Pol_Sign);
+	   fChain->SetBranchAddress("Log_Channel", &Log_Channel, &b_Log_Channel);
+	    }
+
+
 //    fChain->SetBranchAddress("ControllerV", &ControllerV, &b_ControllerV);
    fChain->SetBranchAddress("timel", &timel, &b_timel);
    fChain->SetBranchAddress("array", &array, &b_array);
@@ -693,19 +725,30 @@ void NMRana::FillQcurveArray(){
 
 
 }
+void NMRana::SetTimeControl(Int_t main_input){
+	TimeControl = main_input;
+}
+
+TString NMRana::GetDate(TString input) {
+
+
+	TString timestring = input;
+    time_t time_test = timestring.Atoi()-2082844800; // calculated with offset since stupid labview uses jan-1-1904
+    tm *ltm = localtime(&time_test);          //and unix uses jan-1-1970
+
+    cout<<" \n \n ******************************************\n\n";
+    cout << "Year: "<< 1900 + ltm->tm_year << endl;
+       cout << "Month: "<< 1 + ltm->tm_mon<< endl;
+       cout << "Day: "<<  ltm->tm_mday << endl;
+       cout << "Time: "<< 1 + ltm->tm_hour << ":";
+       cout << 1 + ltm->tm_min << ":";
+       cout << 1 + ltm->tm_sec << endl;
+
+      cout<<asctime(ltm)<<"  "<<time_test<<"   "<<"    \n";
+      cout<<" \n \n ******************************************\n\n";
+      if(Int_t(time_test) > 1465948800) TimeControl =1; // this gives a control value for which time the polarization file is from
+      return  asctime(ltm);
 
 
 #endif // #ifdef NMRana_cxx
-
-
-
-
-
-
-
-
-
-
-
-
 
