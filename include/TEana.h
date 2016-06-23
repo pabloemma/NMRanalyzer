@@ -44,6 +44,7 @@ private:
 	Double_t boltzmann ; // J/K
 	Double_t proton_fact;
 	Double_t deuteron_fact;
+	Int_t TimeControl;
 
 
 	// coefficiewnts for helium pressute to T calculation
@@ -68,6 +69,12 @@ public :
    Double_t        TuneV;
    Double_t        Offset;
    Double_t        ControllerV;
+   Double_t        Phase_Voltage;
+   Double_t        Peak_Area;
+   Double_t        Pol_Calib_Const;
+   Double_t        Gain;
+   Double_t        Pol_Sign;
+   Double_t        Log_Channel;
    vector<double>  *array;
    Long64_t        timel;
    Int_t           IntScanPoints;
@@ -86,6 +93,12 @@ public :
    TBranch        *b_TuneV;   //!
    TBranch        *b_Offset;   //!
    TBranch        *b_ControllerV;   //!
+   TBranch        *b_Peak_Area;   //!
+   TBranch        *b_Phase_Voltage;   //!
+   TBranch        *b_Pol_Calib_Const;   //!
+   TBranch        *b_Gain;   //!
+   TBranch        *b_Pol_Sign;   //!
+   TBranch        *b_Log_Channel;   //!
    TBranch        *b_array;   //!
    TBranch        *b_timel;   //!
    TBranch        *b_IntScanPoints;   //!
@@ -123,9 +136,7 @@ public :
 
 
 
-TEana::TEana()
-{
-
+TEana::TEana(){
 		cout<<"**************       Initialize TE analyzer **************** \n\n\n";
 		proton_g    =  5.585694702;
 		neutron_g   = -3.82608545;
@@ -264,6 +275,14 @@ void TEana::Init(TTree *tree)
    fChain->SetBranchAddress("TuneV", &TuneV, &b_TuneV);
    fChain->SetBranchAddress("Offset", &Offset, &b_Offset);
    fChain->SetBranchAddress("ControllerV", &ControllerV, &b_ControllerV);
+   if(TimeControl == 1){
+	   fChain->SetBranchAddress("Phase_Voltage", &Phase_Voltage, &b_Phase_Voltage);
+	   fChain->SetBranchAddress("Peak_Area", &Peak_Area, &b_Peak_Area);
+	   fChain->SetBranchAddress("Pol_Calib_Const", &Pol_Calib_Const, &b_Pol_Calib_Const);
+	   fChain->SetBranchAddress("Gain", &Gain, &b_Gain);
+	   fChain->SetBranchAddress("Pol_Sign", &Pol_Sign, &b_Pol_Sign);
+	   fChain->SetBranchAddress("Log_Channel", &Log_Channel, &b_Log_Channel);
+	    }
    fChain->SetBranchAddress("array", &array, &b_array);
    fChain->SetBranchAddress("timel", &timel, &b_timel);
    fChain->SetBranchAddress("IntScanPoints", &IntScanPoints, &b_IntScanPoints);
@@ -345,7 +364,7 @@ Double_t TEana::CalcT(Double_t pressure){
 	else if(pressure>=.826 && pressure<37.82)
 		temp = CalculateT(aLowT,bLow,cLow,pa);
 
-	else if(pressure>=72.82 && pressure<1471.)
+	else if(pressure>=37.82 && pressure<1471.)
 		temp = CalculateT(aHighT,bHigh,cHigh,pa);
 
 
@@ -366,5 +385,4 @@ Double_t TEana::CalculateT(Double_t *a, Double_t b, Double_t c, Double_t press){
 
 
 #endif // #ifdef TEana_cxx
-
 
