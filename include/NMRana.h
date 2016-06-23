@@ -413,7 +413,7 @@ void NMRana::SetupHistos(){
 	   NMR1 = new TH1D("NMR1","Signal histogram",IntScanPoints,MinFreq,MaxFreq);
 	   NMR_RT = new TH1D("NMR_RT","Real TimeSignal histogram",IntScanPoints,MinFreq,MaxFreq);
 	   NMR_RT->SetLineColor(kSpring-2);
-	   NMR_RT->SetLineWidth(3);
+	   NMR_RT->SetLineWidth(4);
 
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
@@ -476,7 +476,7 @@ void NMRana::SetupCanvas(){
 
 	RTCanvas =  new TCanvas("RTCanvas","Real Time charts",100,1000,600,400);
 	RTCanvas->SetGrid();
-	RTCanvas->SetFillColor(21);
+	RTCanvas->SetFillColor(23);
 	RTCanvas->SetFrameFillColor(16);
 
 

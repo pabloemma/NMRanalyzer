@@ -121,7 +121,7 @@ public :
    virtual Double_t	CalcT(Double_t); // calculates temperature from pressure, input in TORR
    virtual Double_t CalculateT(Double_t *, Double_t , Double_t, Double_t);
    virtual TString  GetDate(TString);
-
+   virtual void     ReadParameterFile(char* );
 };
 
 
@@ -203,6 +203,65 @@ int TEana::OpenFile(TString rootfile){
    return 0;
 
 }
+void TEana::ReadParameterFile(char* ParameterFile){
+	// reads in parameters for running the NMRanalyzer
+	// needs the Qcurve file
+	// calibration constants from TE measurements
+	// line length is a maximum of 80
+
+	// the format of the file is  name , value
+	// example: Qcurve   Qcurve.root
+	char temp_string[81];
+	std::string temp;
+	std::string string1, string2;
+	std::string temp_file;
+
+	ifstream ParFile; // create instream file
+	ParFile.open(ParameterFile);
+	// check if found and opened
+	if(!ParFile.is_open()){
+		exit(EXIT_FAILURE);
+	}
+	// read the lines
+
+
+	do{
+		ParFile >>string1 >> string2;
+//		cout<<string1<<"   "<<string2<<"  \n";
+		if (ParFile.eof()) break;  // get out of the loop
+		if(string1.find("#") == std::string::npos) Parameters[string1] = string2;  // check for comments
+
+	}while(ParFile.good());
+
+
+	// Now print out parameter map
+	for( std::map<string,string>::iterator pos=Parameters.begin(); pos !=  Parameters.end(); ++pos){
+		cout<<"parameters from file  :"<<pos->first<<"\t"<<pos->second <<"\n";
+
+
+		if(pos->first.find("QCurve")!= std::string::npos){
+			QC=true;
+			temp_file = pos->second;
+		}
+
+
+		if(pos->first.find("QAMP")!= std::string::npos){
+			// amplifier setting for QCurve
+			Qamp = std::stod(string2);
+
+		}
+		if(pos->first.find("TIMEC")!= std::string::npos){
+			// amplifier setting for QCurve
+			TimeControl = std::stoi(string2);
+
+		}
+
+
+	}
+	if(QC) GetQcurve(temp_file);
+
+}
+
 
 TEana::~TEana()
 {
