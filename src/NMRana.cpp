@@ -105,7 +105,6 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 
-
 	InputRootDirectory = theApp->WorkingDirectory();
 
 
@@ -114,8 +113,14 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 	// If the rootname starts with QCR we deal with a Qcurve
 	//TER is TE measurement
 	// and NMR is signal.
+
+
 	for (Int_t k=0;k < theApp->Argc();k++){  // find the filenames
 	TString temp = std::string(theApp->Argv(k));  //Argv with index is char*
+		if(temp.Contains("-f")){
+			parameter_file = std::string(theApp->Argv(k+1));
+		}
+
 		if(temp.Contains(".root")) {
 			// Now check what kind of run it is
 			if(temp.BeginsWith("POL")) {
@@ -158,6 +163,10 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 	if(!InputTEFile.empty() ){
+		TE.ReadParameterFile(parameter_file);
+		TE.CalculatePlots();
+
+
 // Open ROOT file
 			if(InputTEFile.size()>1){
 				TE.OpenChain(InputTEFile);  // we will create a TChain
@@ -180,7 +189,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 	if(!InputSignalFile.empty() ){
-			SIG.ReadParameterFile("/Volumes/FastDisk/NMR/ParameterFiles/test_june16.txt");
+			SIG.ReadParameterFile(parameter_file);
 // Open ROOT file
 			if(InputSignalFile.size()>1){
 				SIG.OpenChain(InputSignalFile);  // we will create a TChain

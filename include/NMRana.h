@@ -169,7 +169,7 @@ public :
    virtual void		SetupCanvas();
    virtual TH1D * 	SetupStripChart(TString);
    virtual void 	GetTimeStamp();
-   virtual void		ReadParameterFile(char*);
+   virtual void		ReadParameterFile(TString );
    virtual void     GetQcurve(std::string );
    virtual void		FillQcurveArray();
    virtual void	    SetTimeControl(int);
@@ -188,7 +188,7 @@ NMRana::NMRana(){
 
 
 }
-void NMRana::ReadParameterFile(char* ParameterFile){
+void NMRana::ReadParameterFile(TString ParameterFile){
 	// reads in parameters for running the NMRanalyzer
 	// needs the Qcurve file
 	// calibration constants from TE measurements

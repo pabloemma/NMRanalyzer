@@ -83,6 +83,8 @@ public :
    TFile		   *f;
    TTree           *tree;
    TChain    	   *NMRchain; // if we have more than one root file
+   TGraph		   *Press_Temp;
+   TGraph		   *Pol_Temp;
 
 
 
@@ -121,7 +123,8 @@ public :
    virtual Double_t	CalcT(Double_t); // calculates temperature from pressure, input in TORR
    virtual Double_t CalculateT(Double_t *, Double_t , Double_t, Double_t);
    virtual TString  GetDate(TString);
-   virtual void     ReadParameterFile(char* );
+   virtual void     ReadParameterFile(TString );
+   virtual void	CalculatePlots();
 };
 
 
@@ -190,6 +193,13 @@ TEana::TEana(){
 
 }
 
+
+
+TEana::~TEana()
+{
+   if (!fChain) return;
+   delete fChain->GetCurrentFile();
+}
 int TEana::OpenFile(TString rootfile){
 
 	// oepn file and initialize tree
@@ -203,7 +213,9 @@ int TEana::OpenFile(TString rootfile){
    return 0;
 
 }
-void TEana::ReadParameterFile(char* ParameterFile){
+
+
+void TEana::ReadParameterFile(TString ParameterFile){
 	// reads in parameters for running the NMRanalyzer
 	// needs the Qcurve file
 	// calibration constants from TE measurements
@@ -260,13 +272,6 @@ void TEana::ReadParameterFile(char* ParameterFile){
 	}
 	if(QC) GetQcurve(temp_file);
 
-}
-
-
-TEana::~TEana()
-{
-   if (!fChain) return;
-   delete fChain->GetCurrentFile();
 }
 
 int TEana::OpenChain(std::vector<TString> RootFileArray){
@@ -366,7 +371,62 @@ Bool_t TEana::Notify()
    return kTRUE;
 }
 
+void TEana::CalculatePlots(){
+	// this routine calculates T as a function of P and displays it
+	// and Polarization as a function of T
+	// this is merely for debugging
+	Int_t npoints = 2000;
+	Double_t press = .05;
+	Double_t p_step = .001;
+	Double_t lowTlimit;
+	Double_t highTlimit;
+	lowTlimit = CalcT(press);
+	highTlimit = CalcT(press+p_step*npoints);
 
+	// need to do this with TGraph
+	Double_t *Temp_array = new Double_t[npoints];
+	Double_t *Pol_array = new Double_t[npoints];
+	Double_t *Press_array = new Double_t[npoints];
+
+//	TH1D * h1 = new TH1D("h1","pressure vst T", npoints/20,lowTlimit,highTlimit);
+//    TH1D * h2 = new TH1D("h2"," T  vs polarization", npoints,lowTlimit,highTlimit);
+	for(Int_t k=0; k<npoints;k++){
+		Temp_array[k] = CalcT(press);
+		Pol_array[k] = CalculateTEP("proton",.5,5.,press);
+		Press_array[k] = press;
+	     // h1->Fill(CalcT(press),press);
+	     // h2->Fill(CalcT(press),CalculateTEP("proton",.5,5.,press));
+	     // cout<<CalcT(press)<<"   "<<press<<"   "<< CalculateTEP("proton",.5,5.,press)<<"\n";
+	      press = press+p_step;
+	}
+	   Press_Temp = new TGraph(npoints,Temp_array,Press_array);
+	   Press_Temp->SetTitle(" Pressure vs Temperature");
+	   Press_Temp->SetLineWidth(3);
+	   Pol_Temp = new TGraph(npoints,Temp_array,Pol_array);
+	   Pol_Temp->SetTitle("Polarization vs Temperature");
+	   Pol_Temp->SetLineWidth(3);
+	   TCanvas *c1 = new TCanvas("c1","Temp and pressure",10,10,600,400);
+	   TCanvas *c2 = new TCanvas("c2","Temp and polarization",10,610,600,400);
+	   c1->SetGrid();
+		c1->SetFillColor(23);
+		c1->SetFrameFillColor(16);
+		c1->cd();
+		Press_Temp->Draw();
+		c1->Update();
+
+		   c2->SetGrid();
+			c2->SetFillColor(23);
+			c2->SetFrameFillColor(16);
+
+	   c2->cd();
+	   Pol_Temp->Draw();
+	   c2->Update();
+
+	   delete [] Temp_array;
+	   delete [] Pol_array;
+	   delete [] Press_array;
+
+}
 
 void TEana::Loop()
 {
@@ -374,33 +434,18 @@ void TEana::Loop()
 
    Long64_t nentries = fChain->GetEntriesFast();
 
-     // this is a debig section
-	   TH1D * h1 = new TH1D("h1","pressure vst T", 1000,0.,5.);
-   	   TH1D * h2 = new TH1D("h2"," T  vs polarization", 1000,0.,5.);
 
 
-   	  Double_t press = .05;
-   	  Double_t p_step=.01;
-   Long64_t nbytes = 0, nb = 0;
+   	  Long64_t nbytes = 0, nb = 0;
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
       Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
       nb = fChain->GetEntry(jentry);   nbytes += nb;
 
 
-      cout<<"pressure  "<<press<<"   temp:  "<<CalcT(press)<<"   Polarization:  "<<CalculateTEP("proton",.5,5.,press)<<" \n";
-      h1->Fill(press, CalcT(press));
-      h2->Fill(CalcT(press),CalculateTEP("proton",.5,5.,press));
-      press = press+p_step;
       // if (Cut(ientry) < 0) continue;
    }
-   	   TCanvas *c1 = new TCanvas();
-   	   c1->Divide(1,2);
-   	   c1->cd(1);
-   	   h1->Draw();
-   	   c1->cd(2);
-   	   h2->Draw();
-   	   c1->Update();
+
 }
 
 Double_t TEana::CalculateTEP(std::string particle ,Double_t spin, Double_t field, Double_t pressure){
