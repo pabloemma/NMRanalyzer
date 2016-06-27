@@ -388,15 +388,10 @@ void TEana::CalculatePlots(){
 	Double_t *Pol_array = new Double_t[npoints];
 	Double_t *Press_array = new Double_t[npoints];
 
-//	TH1D * h1 = new TH1D("h1","pressure vst T", npoints/20,lowTlimit,highTlimit);
-//    TH1D * h2 = new TH1D("h2"," T  vs polarization", npoints,lowTlimit,highTlimit);
 	for(Int_t k=0; k<npoints;k++){
 		Temp_array[k] = CalcT(press);
 		Pol_array[k] = CalculateTEP("proton",.5,5.,press);
 		Press_array[k] = press;
-	     // h1->Fill(CalcT(press),press);
-	     // h2->Fill(CalcT(press),CalculateTEP("proton",.5,5.,press));
-	     // cout<<CalcT(press)<<"   "<<press<<"   "<< CalculateTEP("proton",.5,5.,press)<<"\n";
 	      press = press+p_step;
 	}
 	   Press_Temp = new TGraph(npoints,Temp_array,Press_array);
