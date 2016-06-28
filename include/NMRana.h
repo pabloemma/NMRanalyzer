@@ -157,25 +157,27 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   	   	   void     Loop(); // TEana inherits
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
    virtual Int_t 	OpenFile(TString);
-   virtual void	    SetupHistos();
    virtual void		CloseFile();
    virtual void		DrawHistos();
    virtual int      OpenChain(std::vector<TString> );
    virtual void		AreaSetLimits(Double_t , Double_t);
    virtual Double_t CalculateArea(std::vector<Double_t> *);
    virtual void		PrintTime();  // prints time from Labview time stamp
-   virtual void		SetupCanvas();
-   virtual TH1D * 	SetupStripChart(TString);
    virtual void 	GetTimeStamp();
    virtual void		ReadParameterFile(TString );
    virtual void     GetQcurve(std::string );
    virtual void		FillQcurveArray();
    virtual void	    SetTimeControl(int);
    virtual TString  GetDate(TString input);
+
+   // memebre which will be inhertied from TEana
+   void     Loop(); // TEana inherits
+   void		SetupCanvas();
+   TH1D * 	SetupStripChart(TString);
+   void	    SetupHistos();
 
 
 };

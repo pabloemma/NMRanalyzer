@@ -129,8 +129,6 @@ public :
    virtual Double_t	CalcT(Double_t); // calculates temperature from pressure, input in TORR
    virtual Double_t CalculateT(Double_t *, Double_t , Double_t, Double_t);
    virtual TString  GetDate(TString);
-   virtual void		SetupCanvas();
-   virtual void     SetupHistos();
    virtual void     ReadParameterFile(TString );
    virtual void	CalculatePlots();
 };
@@ -431,112 +429,7 @@ void TEana::CalculatePlots(){
 
 }
 
-void TEana::SetupHistos(){
-// Here we setup histos if needed
-// first we get the first entry to calculate the limits
-	   //gROOT->cd(); //this prevents from histos being deleted once files are closed
-	   if (fChain == 0) return;
 
-	   Long64_t nentries = fChain->GetEntriesFast();
-
-	   Long64_t nbytes = 0, nb = 0;
-
-	   Long64_t ientry = LoadTree(0);
-
-	   fChain->GetEntry(0);
-
-	   fChain->Show(0);
-
-
-	   //GetEntry(0);
-	   //Show(0);
-
-
-	   // histo limits
-	   MinFreq = (FreqCenter) - (ScanPoints-1.)/2. * FreqStep;
-	   MaxFreq = FreqCenter + (ScanPoints-1.)/2. * FreqStep;
-
-	   NMR1 = new TH1D("NMR1","Signal histogram",IntScanPoints,MinFreq,MaxFreq);
-	   NMR_RT = new TH1D("NMR_RT","Real TimeSignal histogram",IntScanPoints,MinFreq,MaxFreq);
-	   NMR_RT->SetLineColor(kSpring-2);
-	   NMR_RT->SetLineWidth(4);
-
-	   // Determine the Integration or summation limits for peak in terms of channels.
-	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
-	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
-
-       //
-
-
-
-
-	   // Now setup the time versus polarization histo
-	   // the time is in 100 microseconds, which is much more precise than what we need
-	   // so I didvide by 10000  with an integer division, also the time and date is now in UNIX time
-	   //####################Note the time is only correct if the updates take about 1 second.
-	   // if it is longer or shorter it is not correct, since tickmaks assue 1 second.######
-	   GetTimeStamp();
-	   td = new TDatime(TimeStamp);
-	   td->Print();
-	   // we set the time stamp to 0
-	   //gStyle->SetTimeOffset(td->Convert());
-	   PolTime = SetupStripChart("Polarization vs time");
-	   PolTime->SetMaximum(100.);
-	   PolTime->SetMinimum(-100.);
-	   PolTime->SetLineColor(2);
-
-
-
-
-	   // Print original time
-	   PrintTime();
-
-
-	   Int_t timewindow = 1;
-	   PolTime = new TH1D("PolTime","Polarization vs time",timewindow,0,10*timewindow);
-	   PolTime->GetXaxis()->SetTimeDisplay(1);
-	   PolTime->GetXaxis()->SetTimeOffset(TimeStamp);
-	   PolTime->GetXaxis()->SetTimeFormat("%d\/%m\ %H\:%M \:%S");
-	   PolTime->GetXaxis()->SetNdivisions(405) ;
-	   // Now setup a Canvas for Qcurve
-
-	   if(Qcurve_array.size()!=0){
-		   Qcurve_histo = new TH1D("Qcurve_hist","Normalized Qcurve histogram",IntScanPoints,MinFreq,MaxFreq);
-		   NMR1_NoQ = new TH1D("NMR1_NoQ","Signal without QCurve subtraction",IntScanPoints,MinFreq,MaxFreq);
-	   }
-
-
-
-}
-
-
-
-void TEana::SetupCanvas(){
-	// creates the different Canvas
-	// master canvas for all histograms
-	GeneralCanvas = new TCanvas("GeneralCanvas","NMR signal",200,50,800,800);
-
-
-	//canvas for all strip charts
-	StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1020,50,1000,600);
-	StripCanvas->SetGrid();
-	StripCanvas->SetFillColor(42);
-	StripCanvas->SetFrameFillColor(33);
-
-	RTCanvas =  new TCanvas("RTCanvas","Real Time charts",100,1000,600,400);
-	RTCanvas->SetGrid();
-	RTCanvas->SetFillColor(23);
-	RTCanvas->SetFrameFillColor(16);
-
-
-
-
-	if(Qcurve_array.size()!=0){
-
-	AuxCanvas = new TCanvas("AuxCanvas","Auxiliary plots",1020,700,1000,600);
-	AuxCanvas->Divide(1,2);
-	}
-}
 
 
 
