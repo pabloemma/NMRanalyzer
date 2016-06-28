@@ -163,7 +163,6 @@ public :
    virtual void     GetQcurve(std::string );
    virtual void		FillQcurveArray();
    virtual void	    SetTimeControl(int);
-   virtual TString  GetDate(TString input);
 
    // memebre which will be inhertied from TEana
    void     Loop(); // TEana inherits
@@ -178,6 +177,7 @@ public :
    Int_t 	OpenFile(TString);
    void		CloseFile();
    void		DrawHistos();
+   TString  GetDate(TString input);
 
 
 };
