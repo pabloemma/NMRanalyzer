@@ -154,20 +154,12 @@ public :
    NMRana();
    virtual ~NMRana();
    virtual Int_t    Cut(Long64_t entry);
-   virtual Int_t    GetEntry(Long64_t entry);
-   virtual Long64_t LoadTree(Long64_t entry);
-   virtual void     Init(TTree *tree);
-   virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
-   virtual Int_t 	OpenFile(TString);
-   virtual void		CloseFile();
-   virtual void		DrawHistos();
    virtual int      OpenChain(std::vector<TString> );
    virtual void		AreaSetLimits(Double_t , Double_t);
    virtual Double_t CalculateArea(std::vector<Double_t> *);
    virtual void		PrintTime();  // prints time from Labview time stamp
    virtual void 	GetTimeStamp();
-   virtual void		ReadParameterFile(TString );
    virtual void     GetQcurve(std::string );
    virtual void		FillQcurveArray();
    virtual void	    SetTimeControl(int);
@@ -178,6 +170,14 @@ public :
    void		SetupCanvas();
    TH1D * 	SetupStripChart(TString);
    void	    SetupHistos();
+   void		ReadParameterFile(TString );
+   void     Init(TTree *tree);
+   Bool_t   Notify();
+   Int_t    GetEntry(Long64_t entry);
+   Long64_t LoadTree(Long64_t entry);
+   Int_t 	OpenFile(TString);
+   void		CloseFile();
+   void		DrawHistos();
 
 
 };

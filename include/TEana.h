@@ -116,20 +116,12 @@ public :
    TEana();
    virtual ~TEana();
  //  virtual Int_t    Cut(Long64_t entry);
-   virtual Int_t    GetEntry(Long64_t entry);
-   virtual Long64_t LoadTree(Long64_t entry);
-   virtual void     Init(TTree *tree);
-// this is inherited   virtual void     Loop();
-   virtual Bool_t   Notify();
 //   virtual void     Show(Long64_t entry = -1);
-   virtual Int_t 	OpenFile(TString);
    virtual int      OpenChain(std::vector<TString> );
-   virtual void CloseFile();
    virtual Double_t  CalculateTEP(std::string, Double_t,Double_t , Double_t );
    virtual Double_t	CalcT(Double_t); // calculates temperature from pressure, input in TORR
    virtual Double_t CalculateT(Double_t *, Double_t , Double_t, Double_t);
    virtual TString  GetDate(TString);
-   virtual void     ReadParameterFile(TString );
    virtual void	CalculatePlots();
 };
 
@@ -206,79 +198,8 @@ TEana::~TEana()
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
-int TEana::OpenFile(TString rootfile){
-
-	// oepn file and initialize tree
-     cout<<"opening file "<<rootfile<<"\n";
-
-     f = new TFile(rootfile);
-
-     f->GetObject("NMRtree",tree);
-     Init(tree);
-
-   return 0;
-
-}
 
 
-void TEana::ReadParameterFile(TString ParameterFile){
-	// reads in parameters for running the NMRanalyzer
-	// needs the Qcurve file
-	// calibration constants from TE measurements
-	// line length is a maximum of 80
-
-	// the format of the file is  name , value
-	// example: Qcurve   Qcurve.root
-	char temp_string[81];
-	std::string temp;
-	std::string string1, string2;
-	std::string temp_file;
-
-	ifstream ParFile; // create instream file
-	ParFile.open(ParameterFile);
-	// check if found and opened
-	if(!ParFile.is_open()){
-		exit(EXIT_FAILURE);
-	}
-	// read the lines
-
-
-	do{
-		ParFile >>string1 >> string2;
-//		cout<<string1<<"   "<<string2<<"  \n";
-		if (ParFile.eof()) break;  // get out of the loop
-		if(string1.find("#") == std::string::npos) Parameters[string1] = string2;  // check for comments
-
-	}while(ParFile.good());
-
-
-	// Now print out parameter map
-	for( std::map<string,string>::iterator pos=Parameters.begin(); pos !=  Parameters.end(); ++pos){
-		cout<<"parameters from file  :"<<pos->first<<"\t"<<pos->second <<"\n";
-
-
-		if(pos->first.find("QCurve")!= std::string::npos){
-			QC=true;
-			temp_file = pos->second;
-		}
-
-
-		if(pos->first.find("QAMP")!= std::string::npos){
-			// amplifier setting for QCurve
-			Qamp = std::stod(string2);
-
-		}
-		if(pos->first.find("TIMEC")!= std::string::npos){
-			// amplifier setting for QCurve
-			TimeControl = std::stoi(string2);
-
-		}
-
-
-	}
-	if(QC) GetQcurve(temp_file);
-
-}
 
 int TEana::OpenChain(std::vector<TString> RootFileArray){
 
@@ -301,81 +222,11 @@ int TEana::OpenChain(std::vector<TString> RootFileArray){
 
 }
 
-void TEana::CloseFile(){
-	f->Close();
-}
 
 
 
 
-Int_t TEana::GetEntry(Long64_t entry)
-{
-// Read contents of entry.
-   if (!fChain) return 0;
-   return fChain->GetEntry(entry);
-}
-Long64_t TEana::LoadTree(Long64_t entry)
-{
-// Set the environment to read one entry
-   if (!fChain) return -5;
-   Long64_t centry = fChain->LoadTree(entry);
-   if (centry < 0) return centry;
-   if (fChain->GetTreeNumber() != fCurrent) {
-      fCurrent = fChain->GetTreeNumber();
-      Notify();
-   }
-   return centry;
-}
 
-void TEana::Init(TTree *tree)
-{
-   // The Init() function is called when the selector needs to initialize
-   // a new tree or chain. Typically here the branch addresses and branch
-   // pointers of the tree will be set.
-   // It is normally not necessary to make changes to the generated
-   // code, but the routine can be extended by the user if needed.
-   // Init() will be called many times when running on PROOF
-   // (once per file to be processed).
-
-   // Set object pointer
-   array = 0;
-   // Set branch addresses and branch pointers
-   if (!tree) return;
-   fChain = tree;
-   fCurrent = -1;
-   fChain->SetMakeClass(1);
-
-   fChain->SetBranchAddress("FreqCenter", &FreqCenter, &b_FreqCenter);
-   fChain->SetBranchAddress("FreqStep", &FreqStep, &b_FreqStep);
-   fChain->SetBranchAddress("Temperature", &Temperature, &b_Temperature);
-   fChain->SetBranchAddress("ScanPoints", &ScanPoints, &b_ScanPoints);
-   fChain->SetBranchAddress("TuneV", &TuneV, &b_TuneV);
-   fChain->SetBranchAddress("Offset", &Offset, &b_Offset);
-   fChain->SetBranchAddress("ControllerV", &ControllerV, &b_ControllerV);
-   if(TimeControl == 1){
-	   fChain->SetBranchAddress("Phase_Voltage", &Phase_Voltage, &b_Phase_Voltage);
-	   fChain->SetBranchAddress("Peak_Area", &Peak_Area, &b_Peak_Area);
-	   fChain->SetBranchAddress("Pol_Calib_Const", &Pol_Calib_Const, &b_Pol_Calib_Const);
-	   fChain->SetBranchAddress("Gain", &Gain, &b_Gain);
-	   fChain->SetBranchAddress("Pol_Sign", &Pol_Sign, &b_Pol_Sign);
-	   fChain->SetBranchAddress("Log_Channel", &Log_Channel, &b_Log_Channel);
-	    }
-   fChain->SetBranchAddress("array", &array, &b_array);
-   fChain->SetBranchAddress("timel", &timel, &b_timel);
-   fChain->SetBranchAddress("IntScanPoints", &IntScanPoints, &b_IntScanPoints);
-   Notify();
-}
-
-Bool_t TEana::Notify()
-{
-   // The Notify() function is called when a new file is opened. This
-   // can be either for a new TTree in a TChain or when when a new TTree
-   // is started when using PROOF. It is normally not necessary to make changes
-   // to the generated code, but the routine can be extended by the
-   // user if needed. The return value is currently not used.
-
-   return kTRUE;
-}
 
 void TEana::CalculatePlots(){
 	// this routine calculates T as a function of P and displays it
