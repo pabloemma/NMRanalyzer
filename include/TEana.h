@@ -36,8 +36,10 @@
 
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
+// TEana inherits from NMRanan
 
-class TEana : NMRana {
+class TEana : public NMRana {
+
 private:
 	Double_t deuteron_g;
 	Double_t nucleon_mag_moment;
@@ -117,7 +119,7 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   virtual void     Loop();
+// this is inherited   virtual void     Loop();
    virtual Bool_t   Notify();
 //   virtual void     Show(Long64_t entry = -1);
    virtual Int_t 	OpenFile(TString);
@@ -536,103 +538,6 @@ void TEana::SetupCanvas(){
 	}
 }
 
-
-void TEana::Loop()
-{
-//   In a ROOT session, you can do:
-//      Root > .L NMRana.C
-//      Root > NMRana t
-//      Root > t.GetEntry(12); // Fill t data members with entry number 12
-//      Root > t.Show();       // Show values of entry 12
-//      Root > t.Show(16);     // Read and show values of entry 16
-//      Root > t.Loop();       // Loop on all entries
-//
-
-//     This is the loop skeleton where:
-//    jentry is the global entry number in the chain
-//    ientry is the entry number in the current Tree
-//  Note that the argument to GetEntry must be:
-//    jentry for TChain::GetEntry
-//    ientry for TTree::GetEntry and TBranch::GetEntry
-//
-//       To read only selected branches, Insert statements like:
-// METHOD1:
-//    fChain->SetBranchStatus("*",0);  // disable all branches
-//    fChain->SetBranchStatus("branchname",1);  // activate branchname
-// METHOD2: replace line
-//    fChain->GetEntry(jentry);       //read all branches
-//by  b_branchname->GetEntry(ientry); //read only this branch
-   if (fChain == 0) return;
-
-
-   	   // go to strip chart
-   StripCanvas->cd();
-
-   Long64_t nentries = fChain->GetEntriesFast();
-   Long64_t time_prev = 0;
-   Long64_t nbytes = 0, nb = 0;
-
-   RTCanvas->cd();
-   NMR_RT->Draw();
-   for (Long64_t jentry=0; jentry<nentries;jentry++) {
-	   NMR_RT->Reset();
-	   Long64_t ientry = LoadTree(jentry);
-      if (ientry < 0) break;
-      nb = fChain->GetEntry(jentry);   nbytes += nb;
-      // if (Cut(ientry) < 0) continue;
-
-//	now fill histogram
-// reset freq_temp to lower bound
-      Double_t freq_temp = MinFreq;
-
-
-      for (UInt_t j = 0; j < array->size(); ++j) {
-    	  // subtract QCurve if existing
-
-    	  if(Qcurve_array.size()!=0) {
-              NMR1_NoQ->Fill(freq_temp,array->at(j));
-              array->at(j) = array->at(j) - Qcurve_array.at(j);
-    	  }
-
-          NMR1->Fill(freq_temp,array->at(j));
-          NMR_RT->Fill(freq_temp,array->at(j));
-          freq_temp = freq_temp+FreqStep;
-      	  }
-
-//sum the peak area
-      StripCanvas->cd();
-      SignalArea = CalculateArea(array);
- 	  GetTimeStamp();
-	  PolTime->SetBinContent(jentry,SignalArea*100.);
-	  PolTime->GetXaxis()->SetRange(jentry-10000,jentry+5);
-	  StripCanvas->Clear();
-	  PolTime->Draw();
-	  StripCanvas->Modified();
-	  StripCanvas->Update();
-
-// draw the signal histogram
-	  RTCanvas->cd();
-	  RTCanvas->Modified();
-	  RTCanvas->Update();
-
-//      cout<<timel<<"another one \n";
-
-   }// end of entry loop
-   // Now fill the QCurve histo if it is used
-	  if(Qcurve_array.size()!=0){
-	      Double_t freq_temp = MinFreq;
-
-
-	      for (UInt_t j = 0; j < Qcurve_array.size(); ++j) {
-	    	  // subtract QCurve if existing
-
-	          Qcurve_histo->Fill(freq_temp,Qcurve_array.at(j));
-	          freq_temp = freq_temp+FreqStep;
-	      	  }
-
-	  }
-
-}
 
 
 

@@ -175,8 +175,8 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 				TE.OpenFile(InputTEFile[0]); // just one spectrum
 			}
 // Do stuff with it
-//			TE.SetupCanvas();
-//			TE.SetupHistos();
+			TE.SetupCanvas();
+			TE.SetupHistos();
 			TE.Loop();
 //			TE.DrawHistos();
 	}

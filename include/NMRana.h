@@ -45,11 +45,13 @@ using namespace std;
 class NMRana : public Ana {  //inherit from analysis
 
 private:
+	Int_t Control;  			// determines the time reading (when has the file been created and what readout mechanism are we using
+
+protected:    // for TEana inheritance
 	Double_t LowArea_X; // lower bound for area calculation
 	Double_t HighArea_X;// upper bound for area claculation
 	Int_t low_id;		// determines lower and upper index of array for integration
 	Int_t high_id;
-	Int_t Control;  			// determines the time reading (when has the file been created and what readout mechanism are we using
 
 
 public :
@@ -155,7 +157,7 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   virtual void     Loop();
+   	   	   void     Loop(); // TEana inherits
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
    virtual Int_t 	OpenFile(TString);
