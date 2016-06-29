@@ -241,27 +241,28 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 		if(pos->first.find("QAMP")!= std::string::npos){
 			// amplifier setting for QCurve
-			Qamp = std::stod(string2);
+			Qamp = std::stod(pos->second);
+			cout<<" test qamp"<<string2<<"\n";
 
 		}
 		if(pos->first.find("TIMEC")!= std::string::npos){
 			// amplifier setting for QCurve
-			TimeControl = std::stoi(string2);
+			TimeControl = std::stoi(pos->second);
 
 		}
 		if(pos->first.find("NMR_LOW")!= std::string::npos){
 			// amplifier setting for QCurve
-			lownmr = std::stoi(string2);
+			lownmr = std::stoi(pos->second);
 
 		}
 		if(pos->first.find("NMR_HI")!= std::string::npos){
 			// amplifier setting for QCurve
-			hinmr = std::stoi(string2);
+			hinmr = std::stoi(pos->second);
 
 		}
 		if(pos->first.find("QC_DISPLAY")!= std::string::npos){
 			// amplifier setting for QCurve
-			if(std::stoi(string2)==1) QC_DISP=true ;
+			if(std::stoi(pos->second)==1) QC_DISP=true ;
 
 		}
 
@@ -659,7 +660,7 @@ void NMRana::Loop()
 
 	  }
 	  //Fill qcurve histogram if desired
-	  if(QC_DISP){
+/*	  if(QC_DISP){
 	      Double_t freq_temp = MinFreq;
 
 
@@ -671,7 +672,7 @@ void NMRana::Loop()
 	      	  }
 
 	  }
-
+*/
 }
 
 Double_t NMRana::CalculateArea(std::vector<Double_t> *array){
