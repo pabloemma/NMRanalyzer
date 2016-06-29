@@ -97,6 +97,7 @@ public :
 
    	   char *timel_ptr; // because  Root stored the string as a charcater array
    Bool_t QC; // set true for qcurve subtraction
+   Bool_t QC_DISP; // If we have a Qcurve we can display it with setting this switch to 1
 
    TTree *QCUtree;
    std::map<std::string,std::string> Parameters; // input parameters
@@ -133,6 +134,7 @@ public :
    TH1D      *NMR_RT;// real time display of the NMR signal
    TH1D		 *PolTime; // polarization vs time
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
+   TH1D		 *QCC; // Display of Qcurve if QC_DISP is on;
    //
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
    TCanvas	 *StripCanvas;   // shows polarization vs time
@@ -189,7 +191,7 @@ public :
 NMRana::NMRana(){
 	time_offset = 2082852019 ; // unix offset in seconds
 	TimeControl = 1; // always assume the file is from the newest generation // if not use TIMEC = value in parameter file
-
+	QC_DISP = false;
 
 }
 void NMRana::ReadParameterFile(TString ParameterFile){
@@ -200,10 +202,13 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 	// the format of the file is  name , value
 	// example: Qcurve   Qcurve.root
-	char temp_string[81];
+	char temp_string[132];
 	std::string temp;
 	std::string string1, string2;
 	std::string temp_file;
+
+	Int_t lownmr(212.8);
+	Int_t hinmr(213.3);
 
 	ifstream ParFile; // create instream file
 	ParFile.open(ParameterFile);
@@ -244,10 +249,32 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 			TimeControl = std::stoi(string2);
 
 		}
+		if(pos->first.find("NMR_LOW")!= std::string::npos){
+			// amplifier setting for QCurve
+			lownmr = std::stoi(string2);
+
+		}
+		if(pos->first.find("NMR_HI")!= std::string::npos){
+			// amplifier setting for QCurve
+			hinmr = std::stoi(string2);
+
+		}
+		if(pos->first.find("QC_DISPLAY")!= std::string::npos){
+			// amplifier setting for QCurve
+			if(std::stoi(string2)==1) QC_DISP=true ;
+
+		}
 
 
 	}
 	if(QC) GetQcurve(temp_file);
+
+
+		// set limits for are either default or what comes in from parameter file
+	if(lownmr > hinmr){
+		cout<<"the integration limits are wrong Low limit is larger than high limit  "<<lownmr<<"  "<<hinmr<<"\n";
+	}
+	else  AreaSetLimits(lownmr,hinmr);
 
 }
 
@@ -461,6 +488,10 @@ void NMRana::SetupHistos(){
 	   if(Qcurve_array.size()!=0){
 		   Qcurve_histo = new TH1D("Qcurve_hist","Normalized Qcurve histogram",IntScanPoints,MinFreq,MaxFreq);
 		   NMR1_NoQ = new TH1D("NMR1_NoQ","Signal without QCurve subtraction",IntScanPoints,MinFreq,MaxFreq);
+		   if(QC_DISP){
+			   QCC = new TH1D("QCC","QCurve disply",IntScanPoints,MinFreq,MaxFreq);
+
+		   }
 	   }
 
 
@@ -489,7 +520,10 @@ void NMRana::SetupCanvas(){
 	if(Qcurve_array.size()!=0){
 
 	AuxCanvas = new TCanvas("AuxCanvas","Auxiliary plots",1020,700,1000,600);
-	AuxCanvas->Divide(1,2);
+
+	if(QC_DISP)AuxCanvas->Divide(1,3); // if we want to see the Qcurve as well
+	else AuxCanvas->Divide(1,2);
+
 	}
 }
 
@@ -507,15 +541,25 @@ void NMRana::DrawHistos(){
 	GeneralCanvas->Update();
 
 	if(Qcurve_array.size()!=0){
-		AuxCanvas->cd(1);
-		Qcurve_histo->Draw();
-		AuxCanvas->cd(2);
-		NMR1_NoQ->Draw();
+		if(QC_DISP){
+			AuxCanvas->cd(1);
+			Qcurve_histo->Draw();
+			AuxCanvas->cd(2);
+			NMR1_NoQ->Draw();
+			AuxCanvas->cd(3);
+			QCC->Draw();
 
 		AuxCanvas->Update();
+		}
+		else {
+			AuxCanvas->cd(1);
+			Qcurve_histo->Draw();
+			AuxCanvas->cd(2);
+			NMR1_NoQ->Draw();
+			AuxCanvas->Update();
+		}
+
 	}
-
-
 
 
 }
@@ -610,6 +654,19 @@ void NMRana::Loop()
 	    	  // subtract QCurve if existing
 
 	          Qcurve_histo->Fill(freq_temp,Qcurve_array.at(j));
+	          freq_temp = freq_temp+FreqStep;
+	      	  }
+
+	  }
+	  //Fill qcurve histogram if desired
+	  if(QC_DISP){
+	      Double_t freq_temp = MinFreq;
+
+
+	      for (UInt_t j = 0; j < Qcurve_array.size(); ++j) {
+	    	  // subtract QCurve if existing
+
+	          QCC->Fill(freq_temp,Qcurve_array.at(j));
 	          freq_temp = freq_temp+FreqStep;
 	      	  }
 

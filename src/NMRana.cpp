@@ -175,10 +175,13 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 				TE.OpenFile(InputTEFile[0]); // just one spectrum
 			}
 // Do stuff with it
+			//!!!!!!!!!!!warning, has to be set differently, right now for testing hard coded limits
+//			TE.AreaSetLimits(212.83,213.21);
+			//!!!!!!!!!!!!!!!!!!
 			TE.SetupCanvas();
 			TE.SetupHistos();
 			TE.Loop();
-//			TE.DrawHistos();
+			TE.DrawHistos();
 	}
 
 
@@ -199,7 +202,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			}
 // Do stuff with it
 			//!!!!!!!!!!!warning, has to be set differently, right now for testing hard coded limits
-			SIG.AreaSetLimits(212.83,213.21);
+//			SIG.AreaSetLimits(212.83,213.21);
 			//!!!!!!!!!!!!!!!!!!
 
 
