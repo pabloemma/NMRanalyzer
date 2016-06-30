@@ -134,6 +134,7 @@ public :
    TH1D 	 *NMR1; // Signal histogram
    TH1D		 *NMR1_NoQ ; // Signal without Qcurve subtraction
    TH1D      *NMR_RT;// real time display of the NMR signal
+   TH1D      *NMR_RT_Corr;// real time display of the NMR signal, with background fit subtracted
    TH1D		 *PolTime; // polarization vs time
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
@@ -448,6 +449,9 @@ void NMRana::SetupHistos(){
 	   NMR_RT = new TH1D("NMR_RT","Real TimeSignal histogram",IntScanPoints,MinFreq,MaxFreq);
 	   NMR_RT->SetLineColor(kSpring-2);
 	   NMR_RT->SetLineWidth(4);
+	   NMR_RT_Corr = new TH1D("NMR_RT_corr","Real TimeSignal background subtracted",IntScanPoints,MinFreq,MaxFreq);
+	   NMR_RT_Corr->SetLineColor(kBlue-2);
+	   NMR_RT_Corr->SetLineWidth(4);
 
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
@@ -516,6 +520,8 @@ void NMRana::SetupCanvas(){
 	RTCanvas->SetGrid();
 	RTCanvas->SetFillColor(23);
 	RTCanvas->SetFrameFillColor(16);
+	RTCanvas->Divide(1,2);
+
 
 
 
@@ -598,10 +604,13 @@ void NMRana::Loop()
    Long64_t time_prev = 0;
    Long64_t nbytes = 0, nb = 0;
 
-   RTCanvas->cd();
+   RTCanvas->cd(1);
    NMR_RT->Draw();
+   RTCanvas->cd(2);
+   NMR_RT_Corr->Draw();
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
 	   NMR_RT->Reset();
+	   NMR_RT_Corr->Reset();
 	   Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
       nb = fChain->GetEntry(jentry);   nbytes += nb;
@@ -622,6 +631,7 @@ void NMRana::Loop()
 
           NMR1->Fill(freq_temp,array->at(j));
           NMR_RT->Fill(freq_temp,array->at(j));
+          NMR_RT_Corr->Fill(freq_temp,array->at(j));
           // for backgroiund graph
           gr_freq[j] = freq_temp;
           gr_amp[j] = array->at(j);
@@ -631,7 +641,7 @@ void NMRana::Loop()
 //      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 //      BackSpline(Background);
   	  FindPeak(NMR1);
-      FitBackground(NMR_RT);
+      FitBackground(NMR_RT_Corr);
 //sum the peak area
       StripCanvas->cd();
       SignalArea = CalculateArea(array);
@@ -644,7 +654,10 @@ void NMRana::Loop()
 	  StripCanvas->Update();
 
 // draw the signal histogram
-	  RTCanvas->cd();
+	  RTCanvas->cd(1);
+	  NMR_RT->Draw();
+	  RTCanvas->cd(2);
+	  NMR_RT_Corr->Draw();
 	  RTCanvas->Modified();
 	  RTCanvas->Update();
 

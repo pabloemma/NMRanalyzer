@@ -260,7 +260,7 @@ void Ana::FitBackground(TH1D *spectrum){
 
 	FitBck->SetParameters(1.,1.,1.); // initialze parameters
 
-	spectrum->Fit(FitBck,"R");
+	spectrum->Fit(FitBck,"R0VM");
 	FitBck->GetParameters(bck_par);
     spectrum->Add(FitBck,-1.);
     //return 1;
