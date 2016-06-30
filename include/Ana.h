@@ -262,7 +262,11 @@ void Ana::FitBackground(TH1D *spectrum){
 
 	spectrum->Fit(FitBck,"R0VM");
 	FitBck->GetParameters(bck_par);
-    spectrum->Add(FitBck,-1.);
+	// Create new function to subtract from spectrum
+	// need to do this since otherwise it only subtracts in the range defined by the fit range
+	TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",fit_low_overall-.2,fit_high_overall+.15);
+	fhelp->SetParameters(bck_par);
+    spectrum->Add(fhelp,-1.);
     //return 1;
 }
 
