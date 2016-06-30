@@ -32,7 +32,7 @@ private:
 	Bool_t peakfind;
 	 Double_t  fit_low_overall; // fit limits
 	 Double_t fit_high_overall;
-
+     Double_t fit_limit[4]; ; // these are the limits for the background fit
 public:
 	std::string Ana_pr ="NMR_ana> ";
 
@@ -69,11 +69,14 @@ public:
 	 static Double_t CombinedFit(Double_t *, Double_t *); // Gaus folded with Lorentzian distribution
 	Int_t FitSpectrum(TH1D *, Int_t  );
 	 static Double_t GausPeak(Double_t *, Double_t *);
-	 static Double_t Background(Double_t *, Double_t *);
 	 static Double_t Background2(Double_t *, Double_t *,Double_t *, Double_t *);
 //	 static Double_t BackSpline(Double_t *, Double_t *,Double_t *, Double_t *, TGraph *); // This will determine a spline back ground
 	 static Double_t BackSpline( TGraph *);
 	 void FitBackground(TH1D*);
+	 void SetFitLimits(Double_t, Double_t, Double_t, Double_t);
+	 Double_t Background(Double_t *, Double_t *);
+	 void makeTF1();
+
 
 
 }; //end of class definition
@@ -91,13 +94,13 @@ void Ana::FindPeak(TH1D * Spectrum){
 	// Create new spectrum,we only assume one peak for the moment
 	//
 
-
+	npeaks = 1;
 	peakfind = true;
 	spec= new TSpectrum(npeaks,1.);
 
 	Int_t nfound = spec->Search(Spectrum,sigma,"nobackground new",.01);
-	cout<<"\n\n\n*******************************************\n";
-	cout<<Ana_pr<<"Number of peaks found "<<nfound<<"\n";
+//	cout<<"\n\n\n*******************************************\n";
+//	cout<<Ana_pr<<"Number of peaks found "<<nfound<<"\n";
 	// fill array with peak posistions
 
 	xpeaks = (spec->GetPositionX());
@@ -110,10 +113,6 @@ void Ana::FindPeak(TH1D * Spectrum){
 		*xpeaks = 212.982;
 		sigma = .018;
 		peakfind = false;
-	}
-	else
-	{
-		cout<<Ana_pr<<" Tspectrum found peak at :  "<<*xpeaks<<" \n\n";
 	}
 
 
@@ -157,8 +156,8 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
 	// new version with point rejection, the idea being that
 	// I will not fit background in the peak area but on left and right side of it
 	// see fit descrition in Root reference manual
-	if(x[0]> 212.90  && x[0] < 213.2){
-		//if(x[0]>fit_low_overall  && x[0] < fit_high_overall){
+//	if(x[0]> 212.85  && x[0] < 213.26){
+		if(x[0]>fit_limit[1]  && x[0] < fit_limit[2]){
 	     TF1::RejectPoint();
 	     //return 0;
 	 }
@@ -249,22 +248,35 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	return 1;
 }
 
+void Ana::makeTF1(){
+	// this is so that I can pass parameters to the background fit
+	FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],3);
+}
+
+
+
+
+
+
 void Ana::FitBackground(TH1D *spectrum){
 	// this just determines the backgtound parameters of the spectrum
 	// Currently it is a simple 2degree polynomial
 
-	FitBck =  new TF1("FitBck",Background,fit_low_overall-.2,fit_high_overall+.15,3);
+//	FitBck =  new TF1("FitBck",Background,fit_limit[0],fit_limit[3],3);
+	makeTF1();
 	FitBck->SetNpx(1000);
 	FitBck->SetLineWidth(4);
 	FitBck->SetLineColor(kYellow);
 
 	FitBck->SetParameters(1.,1.,1.); // initialze parameters
 
-	spectrum->Fit(FitBck,"R0VM");
+	spectrum->Fit(FitBck,"R0QM");
 	FitBck->GetParameters(bck_par);
 	// Create new function to subtract from spectrum
 	// need to do this since otherwise it only subtracts in the range defined by the fit range
-	TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",fit_low_overall-.2,fit_high_overall+.15);
+
+	//TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",fit_limit[0],fit_limit[3]);
+	TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
 	fhelp->SetParameters(bck_par);
     spectrum->Add(fhelp,-1.);
     //return 1;
@@ -277,5 +289,12 @@ Double_t Ana::BackSpline(TGraph *gr1){
 	return 1.;
 
 }
+void  Ana::SetFitLimits(Double_t x1, Double_t x2 , Double_t x3, Double_t x4){
+	// this sets the lower and upper window of the quadratic background fit for the backgriound subtraction
+	fit_limit[0] = x1;
+	fit_limit[1] = x2;
+	fit_limit[2] = x3;
+	fit_limit[3] = x4;
+	}
 
 #endif /* ANA_H_ */

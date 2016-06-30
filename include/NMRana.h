@@ -88,6 +88,14 @@ public :
    Double_t high_x;
    Double_t SignalArea ; // the summed area of every signal // not normalized yet
    Double_t SignalAreaNormalized ; // aka polarization
+
+   Double_t fit_x1, fit_x2, fit_x3, fit_x4;// limits for fitting widows
+
+
+
+
+
+
    std::vector<TString> RootFileArray ; // if there is a list of input files it will put them into vector
    time_t TimeStamp;  // timestamp in seconds on UNIX time 0
    Long64_t TimeStamp_usec;  // timestamp in 100 musec
@@ -100,7 +108,7 @@ public :
    	   char *timel_ptr; // because  Root stored the string as a charcater array
    Bool_t QC; // set true for qcurve subtraction
    Bool_t QC_DISP; // If we have a Qcurve we can display it with setting this switch to 1
-
+   Bool_t FitLimit;
    TTree *QCUtree;
    std::map<std::string,std::string> Parameters; // input parameters
 
@@ -268,6 +276,26 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 			if(std::stoi(pos->second)==1) QC_DISP=true ;
 
 		}
+		if(pos->first.find("FITX1")!= std::string::npos){
+			// amplifier setting for QCurve
+		fit_x1 = std::stod(pos->second);
+			FitLimit=true;
+		}
+		if(pos->first.find("FITX2")!= std::string::npos){
+			// amplifier setting for QCurve
+		 fit_x2 = std::stod(pos->second);
+
+		}
+		if(pos->first.find("FITX3")!= std::string::npos){
+			// amplifier setting for QCurve
+		fit_x3 = std::stod(pos->second);
+
+		}
+		if(pos->first.find("FITX4")!= std::string::npos){
+			// amplifier setting for QCurve
+		fit_x4 = std::stod(pos->second);
+
+		}
 
 
 	}
@@ -279,6 +307,8 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		cout<<"the integration limits are wrong Low limit is larger than high limit  "<<lownmr<<"  "<<hinmr<<"\n";
 	}
 	else  AreaSetLimits(lownmr,hinmr);
+	if(FitLimit)SetFitLimits(fit_x1,fit_x2,fit_x3,fit_x4);
+
 
 }
 
@@ -640,7 +670,7 @@ void NMRana::Loop()
 //		fill the background graph and go to determine the spline
 //      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 //      BackSpline(Background);
-  	  FindPeak(NMR1);
+  	  //FindPeak(NMR1);
       FitBackground(NMR_RT_Corr);
 //sum the peak area
       StripCanvas->cd();
@@ -691,6 +721,8 @@ void NMRana::Loop()
 
 	  }
 */
+	  	  	 delete [] gr_freq;
+	  	  	 delete [] gr_amp;
 }
 
 Double_t NMRana::CalculateArea(std::vector<Double_t> *array){
