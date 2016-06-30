@@ -22,6 +22,7 @@
 #include <TSpectrum.h>
 #include <TLegend.h>
 #include <TMath.h>
+#include <TGraph.h>;
 
 using namespace std;
 
@@ -62,14 +63,17 @@ public:
 
 	Ana();
 	virtual ~Ana();
-	virtual void FindPeak(TH1D* );
-	virtual void FindOffset(TH1D* );
+ virtual void FindPeak(TH1D* );
+ virtual void FindOffset(TH1D* );
 
 	 static Double_t CombinedFit(Double_t *, Double_t *); // Gaus folded with Lorentzian distribution
 	Int_t FitSpectrum(TH1D *, Int_t  );
 	 static Double_t GausPeak(Double_t *, Double_t *);
 	 static Double_t Background(Double_t *, Double_t *);
-	virtual void FitBackground(TH1D*);
+	 static Double_t Background2(Double_t *, Double_t *,Double_t *, Double_t *);
+//	 static Double_t BackSpline(Double_t *, Double_t *,Double_t *, Double_t *, TGraph *); // This will determine a spline back ground
+	 static Double_t BackSpline( TGraph *);
+	 void FitBackground(TH1D*);
 
 
 }; //end of class definition
@@ -160,7 +164,20 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
    //return par[0] + par[1]*x[0] ;
 
 }
+// Quadratic background function
+/*Double_t Ana::Background2(Double_t low_x, Double_t high_x,Double_t *x, Double_t *par) {
+	// new version with point rejection, the idea being that
+	// I will not fit background in the peak area but on left and right side of it
+	// see fit descrition in Root reference manual
+	if(x[0]> low_x  && x[0] < high_x){
+	     TF1::RejectPoint();
+	 }
 
+   return (par[0] + par[1]*x[0] + par[2]*x[0]*x[0]);
+   //return par[0] + par[1]*x[0] ;
+
+}
+*/
 
 int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	// function to fit spectrum with this needs to be called after Findpeak
@@ -248,5 +265,12 @@ void Ana::FitBackground(TH1D *spectrum){
     //return 1;
 }
 
+Double_t Ana::BackSpline(TGraph *gr1){
+	TCanvas * chelp = new TCanvas();
+	gr1->Draw();
+	chelp->Update();
+	return 1.;
+
+}
 
 #endif /* ANA_H_ */

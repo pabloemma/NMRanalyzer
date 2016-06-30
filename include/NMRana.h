@@ -73,6 +73,8 @@ public :
    Double_t        Gain;
    Double_t        Pol_Sign;
    Double_t        Log_Channel;
+   Double_t 	   *gr_freq;
+   Double_t		   *gr_amp; // needed for creating and filling the background graph
 
    Double_t			Qamp; // amplifier setting for Qcurve
    Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
@@ -134,7 +136,7 @@ public :
    TH1D      *NMR_RT;// real time display of the NMR signal
    TH1D		 *PolTime; // polarization vs time
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
-   TH1D		 *QCC; // Display of Qcurve if QC_DISP is on;
+   TGraph    *Background; // this is the background I determine from the signal thorugh a spline
    //
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
    TCanvas	 *StripCanvas;   // shows polarization vs time
@@ -489,12 +491,12 @@ void NMRana::SetupHistos(){
 	   if(Qcurve_array.size()!=0){
 		   Qcurve_histo = new TH1D("Qcurve_hist","Normalized Qcurve histogram",IntScanPoints,MinFreq,MaxFreq);
 		   NMR1_NoQ = new TH1D("NMR1_NoQ","Signal without QCurve subtraction",IntScanPoints,MinFreq,MaxFreq);
-		   if(QC_DISP){
-			   QCC = new TH1D("QCC","QCurve disply",IntScanPoints,MinFreq,MaxFreq);
-
 		   }
-	   }
 
+	   // Do the graph for the histo
+	   gr_freq = new Double_t[IntScanPoints];
+	   gr_amp = new Double_t[IntScanPoints];
+	  // Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 
 
 }
@@ -522,8 +524,8 @@ void NMRana::SetupCanvas(){
 
 	AuxCanvas = new TCanvas("AuxCanvas","Auxiliary plots",1020,700,1000,600);
 
-	if(QC_DISP)AuxCanvas->Divide(1,3); // if we want to see the Qcurve as well
-	else AuxCanvas->Divide(1,2);
+	if(QC_DISP)AuxCanvas->Divide(1,2); // if we want to see the Qcurve as well
+	else AuxCanvas->Divide(1,1);
 
 	}
 }
@@ -543,19 +545,15 @@ void NMRana::DrawHistos(){
 
 	if(Qcurve_array.size()!=0){
 		if(QC_DISP){
-			AuxCanvas->cd(1);
-			Qcurve_histo->Draw();
 			AuxCanvas->cd(2);
+			Qcurve_histo->Draw();
+			AuxCanvas->cd(1);
 			NMR1_NoQ->Draw();
-			AuxCanvas->cd(3);
-			QCC->Draw();
 
 		AuxCanvas->Update();
 		}
 		else {
 			AuxCanvas->cd(1);
-			Qcurve_histo->Draw();
-			AuxCanvas->cd(2);
 			NMR1_NoQ->Draw();
 			AuxCanvas->Update();
 		}
@@ -619,13 +617,19 @@ void NMRana::Loop()
 
     	  if(Qcurve_array.size()!=0) {
               NMR1_NoQ->Fill(freq_temp,array->at(j));
-              array->at(j) = array->at(j) - Qcurve_array.at(j);
+             array->at(j) = array->at(j) - Qcurve_array.at(j);
     	  }
 
           NMR1->Fill(freq_temp,array->at(j));
           NMR_RT->Fill(freq_temp,array->at(j));
+          // for backgroiund graph
+          gr_freq[j] = freq_temp;
+          gr_amp[j] = array->at(j);
           freq_temp = freq_temp+FreqStep;
       	  }
+//		fill the background graph and go to determine the spline
+      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
+//      BackSpline(Background);
 
 //sum the peak area
       StripCanvas->cd();
