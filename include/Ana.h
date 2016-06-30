@@ -101,8 +101,11 @@ void Ana::FindPeak(TH1D * Spectrum){
 	// fill array with peak posistions
 
 	xpeaks = (spec->GetPositionX());
+	fit_low_overall = *xpeaks-.2;
+	fit_high_overall = *xpeaks +.2;
 
-	if(*xpeaks < 212.982 - .2 || *xpeaks > 212.982 + .2 ){
+
+	if(*xpeaks < 212.982 - .3 || *xpeaks > 212.982 + .3 ){
 		cout<< "TSpectrum failed, assign peak to 212.98 \n";
 		*xpeaks = 212.982;
 		sigma = .018;
@@ -154,7 +157,7 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
 	// new version with point rejection, the idea being that
 	// I will not fit background in the peak area but on left and right side of it
 	// see fit descrition in Root reference manual
-	if(x[0]> 213.80  && x[0] < 213.1){
+	if(x[0]> 212.90  && x[0] < 213.2){
 		//if(x[0]>fit_low_overall  && x[0] < fit_high_overall){
 	     TF1::RejectPoint();
 	     //return 0;
@@ -188,8 +191,6 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	FindOffset(Spectrum);
 	FitBackground(Spectrum);
 
-	fit_low_overall = *xpeaks-.2;
-	fit_high_overall = *xpeaks +.2;
 
 	   // correct for negative
 		FindOffset(Spectrum);
@@ -252,7 +253,7 @@ void Ana::FitBackground(TH1D *spectrum){
 	// this just determines the backgtound parameters of the spectrum
 	// Currently it is a simple 2degree polynomial
 
-	FitBck =  new TF1("FitBck",Background,fit_low_overall-.1,fit_high_overall+.1,3);
+	FitBck =  new TF1("FitBck",Background,fit_low_overall-.2,fit_high_overall+.15,3);
 	FitBck->SetNpx(1000);
 	FitBck->SetLineWidth(4);
 	FitBck->SetLineColor(kYellow);
@@ -261,7 +262,7 @@ void Ana::FitBackground(TH1D *spectrum){
 
 	spectrum->Fit(FitBck,"R");
 	FitBck->GetParameters(bck_par);
-
+    spectrum->Add(FitBck,-1.);
     //return 1;
 }
 

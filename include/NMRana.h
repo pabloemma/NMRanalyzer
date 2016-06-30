@@ -628,9 +628,10 @@ void NMRana::Loop()
           freq_temp = freq_temp+FreqStep;
       	  }
 //		fill the background graph and go to determine the spline
-      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
+//      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 //      BackSpline(Background);
-
+  	  FindPeak(NMR1);
+      FitBackground(NMR_RT);
 //sum the peak area
       StripCanvas->cd();
       SignalArea = CalculateArea(array);
