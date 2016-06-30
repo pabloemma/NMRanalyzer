@@ -279,6 +279,16 @@ void Ana::FitBackground(TH1D *spectrum){
 	TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
 	fhelp->SetParameters(bck_par);
     spectrum->Add(fhelp,-1.);
+
+
+    // now check for offset below 0 and then shift this offset up
+    Double_t offset = spectrum->GetBinContent(spectrum->GetMinimumBin());
+    if(offset<0.){
+    for(Int_t k=0;k<spectrum->GetNbinsX();k++){
+    	spectrum->AddBinContent(k,-1.*offset);
+   	   }
+    }
+
     //return 1;
 }
 

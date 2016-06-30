@@ -170,7 +170,8 @@ public :
    virtual void     Show(Long64_t entry = -1);
    virtual int      OpenChain(std::vector<TString> );
    virtual void		AreaSetLimits(Double_t , Double_t);
-   virtual Double_t CalculateArea(std::vector<Double_t> *);
+   // virtual Double_t CalculateArea(std::vector<Double_t> *);
+    virtual Double_t CalculateArea(TH1D *);
    virtual void		PrintTime();  // prints time from Labview time stamp
    virtual void 	GetTimeStamp();
    virtual void     GetQcurve(std::string );
@@ -674,7 +675,7 @@ void NMRana::Loop()
       FitBackground(NMR_RT_Corr);
 //sum the peak area
       StripCanvas->cd();
-      SignalArea = CalculateArea(array);
+      SignalArea = CalculateArea(NMR_RT_Corr);
  	  GetTimeStamp();
 	  PolTime->SetBinContent(jentry,SignalArea*100.);
 	  PolTime->GetXaxis()->SetRange(jentry-10000,jentry+5);
@@ -725,16 +726,19 @@ void NMRana::Loop()
 	  	  	 delete [] gr_amp;
 }
 
-Double_t NMRana::CalculateArea(std::vector<Double_t> *array){
+Double_t NMRana::CalculateArea(TH1D *histo){
 	// this function calculates the area of the NMR perak by simpy summing it in
 	//  limits given by AreaSetLimits in the main program
 	// the area is calculated as sum i_low to i_high (a(i)*binwidth)
 
-	Double_t sum = 0.;
+/*	Double_t sum = 0.;
     for (Int_t j = low_id; j < high_id; ++j) {
          sum = sum + array->at(j);
      	  }
-    return sum * FreqStep;
+     	  */
+		Double_t sum = histo->Integral(histo->FindBin(fit_x2),histo->FindBin(fit_x3));
+    	    return sum ;
+   // return sum * FreqStep;
 
 
 
