@@ -749,7 +749,7 @@ TString NMRana::GetDate(TString input) {
       if(Int_t(time_test) > 1465948800) TimeControl =1; // this gives a control value for which time the polarization file is from
       return  asctime(ltm);
 
-
+}
 #endif // #ifdef NMRana_cxx
 
 

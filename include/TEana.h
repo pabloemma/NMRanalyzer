@@ -94,6 +94,7 @@ public :
    TBranch        *b_Offset;   //!
    TBranch        *b_ControllerV;   //!
    TBranch        *b_Peak_Area;   //!
+   TBranch		  *b_Phase_Voltage;
    TBranch        *b_Pol_Calib_Const;   //!
    TBranch        *b_Gain;   //!
    TBranch        *b_Pol_Sign;   //!
@@ -359,7 +360,7 @@ Double_t TEana::CalcT(Double_t pressure){
 	Double_t pa = pressure*133.322; // convert pressure into pascal
 	if(pressure>.0009 && pressure<.826)
 		temp = lowT->Eval(pa,0,"S");  //cubic spline
-		break;
+
 	else if(pressure>=.826 && pressure<37.82)
 		temp = CalculateT(aLowT,bLow,cLow,pa);
 
