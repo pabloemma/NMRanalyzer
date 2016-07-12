@@ -90,6 +90,11 @@ public :
    Double_t SignalAreaNormalized ; // aka polarization
 
    Double_t fit_x1, fit_x2, fit_x3, fit_x4;// limits for fitting widows
+   Int_t	DEBUG;// level of debugging information  // currently 0: nodebug
+   	   	   	   	   	   	   	   	   	   	   	   	     //1: regular debug
+ 	   	   	   	   	     //2:
+ 	   	   	   	   	     //3: You really do not want this
+
 
 
 
@@ -233,7 +238,6 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 	do{
 		ParFile >>string1 >> string2;
-//		cout<<string1<<"   "<<string2<<"  \n";
 		if (ParFile.eof()) break;  // get out of the loop
 		if(string1.find("#") == std::string::npos) Parameters[string1] = string2;  // check for comments
 
@@ -295,6 +299,11 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		if(pos->first.find("FITX4")!= std::string::npos){
 			// amplifier setting for QCurve
 		fit_x4 = std::stod(pos->second);
+
+		}
+		if(pos->first.find("DEBUG")!= std::string::npos){
+			// amplifier setting for QCurve
+		DEBUG = std::stoi(pos->second);
 
 		}
 
@@ -692,7 +701,7 @@ void NMRana::Loop()
 	  RTCanvas->Modified();
 	  RTCanvas->Update();
 
-//      cout<<timel<<"another one \n";
+	  if(DEBUG ==2)cout<<timel<<"another one \n";
 
    }// end of entry loop
    // Now fill the QCurve histo if it is used
@@ -740,11 +749,14 @@ Double_t NMRana::CalculateArea(TH1D *histo){
     Double_t sum11 =0;
     Double_t sum = histo->Integral(histo->FindBin(low_id),histo->FindBin(high_id));
 		for(Int_t k=low_id;k<high_id;k++){
-		cout<<histo->GetBinContent(k)<<"  \n";
+		if(DEBUG ==3)cout<<histo->GetBinContent(k)<<"  \n";
 		sum11 += histo->GetBinContent(k);
 		}
-		cout<<sum1<<"  "<<sum<<"  "<<sum11<<"\n";
-		cout<<low_id<<"   "<<high_id<<" \n";
+		if(DEBUG==3){
+			cout<<sum1<<"  "<<sum<<"  "<<sum11<<"\n";
+
+		   cout<<low_id<<"   "<<high_id<<" \n";
+		}
     	    return sum ;
    // return sum * FreqStep;
 
@@ -835,7 +847,7 @@ void NMRana::FillQcurveArray(){
 	// this function fill the Qcurve array and normalizes it
 	   Long64_t nentries = QCUtree->GetEntriesFast();
 	   Long64_t nbytes = 0, nb = 0;
-       cout<<" nentries"<< nentries<<" \n";
+       if(DEBUG ==1) cout<<"FillQcurve>  "<<" nentries"<< nentries<<" \n";
        Qcurve_array.clear();
 	   for (Long64_t jentry=0; jentry<nentries;jentry++) {
 	      Long64_t ientry = LoadTree(jentry);
@@ -865,7 +877,7 @@ void NMRana::FillQcurveArray(){
 	   }// end of entry loop
 
 	   //now we need to normalize the QCurve to the number of sweeps, which is nentries
-	   cout<<" qamp"<<Qamp<<"\n";
+	   if(DEBUG==1)cout<<"FillQcurve>  "<<" qamp"<<Qamp<<"\n";
 	   for (UInt_t j = 0; j < array->size(); ++j) {
 
 		   Qcurve_array.at(j)= Qcurve_array.at(j)/nentries/Qamp;
