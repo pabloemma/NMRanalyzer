@@ -1,0 +1,3 @@
+QCurve     /Volumes/FastDisk/NMR/rssmt_backup/april25/QCU3544452838.root
+QAMP    10.1
+TIMEC    1
