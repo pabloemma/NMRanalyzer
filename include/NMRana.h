@@ -731,12 +731,20 @@ Double_t NMRana::CalculateArea(TH1D *histo){
 	//  limits given by AreaSetLimits in the main program
 	// the area is calculated as sum i_low to i_high (a(i)*binwidth)
 
-/*	Double_t sum = 0.;
+	Double_t sum1 = 0.;
     for (Int_t j = low_id; j < high_id; ++j) {
-         sum = sum + array->at(j);
+         sum1 += array->at(j);
      	  }
-     	  */
-		Double_t sum = histo->Integral(histo->FindBin(fit_x2),histo->FindBin(fit_x3));
+
+		//Double_t sum = histo->Integral(histo->FindBin(fit_x2),histo->FindBin(fit_x3));
+    Double_t sum11 =0;
+    Double_t sum = histo->Integral(histo->FindBin(low_id),histo->FindBin(high_id));
+		for(Int_t k=low_id;k<high_id;k++){
+		cout<<histo->GetBinContent(k)<<"  \n";
+		sum11 += histo->GetBinContent(k);
+		}
+		cout<<sum1<<"  "<<sum<<"  "<<sum11<<"\n";
+		cout<<low_id<<"   "<<high_id<<" \n";
     	    return sum ;
    // return sum * FreqStep;
 

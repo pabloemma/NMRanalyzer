@@ -167,6 +167,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 		TE.CalculatePlots();
 
 
+
 // Open ROOT file
 			if(InputTEFile.size()>1){
 				TE.OpenChain(InputTEFile);  // we will create a TChain
@@ -176,7 +177,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			}
 // Do stuff with it
 			//!!!!!!!!!!!warning, has to be set differently, right now for testing hard coded limits
-//			TE.AreaSetLimits(212.83,213.21);
+			TE.AreaSetLimits(212.95,213.21);
 			//!!!!!!!!!!!!!!!!!!
 			TE.SetupCanvas();
 			TE.SetupHistos();
