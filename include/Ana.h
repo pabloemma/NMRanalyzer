@@ -22,7 +22,7 @@
 #include <TSpectrum.h>
 #include <TLegend.h>
 #include <TMath.h>
-#include <TGraph.h>;
+#include <TGraph.h>
 
 using namespace std;
 
@@ -34,7 +34,7 @@ private:
 	 Double_t fit_high_overall;
      Double_t fit_limit[4]; ; // these are the limits for the background fit
 public:
-	std::string Ana_pr ="NMR_ana> ";
+	std::string Ana_pr ="Ana_ana> ";
 
 
 	TH1D *Spectrum;  // the histogram we want to find the spectrum of
@@ -87,7 +87,7 @@ Ana::Ana(){
 }
 
 Ana::~Ana(){
-	cout<<Ana_pr<<"Done with analysis \n";
+	cout<<Ana_pr<<"Done with analysis \n\n\n";
 }
 void Ana::FindPeak(TH1D * Spectrum){
 	// this is from peaks.C at Cern
@@ -109,7 +109,7 @@ void Ana::FindPeak(TH1D * Spectrum){
 
 
 	if(*xpeaks < 212.982 - .3 || *xpeaks > 212.982 + .3 ){
-		cout<< "TSpectrum failed, assign peak to 212.98 \n";
+		cout<<Ana_pr<< "TSpectrum failed, assign peak to 212.98 \n";
 		*xpeaks = 212.982;
 		sigma = .018;
 		peakfind = false;
@@ -125,7 +125,7 @@ void Ana::FindOffset(TH1D *Spectrum ){
 	Offset = Spectrum->GetBinContent(Spectrum->GetMinimumBin());
 
 	if (Offset < 0.){
-		cout<<"Add offset to spectrum  "<< Offset<<"   "<<Spectrum->GetNbinsX()<<"\n";
+		cout<<Ana_pr<<"Add offset to spectrum  "<< Offset<<"   "<<Spectrum->GetNbinsX()<<"\n";
 		for (Int_t k = 0;  k< Spectrum->GetNbinsX();k++){
 			//cout<<"adding bin"<<k<<"\n";
 			Spectrum->AddBinContent(k,-Offset);  // add offset
@@ -185,10 +185,6 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	// function to fit spectrum with this needs to be called after Findpeak
 	// since it relies on finding the parameters.
 
-
-   // correct for negative
-	FindOffset(Spectrum);
-	FitBackground(Spectrum);
 
 
 	   // correct for negative

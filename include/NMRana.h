@@ -55,6 +55,7 @@ protected:    // for TEana inheritance
 
 
 public :
+	std::string NMR_pr ="NMR_ana> ";
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
 
@@ -90,6 +91,10 @@ public :
    Double_t SignalAreaNormalized ; // aka polarization
 
    Double_t fit_x1, fit_x2, fit_x3, fit_x4;// limits for fitting widows
+   Double_t CalibConstant; // is calculated from area of TE peak and pressure of measuring CalibConstant = pol_calculated/area
+
+
+
    Int_t	DEBUG;// level of debugging information  // currently 0: nodebug
    	   	   	   	   	   	   	   	   	   	   	   	     //1: regular debug
  	   	   	   	   	     //2:
@@ -98,7 +103,7 @@ public :
 
 
 
-
+   Bool_t TEmeasurement; // if set to true we have TEmeasurement, gets determined from filename
 
 
    std::vector<TString> RootFileArray ; // if there is a list of input files it will put them into vector
@@ -149,11 +154,13 @@ public :
    TH1D      *NMR_RT;// real time display of the NMR signal
    TH1D      *NMR_RT_Corr;// real time display of the NMR signal, with background fit subtracted
    TH1D		 *PolTime; // polarization vs time
+   TH1D		 *CalibTime; // TE calibration constant vs time
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
    //
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
    TCanvas	 *StripCanvas;   // shows polarization vs time
+   TCanvas	 *StripCanvas_1; // for TE measurement shows the pressure over time.
    TCanvas	 *AuxCanvas;   // all the auxiliary plots, like Qcurve
    TCanvas	 *RTCanvas ;    // Life time display canvas, get used in Loop
 
@@ -224,8 +231,8 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 	std::string string1, string2;
 	std::string temp_file;
 
-	Int_t lownmr(212.8);
-	Int_t hinmr(213.3);
+	Double_t lownmr(212.8);
+	Double_t hinmr(213.3);
 
 	ifstream ParFile; // create instream file
 	ParFile.open(ParameterFile);
@@ -246,7 +253,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 	// Now print out parameter map
 	for( std::map<string,string>::iterator pos=Parameters.begin(); pos !=  Parameters.end(); ++pos){
-		cout<<"parameters from file  :"<<pos->first<<"\t"<<pos->second <<"\n";
+		cout<<NMR_pr<<"parameters from file  :"<<pos->first<<"\t"<<pos->second <<"\n";
 
 
 		if(pos->first.find("QCurve")!= std::string::npos){
@@ -258,7 +265,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		if(pos->first.find("QAMP")!= std::string::npos){
 			// amplifier setting for QCurve
 			Qamp = std::stod(pos->second);
-			cout<<" test qamp"<<string2<<"\n";
+			cout<<NMR_pr<<" test qamp"<<string2<<"\n";
 
 		}
 		if(pos->first.find("TIMEC")!= std::string::npos){
@@ -268,12 +275,12 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		}
 		if(pos->first.find("NMR_LOW")!= std::string::npos){
 			// amplifier setting for QCurve
-			lownmr = std::stoi(pos->second);
+			lownmr = std::stod(pos->second);
 
 		}
 		if(pos->first.find("NMR_HI")!= std::string::npos){
 			// amplifier setting for QCurve
-			hinmr = std::stoi(pos->second);
+			hinmr = std::stod(pos->second);
 
 		}
 		if(pos->first.find("QC_DISPLAY")!= std::string::npos){
@@ -314,7 +321,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 		// set limits for are either default or what comes in from parameter file
 	if(lownmr > hinmr){
-		cout<<"the integration limits are wrong Low limit is larger than high limit  "<<lownmr<<"  "<<hinmr<<"\n";
+		cout<<NMR_pr<<"the integration limits are wrong Low limit is larger than high limit  "<<lownmr<<"  "<<hinmr<<"\n";
 	}
 	else  AreaSetLimits(lownmr,hinmr);
 	if(FitLimit)SetFitLimits(fit_x1,fit_x2,fit_x3,fit_x4);
@@ -331,7 +338,12 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 int NMRana::OpenFile(TString rootfile){
 
 	// oepn file and initialize tree
-     cout<<"opening file "<<rootfile<<"\n";
+     cout<<NMR_pr<<"opening file "<<rootfile<<"\n";
+
+     if(rootfile.BeginsWith("TER")){
+    	 TEmeasurement = true;
+    	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
+     }
 
      f = new TFile(rootfile);
 
@@ -349,7 +361,7 @@ int NMRana::OpenChain(std::vector<TString> RootFileArray){
 	 // Now loop over all the rootfiles we have
 		for(Int_t pos = 0 ; pos < RootFileArray.size() ; pos++)
 		{
-			cout<<RootFileArray[pos]<<"   filename \n";
+			cout<<NMR_pr<<RootFileArray[pos]<<"   filename \n";
 			NMRchain->Add(RootFileArray[pos]);
 		}
 
@@ -517,6 +529,14 @@ void NMRana::SetupHistos(){
 	   PolTime->SetMinimum(-100.);
 	   PolTime->SetLineColor(2);
 
+	   //setup calibration constant histogram
+	   if(TEmeasurement){
+		   CalibTime = SetupStripChart("Calibration Constant vs time");
+		   CalibTime->SetMaximum(100.);
+		   CalibTime->SetMaximum(0.);
+
+	   }
+
 
 
 
@@ -528,7 +548,7 @@ void NMRana::SetupHistos(){
 	   PolTime = new TH1D("PolTime","Polarization vs time",timewindow,0,10*timewindow);
 	   PolTime->GetXaxis()->SetTimeDisplay(1);
 	   PolTime->GetXaxis()->SetTimeOffset(TimeStamp);
-	   PolTime->GetXaxis()->SetTimeFormat("%d\/%m\ %H\:%M \:%S");
+	   PolTime->GetXaxis()->SetTimeFormat("%d\ %m\ %H\:%M \:%S");
 	   PolTime->GetXaxis()->SetNdivisions(405) ;
 	   // Now setup a Canvas for Qcurve
 
@@ -555,6 +575,14 @@ void NMRana::SetupCanvas(){
 	StripCanvas->SetGrid();
 	StripCanvas->SetFillColor(42);
 	StripCanvas->SetFrameFillColor(33);
+    // only do a strip chart for pressure if we have a TE measurement.
+	if(TEmeasurement){
+		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1020,50,1000,600);
+		StripCanvas_1->SetGrid();
+		StripCanvas_1->SetFillColor(40);
+		StripCanvas_1->SetFrameFillColor(30);
+
+	}
 
 	RTCanvas =  new TCanvas("RTCanvas","Real Time charts",100,1000,600,400);
 	RTCanvas->SetGrid();
@@ -685,13 +713,35 @@ void NMRana::Loop()
 //sum the peak area
       StripCanvas->cd();
       SignalArea = CalculateArea(NMR_RT_Corr);
+// now for every point in a TE we will calculate the polarization from the pressure
+// the ratio of calculated polarization/ area gives the calibration constant calib
+// so that calib*area = polarization of the reL SIGNAL
+// at the end we will calculate an average caibration constant with a deviation
+
+
+
+
+
  	  GetTimeStamp();
-	  PolTime->SetBinContent(jentry,SignalArea*100.);
+	  PolTime->SetBinContent(jentry,SignalArea);
 	  PolTime->GetXaxis()->SetRange(jentry-10000,jentry+5);
 	  StripCanvas->Clear();
 	  PolTime->Draw();
 	  StripCanvas->Modified();
 	  StripCanvas->Update();
+
+	  cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
+	  if(TEmeasurement){
+		  StripCanvas_1->cd();
+		  CalibConstant = CalculateTEP("proton",.5,5.,.117) ; // needs to change
+		  CalibConstant = CalibConstant/SignalArea;
+		  CalibTime ->GetXaxis()->SetRange(jentry-10000,jentry+5);
+		  StripCanvas_1->Clear();
+		  CalibTime->Draw();
+		  StripCanvas->Modified();
+		  StripCanvas->Update();
+
+	  }
 
 // draw the signal histogram
 	  RTCanvas->cd(1);
@@ -701,7 +751,7 @@ void NMRana::Loop()
 	  RTCanvas->Modified();
 	  RTCanvas->Update();
 
-	  if(DEBUG ==2)cout<<timel<<"another one \n";
+	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
    }// end of entry loop
    // Now fill the QCurve histo if it is used
@@ -749,13 +799,13 @@ Double_t NMRana::CalculateArea(TH1D *histo){
     Double_t sum11 =0;
     Double_t sum = histo->Integral(histo->FindBin(low_id),histo->FindBin(high_id));
 		for(Int_t k=low_id;k<high_id;k++){
-		if(DEBUG ==3)cout<<histo->GetBinContent(k)<<"  \n";
+		if(DEBUG ==3)cout<<NMR_pr<<histo->GetBinContent(k)<<"  \n";
 		sum11 += histo->GetBinContent(k);
 		}
 		if(DEBUG==3){
-			cout<<sum1<<"  "<<sum<<"  "<<sum11<<"\n";
+			cout<<NMR_pr<<sum1<<"  "<<sum<<"  "<<sum11<<"\n";
 
-		   cout<<low_id<<"   "<<high_id<<" \n";
+		   cout<<NMR_pr<<low_id<<"   "<<high_id<<" \n";
 		}
     	    return sum ;
    // return sum * FreqStep;
@@ -796,24 +846,24 @@ void NMRana::PrintTime(){
 	   RootTimeStamp=new TTimeStamp(root_time);
 
 
-//	   cout<<timel<<"   "<<nsec<<"   "<<TimeStamp_usec<<"   \n";
+//	   cout<<NMR_pr<<timel<<"   "<<nsec<<"   "<<TimeStamp_usec<<"   \n";
 	   time_t timm = Int_t(TimeStamp);
 
 	   tm *ltm = localtime(&timm);
-	    cout<<" \n \n ******************************************\n\n";
-	    cout << "Year: "<< 1900 + ltm->tm_year << endl;
-	       cout << "Month: "<< 1 + ltm->tm_mon<< endl;
-	       cout << "Day: "<<  ltm->tm_mday << endl;
-	       cout << "Time: "<< 1 + ltm->tm_hour << ":";
-	       cout << 1 + ltm->tm_min << ":";
-	       cout << 1 + ltm->tm_sec << endl;
+	    cout<<NMR_pr<<" \n \n ******************************************\n\n";
+	    cout<<NMR_pr << "Year: "<< 1900 + ltm->tm_year << endl;
+	       cout<<NMR_pr << "Month: "<< 1 + ltm->tm_mon<< endl;
+	       cout<<NMR_pr << "Day: "<<  ltm->tm_mday << endl;
+	       cout<<NMR_pr << "Time: "<< 1 + ltm->tm_hour << ":";
+	       cout<<NMR_pr << 1 + ltm->tm_min << ":";
+	       cout<<NMR_pr << 1 + ltm->tm_sec << endl;
 
-	      cout<<asctime(ltm)<< " \n";
-	      cout<<" \n \n ******************************************\n\n";
+	      cout<<NMR_pr<<asctime(ltm)<< " \n";
+	      cout<<NMR_pr<<" \n \n ******************************************\n\n";
 
-/*       cout << "Time: "<< 1 + ltm->tm_hour << ":";
-       cout << 1 + ltm->tm_min << ":";
-       cout << 1 + ltm->tm_sec << endl;
+/*       cout<<NMR_pr << "Time: "<< 1 + ltm->tm_hour << ":";
+       cout<<NMR_pr << 1 + ltm->tm_min << ":";
+       cout<<NMR_pr << 1 + ltm->tm_sec << endl;
 */
 }
 
@@ -834,7 +884,7 @@ TH1D *NMRana::SetupStripChart(TString Title){
 
 void NMRana::GetQcurve(std::string filename) {
 
-	cout<<" QCurve file "<<filename<<"\n";
+	cout<<NMR_pr<<" QCurve file "<<filename<<"\n";
 
 	QcurveFile = new TFile(filename.c_str());
 	// now create a new tree, so that we have a different name
@@ -847,7 +897,7 @@ void NMRana::FillQcurveArray(){
 	// this function fill the Qcurve array and normalizes it
 	   Long64_t nentries = QCUtree->GetEntriesFast();
 	   Long64_t nbytes = 0, nb = 0;
-       if(DEBUG ==1) cout<<"FillQcurve>  "<<" nentries"<< nentries<<" \n";
+       if(DEBUG ==1) cout<<NMR_pr<<"FillQcurve>  "<<" nentries"<< nentries<<" \n";
        Qcurve_array.clear();
 	   for (Long64_t jentry=0; jentry<nentries;jentry++) {
 	      Long64_t ientry = LoadTree(jentry);
@@ -877,7 +927,7 @@ void NMRana::FillQcurveArray(){
 	   }// end of entry loop
 
 	   //now we need to normalize the QCurve to the number of sweeps, which is nentries
-	   if(DEBUG==1)cout<<"FillQcurve>  "<<" qamp"<<Qamp<<"\n";
+	   if(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<Qamp<<"\n";
 	   for (UInt_t j = 0; j < array->size(); ++j) {
 
 		   Qcurve_array.at(j)= Qcurve_array.at(j)/nentries/Qamp;
@@ -898,16 +948,16 @@ TString NMRana::GetDate(TString input) {
     time_t time_test = timestring.Atoi()-2082844800; // calculated with offset since stupid labview uses jan-1-1904
     tm *ltm = localtime(&time_test);          //and unix uses jan-1-1970
 
-    cout<<" \n \n ******************************************\n\n";
-    cout << "Year: "<< 1900 + ltm->tm_year << endl;
-       cout << "Month: "<< 1 + ltm->tm_mon<< endl;
-       cout << "Day: "<<  ltm->tm_mday << endl;
-       cout << "Time: "<< 1 + ltm->tm_hour << ":";
-       cout << 1 + ltm->tm_min << ":";
-       cout << 1 + ltm->tm_sec << endl;
+    cout<<NMR_pr<<" \n \n ******************************************\n\n";
+    cout<<NMR_pr << "Year: "<< 1900 + ltm->tm_year << endl;
+       cout<<NMR_pr << "Month: "<< 1 + ltm->tm_mon<< endl;
+       cout<<NMR_pr << "Day: "<<  ltm->tm_mday << endl;
+       cout<<NMR_pr << "Time: "<< 1 + ltm->tm_hour << ":";
+       cout<<NMR_pr << 1 + ltm->tm_min << ":";
+       cout<<NMR_pr << 1 + ltm->tm_sec << endl;
 
-      cout<<asctime(ltm)<<"  "<<time_test<<"   "<<"    \n";
-      cout<<" \n \n ******************************************\n\n";
+      cout<<NMR_pr<<asctime(ltm)<<"  "<<time_test<<"   "<<"    \n";
+      cout<<NMR_pr<<" \n \n ******************************************\n\n";
       if(Int_t(time_test) > 1465948800) TimeControl =1; // this gives a control value for which time the polarization file is from
       return  asctime(ltm);
 }

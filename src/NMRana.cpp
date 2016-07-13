@@ -177,7 +177,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			}
 // Do stuff with it
 			//!!!!!!!!!!!warning, has to be set differently, right now for testing hard coded limits
-			TE.AreaSetLimits(212.95,213.21);
+			//TE.AreaSetLimits(212.95,213.21);
 			//!!!!!!!!!!!!!!!!!!
 			TE.SetupCanvas();
 			TE.SetupHistos();

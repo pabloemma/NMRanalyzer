@@ -66,6 +66,8 @@ private:
 
 
 public :
+	std::string TEana_pr ="TE_ana> ";
+
    TTree          *fChain;   //!pointer to the analyzed TTree or TChain
    Int_t           fCurrent; //!current Tree number in a TChain
 
@@ -138,7 +140,7 @@ public :
 
 
 TEana::TEana(){
-		cout<<"**************       Initialize TE analyzer **************** \n\n\n";
+		cout<<TEana_pr<<"**************       Initialize TE analyzer **************** \n\n\n";
 		proton_g    =  5.585694702;
 		neutron_g   = -3.82608545;
 		deuteron_g = 0.85741; // needs to be multiplied with nucleon mag moment (kind of a g factor)
@@ -184,7 +186,7 @@ TEana::TEana(){
 
 
 		TimeControl = 1;
-		cout<< "Using time control  "<<TimeControl<<"\n\n";
+		cout<<TEana_pr<< "Using time control  "<<TimeControl<<"\n\n";
 
 }
 
@@ -206,7 +208,7 @@ int TEana::OpenChain(std::vector<TString> RootFileArray){
 	 // Now loop over all the rootfiles we have
 		for(Int_t pos = 0 ; pos < RootFileArray.size() ; pos++)
 		{
-			cout<<RootFileArray[pos]<<"   filename \n";
+			cout<<TEana_pr<<RootFileArray[pos]<<"   filename \n";
 			NMRchain->Add(RootFileArray[pos]);
 		}
 
@@ -302,7 +304,7 @@ Double_t TEana::CalculateTEP(std::string particle ,Double_t spin, Double_t field
 		fact = deuteron_fact *spin *field /Temp;
 	}
 	else {
-		cout<<"TEana> No particle found for TE calculation************\n\n\n ";
+		cout<<TEana_pr<<"TEana> No particle found for TE calculation************\n\n\n ";
 	}
 
 	TEPol = arg1*cosh(arg1*fact)/sinh(arg1*fact)-arg2*cosh(arg2*fact)/sinh(arg2*fact);
