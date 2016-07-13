@@ -23,4 +23,10 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<variableList>
+		<variable>
+			<name>ROOTSYS</name>
+			<value>file:/Users/klein/root_all</value>
+		</variable>
+	</variableList>
 </projectDescription>
