@@ -47,7 +47,7 @@ class NMRana : public Ana {  //inherit from analysis
 
 private:
 	Int_t Control;  			// determines the time reading (when has the file been created and what readout mechanism are we using
-
+    Int_t NumberOfStripCharts;
 protected:    // for TEana inheritance
 	Double_t LowArea_X; // lower bound for area calculation
 	Double_t HighArea_X;// upper bound for area claculation
@@ -157,6 +157,8 @@ public :
    TH1D		 *PolTime; // polarization vs time
    TH1D		 *CalibTime; // TE calibration constant vs time
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
+   TH1D 	 *TempHisto;// Temprorary strichart so we do not get memory leaks
+   TH1D	     *ht[20];// Number of strip charts
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
    //
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
@@ -217,7 +219,7 @@ NMRana::NMRana(){
 	time_offset = 2082852019 ; // unix offset in seconds
 	TimeControl = 1; // always assume the file is from the newest generation // if not use TIMEC = value in parameter file
 	QC_DISP = false;
-
+    NumberOfStripCharts=-1; // then start with 0 in loop
 
 
 }
@@ -553,7 +555,20 @@ void NMRana::SetupHistos(){
 	   PolTime->GetXaxis()->SetTimeOffset(TimeStamp);
 	   PolTime->GetXaxis()->SetTimeFormat("%d\ %m\ %H\:%M \:%S");
 	   PolTime->GetXaxis()->SetNdivisions(405) ;
-	   // Now setup a Canvas for Qcurve
+
+	   if(TEmeasurement){
+		   CalibTime = new TH1D("CalibTime","Calibration  vs time",timewindow,0,10*timewindow);
+		   CalibTime->GetXaxis()->SetTimeDisplay(1);
+		   CalibTime->GetXaxis()->SetTimeOffset(TimeStamp);
+		   CalibTime->GetXaxis()->SetTimeFormat("%d\ %m\ %H\:%M \:%S");
+		   CalibTime->GetXaxis()->SetNdivisions(405) ;
+
+	   }
+
+	   // Now setup a histo for Qcurve
+
+
+
 
 	   if(Qcurve_array.size()!=0){
 		   Qcurve_histo = new TH1D("Qcurve_hist","Normalized Qcurve histogram",IntScanPoints,MinFreq,MaxFreq);
@@ -874,14 +889,16 @@ void NMRana::PrintTime(){
 
 TH1D *NMRana::SetupStripChart(TString Title){
 	// this routine sets up a strip chart for time vs value
-	Float_t bintime =1.;
-	TH1D *ht = new TH1D("ht",Title,10,0,10*bintime);
-	ht->SetStats(0);
-	ht->SetLineColor(2);
-	ht->GetXaxis()->SetTimeDisplay(1);
-	ht->GetYaxis()->SetNdivisions(520);
+	NumberOfStripCharts++;
 
-	return ht;
+
+	Float_t bintime =1.;
+	ht[NumberOfStripCharts] = new TH1D(Form("ht_%d",NumberOfStripCharts),Title,10,0,10*bintime);
+	ht[NumberOfStripCharts]->SetStats(0);
+	ht[NumberOfStripCharts]->SetLineColor(2);
+	ht[NumberOfStripCharts]->GetXaxis()->SetTimeDisplay(1);
+	ht[NumberOfStripCharts]->GetYaxis()->SetNdivisions(520);
+	return ht[NumberOfStripCharts];
 
 
 
