@@ -132,6 +132,7 @@ public :
    virtual void	CalculatePlots();
    void ReadTE();  // temporary read for TE pressure file
    Double_t FindPofT(ULong64_t);
+   void ShowDistribution(std::vector<Double_t>) ; //  calculates distribution and mean
 };
 
 
@@ -298,7 +299,7 @@ Double_t TEana::CalculateTEP(std::string particle ,Double_t spin, Double_t field
 
 	TEPol = arg1*cosh(arg1*fact)/sinh(arg1*fact)-arg2*cosh(arg2*fact)/sinh(arg2*fact);
 
-
+	//cout<<TEana_pr<< "temperature  vs pressure "<<Temp<<"   "<<pressure<<" \n";
 
 	return TEPol;
 }
@@ -374,6 +375,38 @@ Double_t TEana::FindPofT(ULong64_t times){
 	return itlow->second;
 
 }
+
+void TEana::ShowDistribution(std::vector<Double_t> CalibConstantVector){
+		 // get mean and error from vector
+	// histogram the whole thing
+	Double_t mean = 	 TMath::Mean(CalibConstantVector.begin(),CalibConstantVector.end());
+	Double_t width =     TMath::RMS(CalibConstantVector.begin(),CalibConstantVector.end());
+	cout<<"\n\n\n"<<TEana_pr<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+    cout<<TEana_pr<<" mean of calibration constant  " <<mean<<"    +/- "<<width <<"\n";
+	cout<<TEana_pr<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n";
+
+	// Now we can create the histogram and plot it
+	Double_t xlow = mean-5*width;
+	Double_t xhigh = mean+5*width;
+	Int_t nchan =100;
+	TH1D * CalibrationHisto = new TH1D("CalibrationHisto","calibration constant distribution",nchan, xlow,xhigh);
+	// fill histo by looping over vector
+
+	for (UInt_t j = 0; j < CalibConstantVector.size(); ++j) {
+
+
+             CalibrationHisto->Fill(CalibConstantVector.at(j));
+	}
+	TCanvas *calib = new TCanvas ("calib","calibration constant distribution",40,50,600,600);
+	calib->cd();
+	CalibrationHisto->Draw();
+	calib->Update();
+
+
+}
+
+
+
 
 #endif // #ifdef TEana_cxx
 

@@ -122,6 +122,9 @@ public :
    Bool_t FitLimit;
    TTree *QCUtree;
    std::map<std::string,std::string> Parameters; // input parameters
+   std::vector<Double_t> CalibConstantVector; // this hold the calculated calibration constants and will calculate mean and error
+   Double_t CalibConstantMean;
+   Double_t CalibConstantMeanError;
 
 
 
@@ -156,14 +159,16 @@ public :
    TH1D      *NMR_RT_Corr;// real time display of the NMR signal, with background fit subtracted
    TH1D		 *PolTime; // polarization vs time
    TH1D		 *CalibTime; // TE calibration constant vs time
+   TH1D		 *PressTime ; // Pressure vs time for TE measurement
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
-   TH1D 	 *TempHisto;// Temprorary strichart so we do not get memory leaks
    TH1D	     *ht[20];// Number of strip charts
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
    //
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
    TCanvas	 *StripCanvas;   // shows polarization vs time
-   TCanvas	 *StripCanvas_1; // for TE measurement shows the pressure over time.
+   TCanvas	 *StripCanvas_1; // for TE measurement shows the calibration constant over time.
+   TCanvas	 *StripCanvas_2; // for TE measurement shows the pressure over time.
+
    TCanvas	 *AuxCanvas;   // all the auxiliary plots, like Qcurve
    TCanvas	 *RTCanvas ;    // Life time display canvas, get used in Loop
 
@@ -541,6 +546,9 @@ void NMRana::SetupHistos(){
 		   CalibTime = SetupStripChart("Calibration Constant vs time");
 		   CalibTime->SetMaximum(100.);
 		   CalibTime->SetMaximum(0.);
+		   PressTime = SetupStripChart("TE pressure vs time");
+		   PressTime->SetMaximum(20.);
+		   PressTime->SetMaximum(0.);
 
 	   }
 
@@ -565,6 +573,11 @@ void NMRana::SetupHistos(){
 		   CalibTime->GetXaxis()->SetTimeFormat("%d\ %m\ %H\:%M \:%S");
 		   CalibTime->GetXaxis()->SetNdivisions(405) ;
 
+		   PressTime = new TH1D("PressTime","Calibration  vs time",timewindow,0,10*timewindow);
+		   PressTime->GetXaxis()->SetTimeDisplay(1);
+		   PressTime->GetXaxis()->SetTimeOffset(TimeStamp);
+		   PressTime->GetXaxis()->SetTimeFormat("%d %m %H :%M :%S");
+		   PressTime->GetXaxis()->SetNdivisions(405) ;
 	   }
 
 	   // Now setup a histo for Qcurve
@@ -597,10 +610,14 @@ void NMRana::SetupCanvas(){
 	StripCanvas->SetFrameFillColor(33);
     // only do a strip chart for pressure if we have a TE measurement.
 	if(TEmeasurement){
-		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1020,550,1000,600);
+		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1020,250,1000,600);
 		StripCanvas_1->SetGrid();
 		StripCanvas_1->SetFillColor(40);
 		StripCanvas_1->SetFrameFillColor(30);
+		StripCanvas_2 =  new TCanvas("StripCanvas_2","Pressure strip charts",1020,450,1000,600);
+		StripCanvas_2->SetGrid();
+		StripCanvas_2->SetFillColor(38);
+		StripCanvas_2->SetFrameFillColor(28);
 
 	}
 
@@ -687,7 +704,11 @@ void NMRana::Loop()
 
    	   // go to strip chart
    StripCanvas->cd();
-   if(TEmeasurement)StripCanvas_1->cd();
+   if(TEmeasurement){
+	   StripCanvas_1->cd();
+	   StripCanvas_2->cd();
+
+   }
 
    Long64_t nentries = fChain->GetEntriesFast();
    Long64_t time_prev = 0;
@@ -755,18 +776,28 @@ void NMRana::Loop()
 		  if(jentry ==0)cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
 		  StripCanvas_1->cd();
 		  // temporary fix for separate time file
-		  Double_t press_help  = TE.FindPofT(root_time.tv_sec); // here we find the neares time stamp in the Yuorv file and return
+		  //replace press_help with pressure variable from ROOT file
+		  Double_t press_help  = TE.FindPofT(root_time.tv_sec); // here we find the nearest time stamp in the Yuorv file and return
 		  	  	  	  	  	  	  	  	  	  	  	  	  	  // the corresponding pressure
 
 
-		  CalibConstant = TE.CalculateTEP("proton",.5,5.,press_help) ; // needs to change
+		  CalibConstant = TE.CalculateTEP("proton",.5,5.,press_help) ; // needs to change to ROOTfile pressure
 		  CalibConstant = CalibConstant/SignalArea;
+		  CalibConstantVector.push_back(CalibConstant);
 		  CalibTime->SetBinContent(jentry,CalibConstant);
 		  CalibTime ->GetXaxis()->SetRange(jentry-10000,jentry+5);
 		  StripCanvas_1->Clear();
 		  CalibTime->Draw();
 		  StripCanvas_1->Modified();
 		  StripCanvas_1->Update();
+
+		  StripCanvas_2->cd();
+		  PressTime->SetBinContent(jentry,press_help);
+		  PressTime ->GetXaxis()->SetRange(jentry-10000,jentry+5);
+		  StripCanvas_2->Clear();
+		  PressTime->Draw();
+		  StripCanvas_2->Modified();
+		  StripCanvas_2->Update();
 
 	  }
 
@@ -810,6 +841,9 @@ void NMRana::Loop()
 */
 	  	  	 delete [] gr_freq;
 	  	  	 delete [] gr_amp;
+
+	  	  	 if(TEmeasurement) TE.ShowDistribution(CalibConstantVector);
+
 }
 
 Double_t NMRana::CalculateArea(TH1D *histo){
