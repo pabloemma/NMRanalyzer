@@ -20,6 +20,7 @@
 #include <TTimeStamp.h>
 #include <TMath.h>
 #include <TGraph.h>
+#include "Riostream.h"
 
 
 // Header file for the classes stored in the TTree if any.
@@ -50,6 +51,12 @@ private:
 	Double_t proton_fact;
 	Double_t deuteron_fact;
 	Int_t TimeControl;
+
+	// next two lines are for the time vs pressure data
+	std::map<ULong64_t, Float_t> TEmap;
+	std::map<ULong64_t, Float_t>::iterator itlow,ithigh;
+
+
 
 
 	// coefficiewnts for helium pressure to T calculation
@@ -123,6 +130,8 @@ public :
    virtual Double_t	CalcT(Double_t); // calculates temperature from pressure, input in TORR
    virtual Double_t CalculateT(Double_t *, Double_t , Double_t, Double_t);
    virtual void	CalculatePlots();
+   void ReadTE();  // temporary read for TE pressure file
+   Double_t FindPofT(ULong64_t);
 };
 
 
@@ -325,9 +334,46 @@ Double_t TEana::CalculateT(Double_t *a, Double_t b, Double_t c, Double_t press){
 
 }
 
+void TEana::ReadTE(){
+	// this is a temporary fix for reading in the temperature file for the 2016 april 25 TE measurement
+	// this is all hardwired an should be eventually discarded
+    ifstream in;
+    in.open("/Users/klein/NMR/TE.txt");
 
+    Float_t x,Temp,Press;
+    ULong64_t UnixTime;
+    Int_t nlines = 0;
 
+    while (1) {
+        in >>UnixTime>> x >> Temp >> Press;
+        if (!in.good()) break;
+        if (nlines < 5) printf("UnixTime =%12llu , Temp=%8f, Press=%8f\n",UnixTime,Temp,Press);
+// 	  Fill the map
+        // now shift the time by 3600, since our clocks were off by an hour
+        UnixTime = UnixTime-3600;
+        TEmap[UnixTime] = Press;
+        nlines++;
+    }
+    printf(" found %d points\n",nlines);
 
+// test the look up mechanism
+/*    itlow = TEmap.lower_bound(1461605009);
+    ithigh = TEmap.upper_bound(1461605009);
+
+    cout<<" closest data point "<< itlow->first<< " "<<itlow->second<<"  "<<ithigh->first<< "\n";
+*/
+
+    in.close();
+
+}
+
+Double_t TEana::FindPofT(ULong64_t times){
+	// Finds nearest entry in Yurow file for time we are looking at
+
+	itlow = TEmap.lower_bound(times);
+	return itlow->second;
+
+}
 
 #endif // #ifdef TEana_cxx
 

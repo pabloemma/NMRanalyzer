@@ -348,6 +348,8 @@ int NMRana::OpenFile(TString rootfile){
      if(rootfile.Contains("TER")){
     	 TEmeasurement = true;
     	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
+    	 // perform the TEfile read as well, so that we have the map
+    	 TE.ReadTE();
      }
 
      f = new TFile(rootfile);
@@ -752,7 +754,12 @@ void NMRana::Loop()
 	  if(TEmeasurement){
 		  if(jentry ==0)cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
 		  StripCanvas_1->cd();
-		  CalibConstant = TE.CalculateTEP("proton",.5,5.,.117) ; // needs to change
+		  // temporary fix for separate time file
+		  Double_t press_help  = TE.FindPofT(root_time.tv_sec); // here we find the neares time stamp in the Yuorv file and return
+		  	  	  	  	  	  	  	  	  	  	  	  	  	  // the corresponding pressure
+
+
+		  CalibConstant = TE.CalculateTEP("proton",.5,5.,press_help) ; // needs to change
 		  CalibConstant = CalibConstant/SignalArea;
 		  CalibTime->SetBinContent(jentry,CalibConstant);
 		  CalibTime ->GetXaxis()->SetRange(jentry-10000,jentry+5);
