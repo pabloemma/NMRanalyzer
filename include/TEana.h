@@ -38,7 +38,8 @@
 // Fixed size dimensions of array or collections stored in the TTree if any.
 // TEana inherits from NMRanan
 
-class TEana : public NMRana {
+//class TEana : public NMRana {
+class TEana  {
 
 private:
 	Double_t deuteron_g;
@@ -117,7 +118,7 @@ public :
 
    TEana();
    virtual ~TEana();
-   virtual int      OpenChain(std::vector<TString> );
+//   virtual int      OpenChain(std::vector<TString> );
    virtual Double_t  CalculateTEP(std::string, Double_t,Double_t , Double_t );
    virtual Double_t	CalcT(Double_t); // calculates temperature from pressure, input in TORR
    virtual Double_t CalculateT(Double_t *, Double_t , Double_t, Double_t);
@@ -132,10 +133,10 @@ public :
 
 
 
-#endif /* TEana_h */
 
 
-#ifdef TEana_cxx
+
+
 
 
 
@@ -199,27 +200,6 @@ TEana::~TEana()
 }
 
 
-
-int TEana::OpenChain(std::vector<TString> RootFileArray){
-
-	// This creates a chain fo trees instead of just one
-
-	 NMRchain = new TChain("NMRtree");
-	 // Now loop over all the rootfiles we have
-		for(Int_t pos = 0 ; pos < RootFileArray.size() ; pos++)
-		{
-			cout<<TEana_pr<<RootFileArray[pos]<<"   filename \n";
-			NMRchain->Add(RootFileArray[pos]);
-		}
-
-
-
-     //NMRchain->GetObject("NMRtree",tree);
-     Init(NMRchain);
-
-   return 0;
-
-}
 
 
 

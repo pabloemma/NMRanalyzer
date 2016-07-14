@@ -37,6 +37,7 @@
 
 
 #include "Ana.h"
+#include "TEana.h"
 
 using namespace std;
 
@@ -171,7 +172,7 @@ public :
    TFile * QcurveFile ; // Qcurve file name
 
 
-
+	TEana TE;
 
 
 
@@ -216,6 +217,8 @@ NMRana::NMRana(){
 	time_offset = 2082852019 ; // unix offset in seconds
 	TimeControl = 1; // always assume the file is from the newest generation // if not use TIMEC = value in parameter file
 	QC_DISP = false;
+
+
 
 }
 void NMRana::ReadParameterFile(TString ParameterFile){
@@ -340,7 +343,7 @@ int NMRana::OpenFile(TString rootfile){
 	// oepn file and initialize tree
      cout<<NMR_pr<<"opening file "<<rootfile<<"\n";
 
-     if(rootfile.BeginsWith("TER")){
+     if(rootfile.Contains("TER")){
     	 TEmeasurement = true;
     	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
      }
@@ -577,7 +580,7 @@ void NMRana::SetupCanvas(){
 	StripCanvas->SetFrameFillColor(33);
     // only do a strip chart for pressure if we have a TE measurement.
 	if(TEmeasurement){
-		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1020,50,1000,600);
+		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1020,550,1000,600);
 		StripCanvas_1->SetGrid();
 		StripCanvas_1->SetFillColor(40);
 		StripCanvas_1->SetFrameFillColor(30);
@@ -667,6 +670,7 @@ void NMRana::Loop()
 
    	   // go to strip chart
    StripCanvas->cd();
+   if(TEmeasurement)StripCanvas_1->cd();
 
    Long64_t nentries = fChain->GetEntriesFast();
    Long64_t time_prev = 0;
@@ -730,16 +734,17 @@ void NMRana::Loop()
 	  StripCanvas->Modified();
 	  StripCanvas->Update();
 
-	  cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
 	  if(TEmeasurement){
+		  if(jentry ==0)cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
 		  StripCanvas_1->cd();
-		  CalibConstant = CalculateTEP("proton",.5,5.,.117) ; // needs to change
+		  CalibConstant = TE.CalculateTEP("proton",.5,5.,.117) ; // needs to change
 		  CalibConstant = CalibConstant/SignalArea;
+		  CalibTime->SetBinContent(jentry,CalibConstant);
 		  CalibTime ->GetXaxis()->SetRange(jentry-10000,jentry+5);
 		  StripCanvas_1->Clear();
 		  CalibTime->Draw();
-		  StripCanvas->Modified();
-		  StripCanvas->Update();
+		  StripCanvas_1->Modified();
+		  StripCanvas_1->Update();
 
 	  }
 

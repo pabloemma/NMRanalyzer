@@ -41,7 +41,7 @@
 #endif
 
  NMRana SIG;			// create object for signal
- TEana TE;			// create object for TE
+// TEana TE;			// create object for TE
  NMRana QCU;			// create object QCU
 
 
@@ -123,11 +123,8 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 		if(temp.Contains(".root")) {
 			// Now check what kind of run it is
-			if(temp.BeginsWith("POL")) {
+			if(temp.BeginsWith("POL")|| temp.BeginsWith("TER")) {
 				InputSignalFile.push_back(InputRootDirectory+temp);
-			}
-			else if(temp.BeginsWith("TER")) {
-				InputTEFile.push_back(InputRootDirectory+temp);
 			}
 			else if(temp.BeginsWith("QCR")) {
 				InputQcurveFile.push_back(InputRootDirectory+temp);
@@ -162,7 +159,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 
-	if(!InputTEFile.empty() ){
+/*	if(!InputTEFile.empty() ){
 		TE.ReadParameterFile(parameter_file);
 		TE.CalculatePlots();
 
@@ -184,6 +181,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			TE.Loop();
 			TE.DrawHistos();
 	}
+*/
 
 
 
@@ -191,8 +189,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 
-
-	if(!InputSignalFile.empty() ){
+	if(!InputSignalFile.empty() || !InputTEFile.empty() ){
 			SIG.ReadParameterFile(parameter_file);
 // Open ROOT file
 			if(InputSignalFile.size()>1){
@@ -227,9 +224,9 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
     // close file
      // Close the file if only one
-    if(InputTEFile.size() == 1)TE.CloseFile();
+
 	if(InputQcurveFile.size() == 1)QCU.CloseFile();
-	if(InputSignalFile.size() == 1)SIG.CloseFile();
+	if(InputSignalFile.size() == 1 || InputTEFile.size() == 1)SIG.CloseFile();
 
     return 0;
 
