@@ -94,16 +94,16 @@ void Ana::FindPeak(TH1D * Spectrum){
 	// Create new spectrum,we only assume one peak for the moment
 	//
 
-	npeaks = 1;
+	npeaks = 3;
 	peakfind = true;
 	spec= new TSpectrum(npeaks,1.);
-
 	Int_t nfound = spec->Search(Spectrum,sigma,"nobackground new",.01);
 //	cout<<"\n\n\n*******************************************\n";
 //	cout<<Ana_pr<<"Number of peaks found "<<nfound<<"\n";
 	// fill array with peak posistions
 
 	xpeaks = (spec->GetPositionX());
+
 	fit_low_overall = *xpeaks-.2;
 	fit_high_overall = *xpeaks +.2;
 
@@ -115,6 +115,7 @@ void Ana::FindPeak(TH1D * Spectrum){
 		peakfind = false;
 	}
 
+	cout<<"peak_find \n";
 
 }
 

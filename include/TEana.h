@@ -101,6 +101,7 @@ public :
    TChain    	   *NMRchain; // if we have more than one root file
    TGraph		   *Press_Temp;
    TGraph		   *Pol_Temp;
+   TH1D 		   *CalibrationHisto;
 
 
 
@@ -389,7 +390,7 @@ void TEana::ShowDistribution(std::vector<Double_t> CalibConstantVector){
 	Double_t xlow = mean-5*width;
 	Double_t xhigh = mean+5*width;
 	Int_t nchan =100;
-	TH1D * CalibrationHisto = new TH1D("CalibrationHisto","calibration constant distribution",nchan, xlow,xhigh);
+	CalibrationHisto = new TH1D("CalibrationHisto","calibration constant distribution",nchan, xlow,xhigh);
 	// fill histo by looping over vector
 
 	for (UInt_t j = 0; j < CalibConstantVector.size(); ++j) {
@@ -400,6 +401,7 @@ void TEana::ShowDistribution(std::vector<Double_t> CalibConstantVector){
 	TCanvas *calib = new TCanvas ("calib","calibration constant distribution",40,50,600,600);
 	calib->cd();
 	CalibrationHisto->Draw();
+
 	calib->Update();
 
 

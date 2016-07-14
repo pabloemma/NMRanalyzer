@@ -93,6 +93,7 @@ public :
 
    Double_t fit_x1, fit_x2, fit_x3, fit_x4;// limits for fitting widows
    Double_t CalibConstant; // is calculated from area of TE peak and pressure of measuring CalibConstant = pol_calculated/area
+   Double_t CalConst;// Calibration constant read from parameter file
 
 
 
@@ -125,6 +126,7 @@ public :
    std::vector<Double_t> CalibConstantVector; // this hold the calculated calibration constants and will calculate mean and error
    Double_t CalibConstantMean;
    Double_t CalibConstantMeanError;
+
 
 
 
@@ -225,6 +227,7 @@ NMRana::NMRana(){
 	TimeControl = 1; // always assume the file is from the newest generation // if not use TIMEC = value in parameter file
 	QC_DISP = false;
     NumberOfStripCharts=-1; // then start with 0 in loop
+    CalConst = 1; // set calibration to default 1
 
 
 }
@@ -321,6 +324,11 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		if(pos->first.find("DEBUG")!= std::string::npos){
 			// amplifier setting for QCurve
 		DEBUG = std::stoi(pos->second);
+
+		}
+		if(pos->first.find("CALCONST")!= std::string::npos){
+			// amplifier setting for QCurve
+		CalConst = std::stod(pos->second);
 
 		}
 
@@ -563,14 +571,14 @@ void NMRana::SetupHistos(){
 	   PolTime = new TH1D("PolTime","Polarization vs time",timewindow,0,10*timewindow);
 	   PolTime->GetXaxis()->SetTimeDisplay(1);
 	   PolTime->GetXaxis()->SetTimeOffset(TimeStamp);
-	   PolTime->GetXaxis()->SetTimeFormat("%d\ %m\ %H\:%M \:%S");
+	   PolTime->GetXaxis()->SetTimeFormat("%d %m %H:%M :%S");
 	   PolTime->GetXaxis()->SetNdivisions(405) ;
 
 	   if(TEmeasurement){
 		   CalibTime = new TH1D("CalibTime","Calibration  vs time",timewindow,0,10*timewindow);
 		   CalibTime->GetXaxis()->SetTimeDisplay(1);
 		   CalibTime->GetXaxis()->SetTimeOffset(TimeStamp);
-		   CalibTime->GetXaxis()->SetTimeFormat("%d\ %m\ %H\:%M \:%S");
+		   CalibTime->GetXaxis()->SetTimeFormat("%d %m %H :%M :%S");
 		   CalibTime->GetXaxis()->SetNdivisions(405) ;
 
 		   PressTime = new TH1D("PressTime","Calibration  vs time",timewindow,0,10*timewindow);
@@ -644,7 +652,7 @@ void NMRana::SetupCanvas(){
 void NMRana::DrawHistos(){
 
 	// analyze spectra
-	FindPeak(NMR1);
+	// FindPeak(NMR1);  // temporarily removed, does only seem to be a waste of time
 // draw histos, mainly for debug purpose
 	GeneralCanvas->Divide(1,2);
 	GeneralCanvas->cd(1);
@@ -825,20 +833,7 @@ void NMRana::Loop()
 	      	  }
 
 	  }
-	  //Fill qcurve histogram if desired
-/*	  if(QC_DISP){
-	      Double_t freq_temp = MinFreq;
 
-
-	      for (UInt_t j = 0; j < Qcurve_array.size(); ++j) {
-	    	  // subtract QCurve if existing
-
-	          QCC->Fill(freq_temp,Qcurve_array.at(j));
-	          freq_temp = freq_temp+FreqStep;
-	      	  }
-
-	  }
-*/
 	  	  	 delete [] gr_freq;
 	  	  	 delete [] gr_amp;
 
