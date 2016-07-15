@@ -42,6 +42,9 @@ public:
 	TF1 *FitFcn;  // convoluted fit function
 	TF1 *FitGaus; // first Gauss fit
 	TF1 *FitBck; // background fit
+	TF1 *BckFct; // function from background fit
+	TF1 *BckFct1; // copy of function from background fit
+
 	Int_t npeaks;	//number of peaks to find
 
 	Double_t *xpeaks; // xpositions of peaks
@@ -220,6 +223,7 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	//Spectrum->Draw();
 	FitFcn->Draw("SAME");
 	FitBck->Draw("SAME");
+	BckFct1->Draw("SAME");
 
 
 
@@ -259,7 +263,6 @@ void Ana::FitBackground(TH1D *spectrum){
 	// this just determines the backgtound parameters of the spectrum
 	// Currently it is a simple 2degree polynomial
 
-//	FitBck =  new TF1("FitBck",Background,fit_limit[0],fit_limit[3],3);
 	makeTF1();
 	FitBck->SetNpx(1000);
 	FitBck->SetLineWidth(4);
@@ -267,15 +270,22 @@ void Ana::FitBackground(TH1D *spectrum){
 
 	FitBck->SetParameters(1.,1.,1.); // initialze parameters
 
-	spectrum->Fit(FitBck,"R0QM");
+	spectrum->Fit(FitBck,"RQM");
 	FitBck->GetParameters(bck_par);
 	// Create new function to subtract from spectrum
 	// need to do this since otherwise it only subtracts in the range defined by the fit range
 
 	//TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",fit_limit[0],fit_limit[3]);
-	TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
-	fhelp->SetParameters(bck_par);
+	TF1 *BckFct = new TF1("BckFct","[0]+[1]*x+[2]*x*x",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
+	BckFct->SetParameters(bck_par);
+    BckFct1 = (TF1*)BckFct->Clone("BckFct1");
+/*	TCanvas *cc1 = new TCanvas();
+	cc1->cd();
+	spectrum->Draw();
+	fhelp->Draw("SAME");
     spectrum->Add(fhelp,-1.);
+    spectrum->Draw("SAME");
+    cc1->Update(); */
 
 
     // now check for offset below 0 and then shift this offset up
