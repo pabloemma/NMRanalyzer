@@ -614,12 +614,13 @@ void NMRana::SetupCanvas(){
 
 
 	//canvas for all strip charts
-	StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1220,50,800,150);
+	if(!TEmeasurement) StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1220,50,1400,750);
 	StripCanvas->SetGrid();
 	StripCanvas->SetFillColor(42);
 	StripCanvas->SetFrameFillColor(33);
     // only do a strip chart for pressure if we have a TE measurement.
 	if(TEmeasurement){
+		StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1220,50,150,750);
 		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1200,200,800,150);
 		StripCanvas_1->SetGrid();
 		StripCanvas_1->SetFillColor(40);
