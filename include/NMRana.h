@@ -199,6 +199,7 @@ public :
    virtual void     GetQcurve(std::string );
    virtual void		FillQcurveArray();
    virtual void	    SetTimeControl(int);
+   virtual void	    PrintWarnings();
 
    // memebre which will be inhertied from TEana
    void     Loop(); // TEana inherits
@@ -228,6 +229,7 @@ NMRana::NMRana(){
 	QC_DISP = false;
     NumberOfStripCharts=-1; // then start with 0 in loop
     CalConst = 1; // set calibration to default 1
+    PrintWarnings();
 
 
 }
@@ -763,7 +765,11 @@ void NMRana::Loop()
       FitBackground(NMR_RT_Corr);
 //sum the peak area
       StripCanvas->cd();
-      SignalArea = CalculateArea(NMR_RT_Corr);
+      SignalArea = CalculateArea(NMR_RT);
+//      SignalArea = CalculateArea(NMR_RT_Corr);
+      // Convert to polarization
+      SignalArea *=CalConst;
+
 // now for every point in a TE we will calculate the polarization from the pressure
 // the ratio of calculated polarization/ area gives the calibration constant calib
 // so that calib*area = polarization of the reL SIGNAL
@@ -1020,6 +1026,42 @@ TString NMRana::GetDate(TString input) {
       if(Int_t(time_test) > 1465948800) TimeControl =1; // this gives a control value for which time the polarization file is from
       return  asctime(ltm);
 }
+
+void NMRana::PrintWarnings(){
+	// this is a routine which prints out current warnings and problems in the code
+
+	// First it prints the version number
+	// and then an array of warnings
+	// these warnings have to be corrected for later versions:
+	   std::string version = "1.0";
+	   std::string bold = "\e[1m";
+	   std::string nonbold ="\e[0m";
+	   std::vector<std::string> warning;
+
+	   std::string NMRwarning = "NMR warning> ";
+	   // Block of warning messages
+	   warning.push_back(" In NMRana loop, the polarization currently gets calculated from the uncorrected signal ");
+	   warning.push_back(" In NMRana loop, The qcurve subtraction is off; needs to be turned on for new NMR signals ");
+
+
+	   // print out
+	   cout<<"**********************************************************************************************\n\n";
+	   cout<<"welcome to NMRanalyzer version "<<bold<<version<<nonbold<<"\n\n";
+	   cout<<"**********************************************************************************************\n\n\n";
+
+	   // Now print out the warning messages
+	   for(auto a =warning.begin() ; a != warning.end(); a++){
+		   cout<<NMRwarning<<bold<<*a<<nonbold<<"\n";
+	   }
+	   cout<<"\n\n\n";
+
+
+
+
+
+
+}
+
 
 #endif // #ifdef NMRana_cxx
 
