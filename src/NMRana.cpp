@@ -159,31 +159,6 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 
-/*	if(!InputTEFile.empty() ){
-		TE.ReadParameterFile(parameter_file);
-		TE.CalculatePlots();
-
-
-
-// Open ROOT file
-			if(InputTEFile.size()>1){
-				TE.OpenChain(InputTEFile);  // we will create a TChain
-			}
-			else {
-				TE.OpenFile(InputTEFile[0]); // just one spectrum
-			}
-// Do stuff with it
-			//!!!!!!!!!!!warning, has to be set differently, right now for testing hard coded limits
-			//TE.AreaSetLimits(212.95,213.21);
-			//!!!!!!!!!!!!!!!!!!
-			TE.SetupCanvas();
-			TE.SetupHistos();
-			TE.Loop();
-			TE.DrawHistos();
-	}
-*/
-
-
 
 
 

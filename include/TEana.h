@@ -341,6 +341,12 @@ void TEana::ReadTE(){
 	// this is all hardwired an should be eventually discarded
     ifstream in;
     in.open("/Users/klein/NMR/TE.txt");
+    if(!in.is_open()){
+    	cout<<TEana_pr<<" erroro in temporray TE calibration read in \n";
+		cout<<TEana_pr<<" file ?users/klein/NMR/Te.txt does not exist I am aborting \n";
+     exit(0);
+    }
+
 
     Float_t x,Temp,Press;
     ULong64_t UnixTime;
