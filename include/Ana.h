@@ -263,6 +263,15 @@ void Ana::FitBackground(TH1D *spectrum){
 	// this just determines the backgtound parameters of the spectrum
 	// Currently it is a simple 2degree polynomial
 
+   //check for offset
+	Double_t offset = spectrum->GetBinContent(spectrum->GetMinimumBin());
+    if(offset<0.){
+    for(Int_t k=0;k<spectrum->GetNbinsX();k++){
+    	spectrum->AddBinContent(k,-1.*offset);
+   	   }
+    }
+
+
 	makeTF1();
 	FitBck->SetNpx(1000);
 	FitBck->SetLineWidth(4);
@@ -279,22 +288,8 @@ void Ana::FitBackground(TH1D *spectrum){
 	TF1 *BckFct = new TF1("BckFct","[0]+[1]*x+[2]*x*x",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
 	BckFct->SetParameters(bck_par);
     BckFct1 = (TF1*)BckFct->Clone("BckFct1");
-/*	TCanvas *cc1 = new TCanvas();
-	cc1->cd();
-	spectrum->Draw();
-	fhelp->Draw("SAME");
-    spectrum->Add(fhelp,-1.);
-    spectrum->Draw("SAME");
-    cc1->Update(); */
 
 
-    // now check for offset below 0 and then shift this offset up
-    Double_t offset = spectrum->GetBinContent(spectrum->GetMinimumBin());
-    if(offset<0.){
-    for(Int_t k=0;k<spectrum->GetNbinsX();k++){
-    	spectrum->AddBinContent(k,-1.*offset);
-   	   }
-    }
 
     //return 1;
 }

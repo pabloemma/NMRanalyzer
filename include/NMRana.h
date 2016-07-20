@@ -789,12 +789,12 @@ void NMRana::Loop()
 //      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 //      BackSpline(Background);
   	  //FindPeak(NMR1);
-      FitBackground(NMR_RT_Corr);
-//sum the peak area
+        FitBackground(NMR_RT_Corr);
+       //sum the peak area
       StripCanvas->cd();
 //warninghook
-      if(TEmeasurement) SignalArea = CalculateArea(NMR_RT);
-      else  SignalArea = CalculateArea(NMR_RT);
+      if(TEmeasurement) SignalArea = CalculateArea(NMR_RT_Corr);
+      else  SignalArea = CalculateArea(NMR_RT_Corr);
 //end warninghook
 
 
