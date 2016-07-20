@@ -164,6 +164,7 @@ public :
    TH1D		 *PressTime ; // Pressure vs time for TE measurement
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
    TH1D	     *ht[20];// Number of strip charts
+   TH1D		 *raw_histo;// this is the histogram filled by the raw numbers//
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
    //
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
@@ -173,6 +174,7 @@ public :
 
    TCanvas	 *AuxCanvas;   // all the auxiliary plots, like Qcurve
    TCanvas	 *RTCanvas ;    // Life time display canvas, get used in Loop
+   TCanvas	 *DebugCanvas;
 
    TChain    *NMRchain; // if we have more than one root file
    TString timestring; // from labview time
@@ -605,6 +607,9 @@ void NMRana::SetupHistos(){
 	   gr_amp = new Double_t[IntScanPoints];
 	  // Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 
+	   	   // histo for debugging
+	   if(DEBUG==1)	   raw_histo = new TH1D("raw_hist","Raw Signal histogram",IntScanPoints,MinFreq,MaxFreq);
+
 
 }
 void NMRana::SetupCanvas(){
@@ -651,6 +656,8 @@ void NMRana::SetupCanvas(){
 	else AuxCanvas->Divide(1,1);
 
 	}
+	if(DEBUG ==1)	DebugCanvas = new TCanvas("DebugCanvas","Debugging plots",120,70,1000,1200);
+
 }
 
 void NMRana::DrawHistos(){
@@ -683,7 +690,13 @@ void NMRana::DrawHistos(){
 		}
 
 	}
-
+	if(DEBUG==1){
+		TFile *fd = new TFile("/Volumes/FastDisk/NMR/test/debug.root","RECREATE");
+		DebugCanvas->cd();
+		raw_histo->Draw();
+		raw_histo->Write();
+		fd->Close();
+	}
 
 }
 
@@ -748,6 +761,8 @@ void NMRana::Loop()
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
     	  array->at(j) /= Qamp;
+    	  if(DEBUG==1)raw_histo->Fill(freq_temp,array->at(j));
+    	  if(jentry==0)cout<<j<<"  "<<array->at(j)<<"\n";
     	  if(Qcurve_array.size()!=0) {
     		 NMR1_NoQ->Fill(freq_temp,array->at(j));
 
@@ -870,6 +885,8 @@ Double_t NMRana::CalculateArea(TH1D *histo){
 	// the area is calculated as sum i_low to i_high (a(i)*binwidth)
 
 	Double_t sum1 = 0.;
+
+
     for (Int_t j = low_id; j < high_id; ++j) {
          sum1 += array->at(j);
      	  }
