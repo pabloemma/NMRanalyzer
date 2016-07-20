@@ -320,7 +320,6 @@ Double_t TEana::CalcT(Double_t pressure){
 	else if(pressure>=37.82 && pressure<1471.)
 		temp = CalculateT(aHighT,bHigh,cHigh,pa);
 
-
 	return temp;
 }
 
@@ -357,8 +356,9 @@ void TEana::ReadTE(){
         if (!in.good()) break;
         if (nlines < 5) printf("UnixTime =%12llu , Temp=%8f, Press=%8f\n",UnixTime,Temp,Press);
 // 	  Fill the map
-        // now shift the time by 3600, since our clocks were off by an hour
-        UnixTime = UnixTime-3600;
+        // now shift the time by 600 sec, since our clocks were off by an hour
+        // see page 198 logbook 2
+        UnixTime = UnixTime-600;
         TEmap[UnixTime] = Press;
         nlines++;
     }

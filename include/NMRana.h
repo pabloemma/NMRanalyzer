@@ -615,12 +615,13 @@ void NMRana::SetupCanvas(){
 
 	//canvas for all strip charts
 	if(!TEmeasurement) StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1220,50,1400,750);
+	else 		StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1220,50,800,150);
 	StripCanvas->SetGrid();
 	StripCanvas->SetFillColor(42);
 	StripCanvas->SetFrameFillColor(33);
     // only do a strip chart for pressure if we have a TE measurement.
 	if(TEmeasurement){
-		StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1220,50,150,750);
+
 		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1200,200,800,150);
 		StripCanvas_1->SetGrid();
 		StripCanvas_1->SetFillColor(40);
@@ -745,16 +746,26 @@ void NMRana::Loop()
 
       for (UInt_t j = 0; j < array->size(); ++j) {
     	  // subtract QCurve if existing
-
+    	  //renormailze signal by amplifier setting
+    	  array->at(j) /= Qamp;
     	  if(Qcurve_array.size()!=0) {
-              NMR1_NoQ->Fill(freq_temp,array->at(j));
-             array->at(j) = array->at(j) - Qcurve_array.at(j);
-    	  }
+    		 NMR1_NoQ->Fill(freq_temp,array->at(j));
 
-          NMR1->Fill(freq_temp,array->at(j));
+
+    		 NMR1->Fill(freq_temp,array->at(j)- Qcurve_array.at(j));
+    		 NMR_RT_Corr->Fill(freq_temp,array->at(j)- Qcurve_array.at(j));
+    	  	  }
+    	  else{
+    		  NMR1->Fill(freq_temp,array->at(j));
+    		  NMR_RT_Corr->Fill(freq_temp,array->at(j));
+
+
+    	  	  }
           NMR_RT->Fill(freq_temp,array->at(j));
-          NMR_RT_Corr->Fill(freq_temp,array->at(j));
-          // for backgroiund graph
+
+
+
+    	  // for backgroiund graph
           gr_freq[j] = freq_temp;
           gr_amp[j] = array->at(j);
           freq_temp = freq_temp+FreqStep;
@@ -766,10 +777,14 @@ void NMRana::Loop()
       FitBackground(NMR_RT_Corr);
 //sum the peak area
       StripCanvas->cd();
-      SignalArea = CalculateArea(NMR_RT);
-//      SignalArea = CalculateArea(NMR_RT_Corr);
+//warninghook
+      if(TEmeasurement) SignalArea = CalculateArea(NMR_RT);
+      else  SignalArea = CalculateArea(NMR_RT);
+//end warninghook
+
+
       // Convert to polarization
-      SignalArea *=CalConst;
+            SignalArea *=CalConst;
 
 // now for every point in a TE we will calculate the polarization from the pressure
 // the ratio of calculated polarization/ area gives the calibration constant calib
@@ -782,7 +797,7 @@ void NMRana::Loop()
 
  	  GetTimeStamp();
 	  PolTime->SetBinContent(jentry,SignalArea);
-	  PolTime->GetXaxis()->SetRange(jentry-10000,jentry+5);
+	  PolTime->GetXaxis()->SetRange(jentry-100,jentry+100);
 	  StripCanvas->Clear();
 	  PolTime->Draw();
 	  StripCanvas->Modified();
@@ -797,7 +812,7 @@ void NMRana::Loop()
 		  	  	  	  	  	  	  	  	  	  	  	  	  	  // the corresponding pressure
 
 
-		  CalibConstant = TE.CalculateTEP("proton",.5,5.,press_help) ; // needs to change to ROOTfile pressure
+		  CalibConstant = TE.CalculateTEP("proton",.5,5.004,press_help) ; // needs to change to ROOTfile pressure
 		  CalibConstant = CalibConstant/SignalArea;
 		  CalibConstantVector.push_back(CalibConstant);
 		  CalibTime->SetBinContent(jentry,CalibConstant);
@@ -861,7 +876,8 @@ Double_t NMRana::CalculateArea(TH1D *histo){
 
 		//Double_t sum = histo->Integral(histo->FindBin(fit_x2),histo->FindBin(fit_x3));
     Double_t sum11 =0;
-    Double_t sum = histo->Integral(histo->FindBin(low_id),histo->FindBin(high_id));
+    // determine sum of channels from low channel to high channel as determined from read in.
+    Double_t sum = histo->Integral(low_id,high_id);
 		for(Int_t k=low_id;k<high_id;k++){
 		if(DEBUG ==3)cout<<NMR_pr<<histo->GetBinContent(k)<<"  \n";
 		sum11 += histo->GetBinContent(k);
@@ -1043,6 +1059,7 @@ void NMRana::PrintWarnings(){
 	   // Block of warning messages
 	   warning.push_back(" In NMRana loop, the polarization currently gets calculated from the uncorrected signal ");
 	   warning.push_back(" In NMRana loop, The qcurve subtraction is off; needs to be turned on for new NMR signals ");
+	   warning.push_back(" In NMRana loop, currently we are calculating no background subtraction for the real signal, this needs to change line 779");
 
 
 	   // print out
