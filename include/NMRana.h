@@ -162,6 +162,7 @@ public :
    TH1D		 *PolTime; // polarization vs time
    TH1D		 *CalibTime; // TE calibration constant vs time
    TH1D		 *PressTime ; // Pressure vs time for TE measurement
+   TH1D		 *SysTempTime ; // Pressure vs time for TE measurement
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
    TH1D	     *ht[20];// Number of strip charts
    TH1D		 *raw_histo;// this is the histogram filled by the raw numbers//
@@ -171,6 +172,7 @@ public :
    TCanvas	 *StripCanvas;   // shows polarization vs time
    TCanvas	 *StripCanvas_1; // for TE measurement shows the calibration constant over time.
    TCanvas	 *StripCanvas_2; // for TE measurement shows the pressure over time.
+   TCanvas	 *StripCanvas_3; // for TE measurement shows the system tempearture over time.
 
    TCanvas	 *AuxCanvas;   // all the auxiliary plots, like Qcurve
    TCanvas	 *RTCanvas ;    // Life time display canvas, get used in Loop
@@ -387,8 +389,15 @@ int NMRana::OpenChain(std::vector<TString> RootFileArray){
 		{
 			cout<<NMR_pr<<RootFileArray[pos]<<"   filename \n";
 			NMRchain->Add(RootFileArray[pos]);
+
 		}
 
+	     if(RootFileArray[0].Contains("TER")){
+	    	 TEmeasurement = true;
+	    	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
+	    	 // perform the TEfile read as well, so that we have the map
+	    	 TE.ReadTE();
+	     }
 
 
      //NMRchain->GetObject("NMRtree",tree);
@@ -548,19 +557,30 @@ void NMRana::SetupHistos(){
 	   td->Print();
 	   // we set the time stamp to 0
 	   //gStyle->SetTimeOffset(td->Convert());
-	   PolTime = SetupStripChart("Polarization vs time");
+	   if(!TEmeasurement){
+		   PolTime = SetupStripChart("Polarization vs time");
+
 	   PolTime->SetMaximum(100.);
 	   PolTime->SetMinimum(-100.);
 	   PolTime->SetLineColor(2);
-
+	   }
 	   //setup calibration constant histogram
 	   if(TEmeasurement){
-		   CalibTime = SetupStripChart("Calibration Constant vs time");
+		   PolTime = SetupStripChart("TE area vs time");
+
+		   PolTime->SetMaximum(100.);
+		   PolTime->SetMinimum(-100.);
+		   PolTime->SetLineColor(2);
+
+		   CalibTime = SetupStripChart("Calibration Constant (pol over TEarea) vs time");
 		   CalibTime->SetMaximum(100.);
 		   CalibTime->SetMaximum(0.);
 		   PressTime = SetupStripChart("TE pressure vs time");
 		   PressTime->SetMaximum(20.);
 		   PressTime->SetMaximum(0.);
+		   SysTempTime = SetupStripChart("TE pressure vs time");
+		   SysTempTime->SetMaximum(20.);
+		   SysTempTime->SetMaximum(0.);
 
 	   }
 
@@ -572,24 +592,39 @@ void NMRana::SetupHistos(){
 
 
 	   Int_t timewindow = 1;
-	   PolTime = new TH1D("PolTime","Polarization vs time",timewindow,0,10*timewindow);
+	   if(!TEmeasurement){
+		   PolTime = new TH1D("PolTime","Polarization vs time",timewindow,0,10*timewindow);
+
 	   PolTime->GetXaxis()->SetTimeDisplay(1);
 	   PolTime->GetXaxis()->SetTimeOffset(TimeStamp);
 	   PolTime->GetXaxis()->SetTimeFormat("%d %m %H:%M :%S");
 	   PolTime->GetXaxis()->SetNdivisions(405) ;
-
+	   }
 	   if(TEmeasurement){
-		   CalibTime = new TH1D("CalibTime","Calibration  vs time",timewindow,0,10*timewindow);
+		   PolTime = new TH1D("PolTime","TE area vs time",timewindow,0,10*timewindow);
+
+	   PolTime->GetXaxis()->SetTimeDisplay(1);
+	   PolTime->GetXaxis()->SetTimeOffset(TimeStamp);
+	   PolTime->GetXaxis()->SetTimeFormat("%d %m %H:%M :%S");
+	   PolTime->GetXaxis()->SetNdivisions(405) ;
+		   CalibTime = new TH1D("CalibTime","Polarization over TEarea  vs time",timewindow,0,10*timewindow);
 		   CalibTime->GetXaxis()->SetTimeDisplay(1);
 		   CalibTime->GetXaxis()->SetTimeOffset(TimeStamp);
 		   CalibTime->GetXaxis()->SetTimeFormat("%d %m %H :%M :%S");
 		   CalibTime->GetXaxis()->SetNdivisions(405) ;
 
-		   PressTime = new TH1D("PressTime","Calibration  vs time",timewindow,0,10*timewindow);
+		   PressTime = new TH1D("PressTime","Pressure  vs time",timewindow,0,10*timewindow);
 		   PressTime->GetXaxis()->SetTimeDisplay(1);
 		   PressTime->GetXaxis()->SetTimeOffset(TimeStamp);
 		   PressTime->GetXaxis()->SetTimeFormat("%d %m %H :%M :%S");
 		   PressTime->GetXaxis()->SetNdivisions(405) ;
+		   SysTempTime = new TH1D("SysTempTime","System temeperature  vs time",timewindow,0,10*timewindow);
+		   SysTempTime->GetXaxis()->SetTimeDisplay(1);
+		   SysTempTime->GetXaxis()->SetTimeOffset(TimeStamp);
+		   SysTempTime->GetXaxis()->SetTimeFormat("%d %m %H :%M :%S");
+		   SysTempTime->GetXaxis()->SetNdivisions(405) ;
+		   SysTempTime->SetMaximum(28.);
+		   SysTempTime->SetMinimum(25.);
 	   }
 
 	   // Now setup a histo for Qcurve
@@ -619,22 +654,26 @@ void NMRana::SetupCanvas(){
 
 
 	//canvas for all strip charts
-	if(!TEmeasurement) StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1220,50,1400,750);
-	else 		StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1220,50,800,150);
+	if(!TEmeasurement) StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1200,50,1400,750);
+	else 		StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1200,50,1200,300);
 	StripCanvas->SetGrid();
 	StripCanvas->SetFillColor(42);
 	StripCanvas->SetFrameFillColor(33);
     // only do a strip chart for pressure if we have a TE measurement.
 	if(TEmeasurement){
 
-		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1200,200,800,150);
+		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1200,350,1200,300);
 		StripCanvas_1->SetGrid();
 		StripCanvas_1->SetFillColor(40);
 		StripCanvas_1->SetFrameFillColor(30);
-		StripCanvas_2 =  new TCanvas("StripCanvas_2","Pressure strip charts",1200,350,800,150);
+		StripCanvas_2 =  new TCanvas("StripCanvas_2","Pressure strip charts",1200,650,1200,300);
 		StripCanvas_2->SetGrid();
 		StripCanvas_2->SetFillColor(38);
 		StripCanvas_2->SetFrameFillColor(28);
+		StripCanvas_3 =  new TCanvas("StripCanvas_3","System Temperature strip charts",1200,950,1200,300);
+		StripCanvas_3->SetGrid();
+		StripCanvas_3->SetFillColor(36);
+		StripCanvas_3->SetFrameFillColor(26);
 
 	}
 
@@ -733,6 +772,7 @@ void NMRana::Loop()
    if(TEmeasurement){
 	   StripCanvas_1->cd();
 	   StripCanvas_2->cd();
+	   StripCanvas_3->cd();
 
    }
 
@@ -762,7 +802,6 @@ void NMRana::Loop()
     	  //renormailze signal by amplifier setting
     	  array->at(j) /= Qamp;
     	  if(DEBUG==1)raw_histo->Fill(freq_temp,array->at(j));
-    	  if(jentry==0)cout<<j<<"  "<<array->at(j)<<"\n";
     	  if(Qcurve_array.size()!=0) {
     		 NMR1_NoQ->Fill(freq_temp,array->at(j));
 
@@ -812,7 +851,7 @@ void NMRana::Loop()
 
  	  GetTimeStamp();
 	  PolTime->SetBinContent(jentry,SignalArea);
-	  PolTime->GetXaxis()->SetRange(jentry-100,jentry+100);
+	  PolTime->GetXaxis()->SetRange(jentry-50000,jentry+20);
 	  StripCanvas->Clear();
 	  PolTime->Draw();
 	  StripCanvas->Modified();
@@ -831,7 +870,7 @@ void NMRana::Loop()
 		  CalibConstant = CalibConstant/SignalArea;
 		  CalibConstantVector.push_back(CalibConstant);
 		  CalibTime->SetBinContent(jentry,CalibConstant);
-		  CalibTime ->GetXaxis()->SetRange(jentry-10000,jentry+5);
+		  CalibTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
 		  StripCanvas_1->Clear();
 		  CalibTime->Draw();
 		  StripCanvas_1->Modified();
@@ -839,12 +878,19 @@ void NMRana::Loop()
 
 		  StripCanvas_2->cd();
 		  PressTime->SetBinContent(jentry,press_help);
-		  PressTime ->GetXaxis()->SetRange(jentry-10000,jentry+5);
+		  PressTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
 		  StripCanvas_2->Clear();
 		  PressTime->Draw();
 		  StripCanvas_2->Modified();
 		  StripCanvas_2->Update();
 
+		  StripCanvas_3->cd();
+		  SysTempTime->SetBinContent(jentry,Temperature);
+		  SysTempTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
+		  StripCanvas_3->Clear();
+		  SysTempTime->Draw();
+		  StripCanvas_3->Modified();
+		  StripCanvas_3->Update();
 	  }
 
 // draw the signal histogram
