@@ -48,6 +48,9 @@ class NMRana : public Ana {  //inherit from analysis
 private:
 	Int_t Control;  			// determines the time reading (when has the file been created and what readout mechanism are we using
     Int_t NumberOfStripCharts;
+    Double_t PatLowArea;
+    Double_t PatHighArea;   // the lower and higher areas in thye NMR signal
+    Double_t PatDiffArea;  		// the difference of PatLow and PatHighArea
 protected:    // for TEana inheritance
 	Double_t LowArea_X; // lower bound for area calculation
 	Double_t HighArea_X;// upper bound for area claculation
@@ -92,6 +95,7 @@ public :
    Double_t SignalAreaNormalized ; // aka polarization
 
    Double_t fit_x1, fit_x2, fit_x3, fit_x4;// limits for fitting widows
+   Int_t Ifit_x1, Ifit_x2, Ifit_x3, Ifit_x4;// corresponding channel limits for fitting widows
    Double_t CalibConstant; // is calculated from area of TE peak and pressure of measuring CalibConstant = pol_calculated/area
    Double_t CalConst;// Calibration constant read from parameter file
 
@@ -163,6 +167,7 @@ public :
    TH1D		 *CalibTime; // TE calibration constant vs time
    TH1D		 *PressTime ; // Pressure vs time for TE measurement
    TH1D		 *SysTempTime ; // Pressure vs time for TE measurement
+   TH1D		 *PatTemp; // pats way to check for temeparture shifts, uses low and high integral of signal and stakes the difference
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
    TH1D	     *ht[20];// Number of strip charts
    TH1D		 *raw_histo;// this is the histogram filled by the raw numbers//
@@ -173,6 +178,7 @@ public :
    TCanvas	 *StripCanvas_1; // for TE measurement shows the calibration constant over time.
    TCanvas	 *StripCanvas_2; // for TE measurement shows the pressure over time.
    TCanvas	 *StripCanvas_3; // for TE measurement shows the system tempearture over time.
+   TCanvas	 *StripCanvas_4; //  background over time.
 
    TCanvas	 *AuxCanvas;   // all the auxiliary plots, like Qcurve
    TCanvas	 *RTCanvas ;    // Life time display canvas, get used in Loop
@@ -218,6 +224,8 @@ public :
    Int_t 	OpenFile(TString);
    void		CloseFile();
    void		DrawHistos();
+   void		Stripper(Long64_t); // darws the stri charts
+   Double_t CalculatePatArea(TH1D *); // calculates the difference of left and right background areas
    TString  GetDate(TString input);
 
 
@@ -541,6 +549,10 @@ void NMRana::SetupHistos(){
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
 	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
+	   Ifit_x1 = NMR1->GetXaxis()->FindBin(fit_x1);
+	   Ifit_x2 = NMR1->GetXaxis()->FindBin(fit_x2);
+	   Ifit_x3 = NMR1->GetXaxis()->FindBin(fit_x3);
+	   Ifit_x4 = NMR1->GetXaxis()->FindBin(fit_x4);
 
        //
 
@@ -574,13 +586,16 @@ void NMRana::SetupHistos(){
 
 		   CalibTime = SetupStripChart("Calibration Constant (pol over TEarea) vs time");
 		   CalibTime->SetMaximum(100.);
-		   CalibTime->SetMaximum(0.);
+		   CalibTime->SetMinimum(0.);
 		   PressTime = SetupStripChart("TE pressure vs time");
 		   PressTime->SetMaximum(20.);
-		   PressTime->SetMaximum(0.);
-		   SysTempTime = SetupStripChart("TE pressure vs time");
+		   PressTime->SetMinimum(0.);
+		   SysTempTime = SetupStripChart("TEmperature vs time");
 		   SysTempTime->SetMaximum(20.);
-		   SysTempTime->SetMaximum(0.);
+		   SysTempTime->SetMinimum(0.);
+		   PatTemp = SetupStripChart("Background difference vs time");
+		   PatTemp->SetMaximum(20.);
+		   PatTemp->SetMinimum(-20.);
 
 	   }
 
@@ -612,6 +627,7 @@ void NMRana::SetupHistos(){
 		   CalibTime->GetXaxis()->SetTimeOffset(TimeStamp);
 		   CalibTime->GetXaxis()->SetTimeFormat("%d %m %H :%M :%S");
 		   CalibTime->GetXaxis()->SetNdivisions(405) ;
+		   CalibTime->SetLineColor(kRed+2);
 
 		   PressTime = new TH1D("PressTime","Pressure  vs time",timewindow,0,10*timewindow);
 		   PressTime->GetXaxis()->SetTimeDisplay(1);
@@ -625,6 +641,13 @@ void NMRana::SetupHistos(){
 		   SysTempTime->GetXaxis()->SetNdivisions(405) ;
 		   SysTempTime->SetMaximum(28.);
 		   SysTempTime->SetMinimum(25.);
+
+		   PatTemp = new TH1D("PatTemp","System temeperature  vs time",timewindow,0,10*timewindow);
+		   PatTemp->GetXaxis()->SetTimeDisplay(1);
+		   PatTemp->GetXaxis()->SetTimeOffset(TimeStamp);
+		   PatTemp->GetXaxis()->SetTimeFormat("%d %m %H :%M :%S");
+		   PatTemp->GetXaxis()->SetNdivisions(405) ;
+
 	   }
 
 	   // Now setup a histo for Qcurve
@@ -662,18 +685,23 @@ void NMRana::SetupCanvas(){
     // only do a strip chart for pressure if we have a TE measurement.
 	if(TEmeasurement){
 
-		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1200,350,1200,300);
+		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1200,350,1200,200);
 		StripCanvas_1->SetGrid();
 		StripCanvas_1->SetFillColor(40);
 		StripCanvas_1->SetFrameFillColor(30);
-		StripCanvas_2 =  new TCanvas("StripCanvas_2","Pressure strip charts",1200,650,1200,300);
+		StripCanvas_2 =  new TCanvas("StripCanvas_2","Pressure strip charts",1200,550,1200,200);
 		StripCanvas_2->SetGrid();
 		StripCanvas_2->SetFillColor(38);
 		StripCanvas_2->SetFrameFillColor(28);
-		StripCanvas_3 =  new TCanvas("StripCanvas_3","System Temperature strip charts",1200,950,1200,300);
+		StripCanvas_3 =  new TCanvas("StripCanvas_3","System Temperature strip charts",1200,750,1200,200);
 		StripCanvas_3->SetGrid();
 		StripCanvas_3->SetFillColor(36);
 		StripCanvas_3->SetFrameFillColor(26);
+
+		StripCanvas_4 =  new TCanvas("StripCanvas_4","Left Righ Backrond difference strip charts",1200,950,1200,200);
+		StripCanvas_4->SetGrid();
+		StripCanvas_4->SetFillColor(34);
+		StripCanvas_4->SetFrameFillColor(24);
 
 	}
 
@@ -834,6 +862,7 @@ void NMRana::Loop()
 //warninghook
       if(TEmeasurement) SignalArea = CalculateArea(NMR_RT_Corr);
       else  SignalArea = CalculateArea(NMR_RT_Corr);
+      PatDiffArea = CalculatePatArea(NMR_RT_Corr);
 //end warninghook
 
 
@@ -845,53 +874,9 @@ void NMRana::Loop()
 // so that calib*area = polarization of the reL SIGNAL
 // at the end we will calculate an average caibration constant with a deviation
 
+      Stripper(jentry); // draw all the strip charts
 
 
-
-
- 	  GetTimeStamp();
-	  PolTime->SetBinContent(jentry,SignalArea);
-	  PolTime->GetXaxis()->SetRange(jentry-50000,jentry+20);
-	  StripCanvas->Clear();
-	  PolTime->Draw();
-	  StripCanvas->Modified();
-	  StripCanvas->Update();
-
-	  if(TEmeasurement){
-		  if(jentry ==0)cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
-		  StripCanvas_1->cd();
-		  // temporary fix for separate time file
-		  //replace press_help with pressure variable from ROOT file
-		  Double_t press_help  = TE.FindPofT(root_time.tv_sec); // here we find the nearest time stamp in the Yuorv file and return
-		  	  	  	  	  	  	  	  	  	  	  	  	  	  // the corresponding pressure
-
-
-		  CalibConstant = TE.CalculateTEP("proton",.5,5.004,press_help) ; // needs to change to ROOTfile pressure
-		  CalibConstant = CalibConstant/SignalArea;
-		  CalibConstantVector.push_back(CalibConstant);
-		  CalibTime->SetBinContent(jentry,CalibConstant);
-		  CalibTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
-		  StripCanvas_1->Clear();
-		  CalibTime->Draw();
-		  StripCanvas_1->Modified();
-		  StripCanvas_1->Update();
-
-		  StripCanvas_2->cd();
-		  PressTime->SetBinContent(jentry,press_help);
-		  PressTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
-		  StripCanvas_2->Clear();
-		  PressTime->Draw();
-		  StripCanvas_2->Modified();
-		  StripCanvas_2->Update();
-
-		  StripCanvas_3->cd();
-		  SysTempTime->SetBinContent(jentry,Temperature);
-		  SysTempTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
-		  StripCanvas_3->Clear();
-		  SysTempTime->Draw();
-		  StripCanvas_3->Modified();
-		  StripCanvas_3->Update();
-	  }
 
 // draw the signal histogram
 	  RTCanvas->cd(1);
@@ -956,6 +941,13 @@ Double_t NMRana::CalculateArea(TH1D *histo){
 
 
 
+}
+
+Double_t NMRana::CalculatePatArea(TH1D *histo){
+	// inetgrates lwer and higher background and takes the difference
+		Double_t low = histo->Integral(Ifit_x1,Ifit_x2)/(Ifit_x1-Ifit_x2);
+		Double_t high = histo->Integral(Ifit_x3,Ifit_x4)/(Ifit_x4-Ifit_x3);
+		return (high - low);
 }
 
 void NMRana::AreaSetLimits(Double_t low_x, Double_t high_x){
@@ -1135,8 +1127,63 @@ void NMRana::PrintWarnings(){
 		   cout<<NMRwarning<<bold<<*a<<nonbold<<"\n";
 	   }
 	   cout<<"\n\n\n";
+}
+
+void NMRana::Stripper(Long64_t jentry){
+	// called by Loop and does the strip charts
+
+	  GetTimeStamp();
+	  PolTime->SetBinContent(jentry,SignalArea);
+	  PolTime->GetXaxis()->SetRange(jentry-50000,jentry+20);
+	  StripCanvas->Clear();
+	  PolTime->Draw();
+	  StripCanvas->Modified();
+	  StripCanvas->Update();
+
+	  if(TEmeasurement){
+		  if(jentry ==0)cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
+		  StripCanvas_1->cd();
+		  // temporary fix for separate time file
+		  //replace press_help with pressure variable from ROOT file
+		  Double_t press_help  = TE.FindPofT(root_time.tv_sec); // here we find the nearest time stamp in the Yuorv file and return
+		  	  	  	  	  	  	  	  	  	  	  	  	  	  // the corresponding pressure
 
 
+		  CalibConstant = TE.CalculateTEP("proton",.5,5.004,press_help) ; // needs to change to ROOTfile pressure
+		  CalibConstant = CalibConstant/SignalArea;
+		  CalibConstantVector.push_back(CalibConstant);
+		  CalibTime->SetBinContent(jentry,CalibConstant);
+		  CalibTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
+		  StripCanvas_1->Clear();
+		  CalibTime->Draw();
+		  StripCanvas_1->Modified();
+		  StripCanvas_1->Update();
+
+		  StripCanvas_2->cd();
+		  PressTime->SetBinContent(jentry,press_help);
+		  PressTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
+		  StripCanvas_2->Clear();
+		  PressTime->Draw();
+		  StripCanvas_2->Modified();
+		  StripCanvas_2->Update();
+
+		  StripCanvas_3->cd();
+		  SysTempTime->SetBinContent(jentry,Temperature);
+		  SysTempTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
+		  StripCanvas_3->Clear();
+		  SysTempTime->Draw();
+		  StripCanvas_3->Modified();
+		  StripCanvas_3->Update();
+
+		  StripCanvas_4->cd();
+		  PatTemp->SetBinContent(jentry,PatDiffArea);
+		  PatTemp ->GetXaxis()->SetRange(jentry-50000,jentry+20);
+		  StripCanvas_4->Clear();
+		  PatTemp->Draw();
+		  StripCanvas_4->Modified();
+		  StripCanvas_4->Update();
+
+	  }
 
 
 
