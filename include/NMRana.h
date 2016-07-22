@@ -836,28 +836,30 @@ void NMRana::Loop()
 
     		 NMR1->Fill(freq_temp,array->at(j)- Qcurve_array.at(j));
     		 NMR_RT_Corr->Fill(freq_temp,array->at(j)- Qcurve_array.at(j));
-    	  	  }
+             gr_freq[j] = freq_temp;
+             gr_amp[j] = array->at(j)- Qcurve_array.at(j);
+     	  	  }
     	  else{
     		  NMR1->Fill(freq_temp,array->at(j));
     		  NMR_RT_Corr->Fill(freq_temp,array->at(j));
+              gr_freq[j] = freq_temp;
+              gr_amp[j] = array->at(j);
 
 
     	  	  }
           NMR_RT->Fill(freq_temp,array->at(j));
 
+          freq_temp = freq_temp+FreqStep;
 
 
     	  // for backgroiund graph
-          gr_freq[j] = freq_temp;
-          gr_amp[j] = array->at(j);
-          freq_temp = freq_temp+FreqStep;
       	  }
 //		fill the background graph and go to determine the spline
 //      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 //      BackSpline(Background);
-  	  //FindPeak(NMR1);
-        FitBackground(NMR_RT_Corr);
-       //sum the peak area
+  	    FindPeak(NMR_RT_Corr);
+  	    //FitBackground(NMR_RT_Corr);
+  	    //sum the peak area
       StripCanvas->cd();
 //warninghook
       if(TEmeasurement) SignalArea = CalculateArea(NMR_RT_Corr);

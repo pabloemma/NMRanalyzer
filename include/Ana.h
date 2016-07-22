@@ -100,15 +100,17 @@ void Ana::FindPeak(TH1D * Spectrum){
 	npeaks = 3;
 	peakfind = true;
 	spec= new TSpectrum(npeaks,1.);
-	Int_t nfound = spec->Search(Spectrum,sigma,"nobackground new",.01);
+	Int_t nfound = spec->Search(Spectrum,sigma=.02,"nobackground new",.5);
 	cout<<"\n\n\n*******************************************\n";
 	cout<<Ana_pr<<"Number of peaks found "<<nfound<<"\n";
 	// fill array with peak posistions
 
 	xpeaks = (Double_t *)(spec->GetPositionX());
 
-	fit_low_overall = *xpeaks-.2;
-	fit_high_overall = *xpeaks +.2;
+	//fit_low_overall = *xpeaks -.2;;
+	//fit_high_overall = *xpeaks +.2;
+	//fit_low_overall = *xpeaks -.2;;
+	//fit_high_overall = *xpeaks +.2;
 
 
 	if(*xpeaks < 212.982 - .3 || *xpeaks > 212.982 + .3 ){
@@ -195,7 +197,8 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 		FindOffset(Spectrum);
 		FitBackground(Spectrum);
 
-
+    fit_low_overall = fit_limit[1];
+    fit_high_overall = fit_limit[2];
 
 	FitFcn =  new TF1("FitFcn",CombinedFit,fit_low_overall,fit_high_overall,6);
 
@@ -264,13 +267,13 @@ void Ana::FitBackground(TH1D *spectrum){
 	// Currently it is a simple 2degree polynomial
 
    //check for offset
-	Double_t offset = spectrum->GetBinContent(spectrum->GetMinimumBin());
+/*	Double_t offset = spectrum->GetBinContent(spectrum->GetMinimumBin());
     if(offset<0.){
     for(Int_t k=0;k<spectrum->GetNbinsX();k++){
     	spectrum->AddBinContent(k,-1.*offset);
    	   }
     }
-
+*/
 
 	makeTF1();
 	FitBck->SetNpx(1000);
