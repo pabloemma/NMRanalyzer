@@ -34,6 +34,7 @@ private:
 	 Double_t  fit_low_overall; // fit limits
 	 Double_t fit_high_overall;
      Double_t fit_limit[4]; ; // these are the limits for the background fit
+     Double_t reject1, reject2;// the lower and upper limits of what backrgound fit rejects.
 public:
 	std::string Ana_pr ="Ana_ana> ";
 
@@ -166,7 +167,7 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
 	// see fit descrition in Root reference manual
 	// 3rd degree polynomial
 
-		if(x[0]>fit_limit[1]  && x[0] < fit_limit[2]){
+		if(x[0]>reject1  && x[0] < reject2){
 	     TF1::RejectPoint();
 	     //return 0;
 	 }
@@ -282,10 +283,21 @@ void Ana::FitBackground(TH1D *spectrum){
 	FitBck->SetLineWidth(4);
 	FitBck->SetLineColor(kYellow);
 
-	FitBck->SetParameters(66526,-376,-.869,.005); // initialize parameters
+// first we try to get starting pararemets by fitting the background only
+	// to the lower background area
+	reject1 = fit_limit[0];
+	reject2 = fit_limit[1];
 
+	// the upper limit of the lower background window we choose
 	spectrum->Fit(FitBck,"RE0");
 	FitBck->GetParameters(&bck_par[0]);
+	// now we fit the whole spectrum with the new variables
+	reject1 = fit_limit[1];
+	reject2 = fit_limit[2];
+	spectrum->Fit(FitBck,"RE0");
+	FitBck->GetParameters(&bck_par[0]);
+
+
 	// Create new function to subtract from spectrum
 	// need to do this since otherwise it only subtracts in the range defined by the fit range
 	FitBckCopy = new TF1("FitBckCopy",CopyBackground,fit_limit[0],fit_limit[3],4);

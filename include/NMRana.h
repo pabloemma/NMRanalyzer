@@ -1107,7 +1107,7 @@ void NMRana::PrintWarnings(){
 	// First it prints the version number
 	// and then an array of warnings
 	// these warnings have to be corrected for later versions:
-	   std::string version = "1.0";
+	   std::string version = "1.01";
 	   std::string bold = "\e[1m";
 	   std::string nonbold ="\e[0m";
 	   std::vector<std::string> warning;
