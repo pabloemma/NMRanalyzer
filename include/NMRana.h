@@ -859,7 +859,6 @@ void NMRana::Loop()
 //      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 //      BackSpline(Background);
   	    FindPeak(NMR_RT_Corr);
-  	    //FitBackground(NMR_RT_Corr);
   	    //sum the peak area
       StripCanvas->cd();
 //warninghook

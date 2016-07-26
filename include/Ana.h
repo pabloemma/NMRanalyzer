@@ -23,6 +23,7 @@
 #include <TLegend.h>
 #include <TMath.h>
 #include <TGraph.h>
+#include "Math/MinimizerOptions.h"
 
 using namespace std;
 
@@ -42,6 +43,7 @@ public:
 	TF1 *FitFcn;  // convoluted fit function
 	TF1 *FitGaus; // first Gauss fit
 	TF1 *FitBck; // background fit
+	TF1 *FitBckCopy; // copy of background fit
 	TF1 *BckFct; // function from background fit
 	TF1 *BckFct1; // copy of function from background fit
 
@@ -57,7 +59,7 @@ public:
 
 	Double_t par[6]; // the fit parameters
 	Double_t gaus_par[3];// for initial gaus fit
-	Double_t bck_par[3]; // background polynomial
+	Double_t bck_par[4]; // background polynomial (3rd deg polynomial
 
 
 
@@ -78,6 +80,7 @@ public:
 	 void FitBackground(TH1D*);
 	 void SetFitLimits(Double_t, Double_t, Double_t, Double_t);
 	 Double_t Background(Double_t *, Double_t *);
+	 static Double_t CopyBackground(Double_t *, Double_t *);
 	 void makeTF1();
 
 
@@ -162,7 +165,7 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
 	// I will not fit background in the peak area but on left and right side of it
 	// see fit descrition in Root reference manual
 	// 3rd degree polynomial
-//	if(x[0]> 212.85  && x[0] < 213.26){
+
 		if(x[0]>fit_limit[1]  && x[0] < fit_limit[2]){
 	     TF1::RejectPoint();
 	     //return 0;
@@ -172,20 +175,19 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
 ;
 
 }
-// Quadratic background function
-/*Double_t Ana::Background2(Double_t low_x, Double_t high_x,Double_t *x, Double_t *par) {
+Double_t Ana::CopyBackground(Double_t *x, Double_t *par) {
 	// new version with point rejection, the idea being that
 	// I will not fit background in the peak area but on left and right side of it
 	// see fit descrition in Root reference manual
-	if(x[0]> low_x  && x[0] < high_x){
-	     TF1::RejectPoint();
-	 }
+	// 3rd degree polynomial, this is just a copy of the real backgound but with no rejection
+	// this way I can subtract the function from the histogram.
 
-   return (par[0] + par[1]*x[0] + par[2]*x[0]*x[0]);
-   //return par[0] + par[1]*x[0] ;
+
+
+   return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2)+par[3]*pow(x[0],3));
+;
 
 }
-*/
 
 int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	// function to fit spectrum with this needs to be called after Findpeak
@@ -194,7 +196,7 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 
 
 	   // correct for negative
-		FindOffset(Spectrum);
+//		FindOffset(Spectrum);
 		FitBackground(Spectrum);
 
     fit_low_overall = fit_limit[1];
@@ -254,7 +256,7 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 
 void Ana::makeTF1(){
 	// this is so that I can pass parameters to the background fit
-	FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],3);
+	FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],4);
 }
 
 
@@ -274,24 +276,29 @@ void Ana::FitBackground(TH1D *spectrum){
    	   }
     }
 */
-
+	 ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Fumili2"); // faster minimizer
 	makeTF1();
 	FitBck->SetNpx(1000);
 	FitBck->SetLineWidth(4);
 	FitBck->SetLineColor(kYellow);
 
-	FitBck->SetParameters(1.2e6,-5000,-27.,.121); // initialze parameters
+	FitBck->SetParameters(66526,-376,-.869,.005); // initialize parameters
 
-	spectrum->Fit(FitBck,"RM");
+	spectrum->Fit(FitBck,"RE0");
 	FitBck->GetParameters(&bck_par[0]);
 	// Create new function to subtract from spectrum
 	// need to do this since otherwise it only subtracts in the range defined by the fit range
+	FitBckCopy = new TF1("FitBckCopy",CopyBackground,fit_limit[0],fit_limit[3],4);
+	FitBckCopy->SetParameters(bck_par);
+// 	now subtract the background
+	spectrum->Add(FitBckCopy,-1.);
+
 
 	//TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",fit_limit[0],fit_limit[3]);
-	TF1 *BckFct = new TF1("BckFct","[0]+[1]*x+[2]*x*x + [3]*pow(x,3)",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
-	BckFct->SetParameters(bck_par);
-    BckFct1 = (TF1*)BckFct->Clone("BckFct1");
+//	TF1 *BckFct = new TF1("BckFct","[0]+[1]*x+[2]*x*x + [3]*pow(x,3)",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
+//	BckFct->SetParameters(bck_par);
 
+//    BckFct1 = (TF1*)BckFct->Clone("BckFct1");
 
 
     //return 1;
