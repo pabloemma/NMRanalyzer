@@ -735,8 +735,9 @@ void NMRana::DrawHistos(){
 	GeneralCanvas->Divide(1,2);
 	GeneralCanvas->cd(1);
 	NMR1->Draw();
+	FitBackground(NMR1);
 //	BckFct1->Draw();
-    FitSpectrum(NMR1,1);
+//    FitSpectrum(NMR1,1);
 	GeneralCanvas->cd(2);
 	PolTime->Draw();
 	GeneralCanvas->Update();

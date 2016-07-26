@@ -162,14 +162,15 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
 	// new version with point rejection, the idea being that
 	// I will not fit background in the peak area but on left and right side of it
 	// see fit descrition in Root reference manual
+	// 3rd degree polynomial
 //	if(x[0]> 212.85  && x[0] < 213.26){
 		if(x[0]>fit_limit[1]  && x[0] < fit_limit[2]){
 	     TF1::RejectPoint();
 	     //return 0;
 	 }
 
-   return (par[0] + par[1]*x[0] + par[2]*x[0]*x[0]);
-   //return par[0] + par[1]*x[0] ;
+   return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2)+par[3]*pow(x[0],3));
+;
 
 }
 // Quadratic background function
@@ -280,15 +281,15 @@ void Ana::FitBackground(TH1D *spectrum){
 	FitBck->SetLineWidth(4);
 	FitBck->SetLineColor(kYellow);
 
-	FitBck->SetParameters(1.,1.,1.); // initialze parameters
+	FitBck->SetParameters(1.2e6,-5000,-27.,.121); // initialze parameters
 
 	spectrum->Fit(FitBck,"RQM");
-	FitBck->GetParameters(bck_par);
+	FitBck->GetParameters(&bck_par[0]);
 	// Create new function to subtract from spectrum
 	// need to do this since otherwise it only subtracts in the range defined by the fit range
 
 	//TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",fit_limit[0],fit_limit[3]);
-	TF1 *BckFct = new TF1("BckFct","[0]+[1]*x+[2]*x*x",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
+	TF1 *BckFct = new TF1("BckFct","[0]+[1]*x+[2]*x*x + [3]*pow(x,3)",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
 	BckFct->SetParameters(bck_par);
     BckFct1 = (TF1*)BckFct->Clone("BckFct1");
 
