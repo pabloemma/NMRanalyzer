@@ -511,7 +511,7 @@ Int_t NMRana::Cut(Long64_t entry)
 // This function may be called from Loop.
 // returns  1 if entry is accepted.
 // returns -1 otherwise.
-   return 1;
+   return 1;   
 }
 void NMRana::SetupHistos(){
 // Here we setup histos if needed

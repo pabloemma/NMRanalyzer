@@ -3,9 +3,15 @@ TIMEC    0
 NMR_LOW	 212.992
 NMR_HI	 213.14
 FITX1		212.6
+<<<<<<< HEAD
 FITX2		212.8
 FITX3		213.3
 FITX4		213.4
+=======
+FITX2		212.90
+FITX3		213.25
+FITX4		213.3
+>>>>>>> branch 'workingteana' of https://github.com/pabloemma/NMRanalyzer
 DEBUG		0
-CALCONST    	0.0111349
-CALCONST    	0.0111349
+CALCONST    	1.
+CALCONST    	1.

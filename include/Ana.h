@@ -101,8 +101,8 @@ void Ana::FindPeak(TH1D * Spectrum){
 	peakfind = true;
 	spec= new TSpectrum(npeaks,1.);
 	Int_t nfound = spec->Search(Spectrum,sigma=.02,"nobackground new",.5);
-	cout<<"\n\n\n*******************************************\n";
-	cout<<Ana_pr<<"Number of peaks found "<<nfound<<"\n";
+	//cout<<"\n\n\n*******************************************\n";
+	//cout<<Ana_pr<<"Number of peaks found "<<nfound<<"\n";
 	// fill array with peak posistions
 
 	xpeaks = (Double_t *)(spec->GetPositionX());
@@ -120,7 +120,6 @@ void Ana::FindPeak(TH1D * Spectrum){
 		peakfind = false;
 	}
 
-	cout<<"peak_find \n";
 
 }
 
@@ -208,7 +207,7 @@ int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
 	FitFcn->SetLineColor(kMagenta);
 
 	FitGaus = new TF1("FitGaus",GausPeak,fit_low_overall,fit_high_overall,3);
-    FitGaus->SetParameters(1.,213.,1.);
+    FitGaus->SetParameters(1.,xpeaks[0],1.);
 
 
 
@@ -283,7 +282,7 @@ void Ana::FitBackground(TH1D *spectrum){
 
 	FitBck->SetParameters(1.2e6,-5000,-27.,.121); // initialze parameters
 
-	spectrum->Fit(FitBck,"RQM");
+	spectrum->Fit(FitBck,"RM");
 	FitBck->GetParameters(&bck_par[0]);
 	// Create new function to subtract from spectrum
 	// need to do this since otherwise it only subtracts in the range defined by the fit range
