@@ -123,7 +123,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 		if(temp.Contains(".root")) {
 			// Now check what kind of run it is
-			if(temp.BeginsWith("POL")|| temp.BeginsWith("TER") || temp.BeginsWith("NMR")) {
+			if(temp.BeginsWith("POL")|| temp.BeginsWith("TER") || temp.BeginsWith("NMR")|| temp.BeginsWith("TEQ")) {
 				InputSignalFile.push_back(InputRootDirectory+temp);
 			}
 			else if(temp.BeginsWith("QCR")) {

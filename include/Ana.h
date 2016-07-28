@@ -117,7 +117,7 @@ void Ana::FindPeak(TH1D * Spectrum){
 	//fit_high_overall = *xpeaks +.2;
 
 
-	if(*xpeaks < 212.982 - .3 || *xpeaks > 212.982 + .3 ){
+	if(*xpeaks < fit_limit[1] - .1 || *xpeaks > fit_limit[2] + .1 ){
 		cout<<Ana_pr<< "TSpectrum failed, assign peak to 212.98 \n";
 		*xpeaks = 212.982;
 		sigma = .018;

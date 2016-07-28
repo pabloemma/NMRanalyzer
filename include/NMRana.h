@@ -78,6 +78,9 @@ public :
    Double_t        Gain;
    Double_t        Pol_Sign;
    Double_t        Log_Channel;
+   Double_t 		Peak_Amp;//
+   Double_t 		ph1,ph2,ph3,ph4,ph5,ph6,ph7; // Double precision placeholders if we ant more info to the sweeps later
+
    Double_t 	   *gr_freq;
    Double_t		   *gr_amp; // needed for creating and filling the background graph
 
@@ -153,6 +156,15 @@ public :
    TBranch        *b_Gain;   //!
    TBranch        *b_Pol_Sign;   //!
    TBranch        *b_Log_Channel;   //!
+   TBranch        *b_Peak_Amp;   //!
+   TBranch        *b_ph1;   //!
+   TBranch        *b_ph2;   //!
+   TBranch        *b_ph3;   //!
+   TBranch        *b_ph4;   //!
+   TBranch        *b_ph5;   //!
+   TBranch        *b_ph6;   //!
+   TBranch        *b_ph7;   //!
+
    TBranch        *b_timel;   //!
    TBranch        *b_array;   //!
    TFile		  *f;
@@ -372,7 +384,7 @@ int NMRana::OpenFile(TString rootfile){
 	// oepn file and initialize tree
      cout<<NMR_pr<<"opening file "<<rootfile<<"\n";
 
-     if(rootfile.Contains("TER")){
+     if(rootfile.Contains("TER") || rootfile.Contains("TEQ") ){
     	 TEmeasurement = true;
     	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
     	 // perform the TEfile read as well, so that we have the map
@@ -400,7 +412,8 @@ int NMRana::OpenChain(std::vector<TString> RootFileArray){
 
 		}
 
-	     if(RootFileArray[0].Contains("TER")){
+	     if(RootFileArray[0].Contains("TER") || RootFileArray[0].Contains("TEQ") ){
+
 	    	 TEmeasurement = true;
 	    	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
 	    	 // perform the TEfile read as well, so that we have the map
@@ -478,6 +491,22 @@ void NMRana::Init(TTree *tree)
 	   fChain->SetBranchAddress("Gain", &Gain, &b_Gain);
 	   fChain->SetBranchAddress("Pol_Sign", &Pol_Sign, &b_Pol_Sign);
 	   fChain->SetBranchAddress("Log_Channel", &Log_Channel, &b_Log_Channel);
+	    }
+   if(TimeControl == 2){
+	   fChain->SetBranchAddress("Phase_Voltage", &Phase_Voltage, &b_Phase_Voltage);
+	   fChain->SetBranchAddress("Peak_Area", &Peak_Area, &b_Peak_Area);
+	   fChain->SetBranchAddress("Pol_Calib_Const", &Pol_Calib_Const, &b_Pol_Calib_Const);
+	   fChain->SetBranchAddress("Gain", &Gain, &b_Gain);
+	   fChain->SetBranchAddress("Pol_Sign", &Pol_Sign, &b_Pol_Sign);
+	   fChain->SetBranchAddress("Log_Channel", &Log_Channel, &b_Log_Channel);
+	   fChain->SetBranchAddress("Peak_Amp", &Peak_Amp, &b_Peak_Amp);
+	   fChain->SetBranchAddress("ph1", &ph1, &b_ph1);
+	   fChain->SetBranchAddress("ph2", &ph2, &b_ph2);
+	   fChain->SetBranchAddress("ph3", &ph3, &b_ph3);
+	   fChain->SetBranchAddress("ph4", &ph4, &b_ph4);
+	   fChain->SetBranchAddress("ph5", &ph5, &b_ph5);
+	   fChain->SetBranchAddress("ph6", &ph6, &b_ph6);
+	   fChain->SetBranchAddress("ph7", &ph7, &b_ph7);
 	    }
 
 
@@ -639,7 +668,7 @@ void NMRana::SetupHistos(){
 		   SysTempTime->GetXaxis()->SetTimeOffset(TimeStamp);
 		   SysTempTime->GetXaxis()->SetTimeFormat("%d %m %H :%M :%S");
 		   SysTempTime->GetXaxis()->SetNdivisions(405) ;
-		   SysTempTime->SetMaximum(28.);
+		   SysTempTime->SetMaximum(35.);
 		   SysTempTime->SetMinimum(25.);
 
 		   PatTemp = new TH1D("PatTemp","System temeperature  vs time",timewindow,0,10*timewindow);
@@ -1117,6 +1146,7 @@ void NMRana::PrintWarnings(){
 	   warning.push_back(" In NMRana loop, the polarization currently gets calculated from the uncorrected signal ");
 	   warning.push_back(" In NMRana loop, The qcurve subtraction is off; needs to be turned on for new NMR signals ");
 	   warning.push_back(" In NMRana loop, currently we are calculating no background subtraction for the real signal, this needs to change line 779");
+	   warning.push_back(" In NMRana loop, the Control does not work for stripper and read in");
 
 
 	   // print out
@@ -1147,9 +1177,15 @@ void NMRana::Stripper(Long64_t jentry){
 		  StripCanvas_1->cd();
 		  // temporary fix for separate time file
 		  //replace press_help with pressure variable from ROOT file
-		  Double_t press_help  = TE.FindPofT(root_time.tv_sec); // here we find the nearest time stamp in the Yuorv file and return
+		  Double_t press_help =5.5;
+/*		  if( Control==0) {
+			  Double_t press_help  = TE.FindPofT(root_time.tv_sec); // here we find the nearest time stamp in the Yuorv file and return
+		  }
 		  	  	  	  	  	  	  	  	  	  	  	  	  	  // the corresponding pressure
-
+		  else{
+			  Double_t press_help = 5.5;
+		  }
+*/
 
 		  CalibConstant = TE.CalculateTEP("proton",.5,5.004,press_help) ; // needs to change to ROOTfile pressure
 		  CalibConstant = CalibConstant/SignalArea;
