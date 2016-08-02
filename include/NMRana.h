@@ -102,6 +102,7 @@ public :
    Double_t CalibConstant; // is calculated from area of TE peak and pressure of measuring CalibConstant = pol_calculated/area
    Double_t CalConst;// Calibration constant read from parameter file
 
+   	   Int_t StripLength ; // how many points in the stripchart
 
 
    Int_t	DEBUG;// level of debugging information  // currently 0: nodebug
@@ -253,6 +254,7 @@ NMRana::NMRana(){
 	QC_DISP = false;
     NumberOfStripCharts=-1; // then start with 0 in loop
     CalConst = 1; // set calibration to default 1
+    StripLength =  68400000;
     PrintWarnings();
 
 
@@ -1166,7 +1168,7 @@ void NMRana::Stripper(Long64_t jentry){
 
 	  GetTimeStamp();
 	  PolTime->SetBinContent(jentry,SignalArea);
-	  PolTime->GetXaxis()->SetRange(jentry-50000,jentry+20);
+	  PolTime->GetXaxis()->SetRange(jentry-StripLength,jentry+20);
 	  StripCanvas->Clear();
 	  PolTime->Draw();
 	  StripCanvas->Modified();
@@ -1191,7 +1193,7 @@ void NMRana::Stripper(Long64_t jentry){
 		  CalibConstant = CalibConstant/SignalArea;
 		  CalibConstantVector.push_back(CalibConstant);
 		  CalibTime->SetBinContent(jentry,CalibConstant);
-		  CalibTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
+		  CalibTime ->GetXaxis()->SetRange(jentry-StripLength,jentry+20);
 		  StripCanvas_1->Clear();
 		  CalibTime->Draw();
 		  StripCanvas_1->Modified();
@@ -1199,7 +1201,7 @@ void NMRana::Stripper(Long64_t jentry){
 
 		  StripCanvas_2->cd();
 		  PressTime->SetBinContent(jentry,press_help);
-		  PressTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
+		  PressTime ->GetXaxis()->SetRange(jentry-StripLength,jentry+20);
 		  StripCanvas_2->Clear();
 		  PressTime->Draw();
 		  StripCanvas_2->Modified();
@@ -1207,7 +1209,7 @@ void NMRana::Stripper(Long64_t jentry){
 
 		  StripCanvas_3->cd();
 		  SysTempTime->SetBinContent(jentry,Temperature);
-		  SysTempTime ->GetXaxis()->SetRange(jentry-50000,jentry+20);
+		  SysTempTime ->GetXaxis()->SetRange(jentry-StripLength,jentry+20);
 		  StripCanvas_3->Clear();
 		  SysTempTime->Draw();
 		  StripCanvas_3->Modified();
@@ -1215,7 +1217,7 @@ void NMRana::Stripper(Long64_t jentry){
 
 		  StripCanvas_4->cd();
 		  PatTemp->SetBinContent(jentry,PatDiffArea);
-		  PatTemp ->GetXaxis()->SetRange(jentry-50000,jentry+20);
+		  PatTemp ->GetXaxis()->SetRange(jentry-StripLength,jentry+20);
 		  StripCanvas_4->Clear();
 		  PatTemp->Draw();
 		  StripCanvas_4->Modified();
