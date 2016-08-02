@@ -17,15 +17,16 @@
 #include <string>
 
 #include <iostream>
-
 #include "NMRana.h"
 #include "NMRana_main.h"
+
 #include "TEana.h"
 #include <TH2.h>
 #include <TStyle.h>
 #include <TCanvas.h>
 #include <TObjArray.h>
 #include <TApplication.h>
+#include <TStopwatch.h>
 
 
 #ifdef __APPLE__
@@ -107,7 +108,8 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 	InputRootDirectory = theApp->WorkingDirectory();
 
-
+    Timer = new TStopwatch; // create a stopwatch
+    Timer->Start();
 	// First we look at the filenames and put thenm into a TObjArray
 	// so that we can then work thorugh them in order.
 	// If the rootname starts with QCR we deal with a Qcurve
@@ -190,7 +192,8 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 	}
 
 
-
+	cout<< "Finished working \n";
+	Timer->Print();
 
 
     theApp->Run();

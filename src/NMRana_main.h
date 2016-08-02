@@ -17,6 +17,7 @@ std::vector<TString> InputQcurveFile ; // if there is a list of input files it w
 std::vector<TString> InputTEFile ; // if there is a list of input files it will put them into anarry
 
 TString parameter_file; //
+TStopwatch *Timer;
 
 
 
