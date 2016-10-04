@@ -201,7 +201,8 @@ public :
    TString timestring; // from labview time
    TDatime *td ; // Datetime for time histogram
    TTimeStamp *RootTimeStamp;
-   TFile * QcurveFile ; // Qcurve file name
+   TFile *QcurveFile; //
+   std::string QcurveFileName ; // Qcurve file name
 
 
 	TEana TE;
@@ -360,6 +361,12 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 		}
 
+		if(pos->first.find("QCURVE")!= std::string::npos){
+			// amplifier setting for QCurve
+		QcurveFileName = pos->second;
+		cout<<"Qcurve File "<<QcurveFileName<<endl;
+
+		}
 
 	}
 	if(QC) GetQcurve(temp_file);
