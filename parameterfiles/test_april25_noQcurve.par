@@ -1,11 +1,11 @@
+QCURVE     /Users/klein/git/NMRanalyzer/parameterfiles/test_april25_noQcurve.par
 QAMP     10.
 NMR_HI     213.14
-NMR_LOW     212.992
 CALCONST     1.
 FITX1     212.6
 FITX2     212.8
 FITX3     213.3
 FITX4     213.4
 DEBUG     1
+NMR_LOW     212.992
 TIMEC     0
-QCURVE    /Users/klein/git/NMRanalyzer/parameterfiles/test_april25_noQcurve.par
