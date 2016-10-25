@@ -797,7 +797,11 @@ void NMRana::DrawHistos(){
 
 	}
 	if(DEBUG==1){
-		TFile *fd = new TFile("/Volumes/FastDisk/NMR/test/debug.root","RECREATE");
+		// first get current directory
+
+
+
+		TFile *fd = new TFile("debug.root","RECREATE");
 		DebugCanvas->cd();
 		raw_histo->Draw();
 		raw_histo->Write();

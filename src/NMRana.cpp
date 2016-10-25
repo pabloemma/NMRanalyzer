@@ -4,6 +4,7 @@
  *  Created on: May 10, 2016
  *      Author: klein
  *      analyzes the NMR rootfile
+ *      modified to work on linux
  */
 
 #define NMRana_cxx
