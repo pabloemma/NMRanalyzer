@@ -79,7 +79,13 @@ public :
    Double_t        Pol_Sign;
    Double_t        Log_Channel;
    Double_t 		Peak_Amp;//
-   Double_t 		ph1,ph2,ph3,ph4,ph5,ph6,ph7; // Double precision placeholders if we ant more info to the sweeps later
+   Double_t 		NMRchan; // whci coil
+   Double_t 		PeakCenter ;//
+   Double_t 		BeamOn;//
+   Double_t 		RFlevel;//
+   Double_t 		IFatt; //
+
+   Double_t 		ph1,ph2; // Double precision placeholders if we ant more info to the sweeps later
 
    Double_t 	   *gr_freq;
    Double_t		   *gr_amp; // needed for creating and filling the background graph
@@ -160,11 +166,11 @@ public :
    TBranch        *b_Peak_Amp;   //!
    TBranch        *b_ph1;   //!
    TBranch        *b_ph2;   //!
-   TBranch        *b_ph3;   //!
-   TBranch        *b_ph4;   //!
-   TBranch        *b_ph5;   //!
-   TBranch        *b_ph6;   //!
-   TBranch        *b_ph7;   //!
+	TBranch 	  *b_NMRchan; // whci coil
+	TBranch 		*b_PeakCenter ;//
+	TBranch 		*b_BeamOn;//
+	TBranch 		*b_RFlevel;//
+	TBranch 		*b_IFatt; //
 
    TBranch        *b_timel;   //!
    TBranch        *b_array;   //!
@@ -509,13 +515,13 @@ void NMRana::Init(TTree *tree)
 	   fChain->SetBranchAddress("Pol_Sign", &Pol_Sign, &b_Pol_Sign);
 	   fChain->SetBranchAddress("Log_Channel", &Log_Channel, &b_Log_Channel);
 	   fChain->SetBranchAddress("Peak_Amp", &Peak_Amp, &b_Peak_Amp);
-	   fChain->SetBranchAddress("ph1", &ph1, &b_ph1);
-	   fChain->SetBranchAddress("ph2", &ph2, &b_ph2);
-	   fChain->SetBranchAddress("ph3", &ph3, &b_ph3);
-	   fChain->SetBranchAddress("ph4", &ph4, &b_ph4);
-	   fChain->SetBranchAddress("ph5", &ph5, &b_ph5);
-	   fChain->SetBranchAddress("ph6", &ph6, &b_ph6);
-	   fChain->SetBranchAddress("ph7", &ph7, &b_ph7);
+	 	 fChain->SetBranchAddress("NMRchan",&NMRchan,&b_NMRchan);
+	 	 fChain->SetBranchAddress("PeakCenter",&PeakCenter,&b_PeakCenter);
+	 	 fChain->SetBranchAddress("BeamOn",&BeamOn,&b_BeamOn);
+	 	 fChain->SetBranchAddress("RFlevel",&RFlevel,&b_RFlevel);
+	 	 fChain->SetBranchAddress("IFatt",&IFatt,&b_IFatt);
+		   fChain->SetBranchAddress("ph1", &ph1, &b_ph1);
+		   fChain->SetBranchAddress("ph2", &ph2, &b_ph2);
 	    }
 
 

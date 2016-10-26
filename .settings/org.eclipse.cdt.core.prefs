@@ -1,6 +1,14 @@
 eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/LD_LIBRARY_PATH/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/LD_LIBRARY_PATH/operation=append
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/LD_LIBRARY_PATH/value=/home/plm/root_all/lib
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/ROOTSYS/delimiter=\:
-environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/ROOTSYS/operation=append
-environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/ROOTSYS/value=/Users/klein/root_all
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/ROOTSYS/operation=replace
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/ROOTSYS/value=/home/plm/root_all
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/append=true
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1448240668/appendContributed=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.709373961/LD_LIBRARY_PATH/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.709373961/LD_LIBRARY_PATH/operation=append
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.709373961/LD_LIBRARY_PATH/value=/home/plm/root_all/lib
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.709373961/append=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.release.709373961/appendContributed=true
