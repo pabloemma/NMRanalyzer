@@ -231,6 +231,7 @@ public :
    virtual void		FillQcurveArray();
    virtual void	    SetTimeControl(int);
    virtual void	    PrintWarnings();
+   virtual void 	Finish(); // used to clean up memory
 
    // memebre which will be inhertied from TEana
    void     Loop(); // TEana inherits
@@ -453,7 +454,18 @@ NMRana::~NMRana()
    if (!fChain) return;
    delete fChain->GetCurrentFile();
 }
+void NMRana::Finish(){
+	// clean up memory
+		cout<<NMR_pr<< "***************************************************************"<<endl;
+		cout<<NMR_pr<<" *"<<endl;
+		cout<<NMR_pr<<"                  Analysis finished"<<endl;
+		cout<<NMR_pr<<" *"<<endl;
+		cout<<NMR_pr<< "***************************************************************"<<endl;
 
+	  	 //delete [] gr_freq;
+	  	 //delete [] gr_amp;
+
+}
 Int_t NMRana::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
@@ -954,8 +966,6 @@ void NMRana::Loop()
 
 	  }
 
-	  	  	 delete [] gr_freq;
-	  	  	 delete [] gr_amp;
 
 	  	  	 if(TEmeasurement) TE.ShowDistribution(CalibConstantVector);
 

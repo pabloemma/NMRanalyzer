@@ -156,6 +156,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			QCU.SetupHistos();
 			QCU.Loop();
 			QCU.DrawHistos();
+			QCU.Finish();
 // Close the file if only one
 	}
 
@@ -187,6 +188,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 			SIG.SetupHistos();
 			SIG.Loop();
 			SIG.DrawHistos();
+			SIG.Finish();
 // Close the file if only one
 
 
