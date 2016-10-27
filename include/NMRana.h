@@ -85,7 +85,8 @@ public :
    Double_t 		RFlevel;//
    Double_t 		IFatt; //
 
-   Double_t 		ph1,ph2; // Double precision placeholders if we ant more info to the sweeps later
+   Double_t 		HeT;
+   Double_t			HeP;
 
    Double_t 	   *gr_freq;
    Double_t		   *gr_amp; // needed for creating and filling the background graph
@@ -164,8 +165,8 @@ public :
    TBranch        *b_Pol_Sign;   //!
    TBranch        *b_Log_Channel;   //!
    TBranch        *b_Peak_Amp;   //!
-   TBranch        *b_ph1;   //!
-   TBranch        *b_ph2;   //!
+   TBranch        *b_HeT;   //!
+   TBranch        *b_HeP;   //!
 	TBranch 	  *b_NMRchan; // whci coil
 	TBranch 		*b_PeakCenter ;//
 	TBranch 		*b_BeamOn;//
@@ -520,8 +521,8 @@ void NMRana::Init(TTree *tree)
 	 	 fChain->SetBranchAddress("BeamOn",&BeamOn,&b_BeamOn);
 	 	 fChain->SetBranchAddress("RFlevel",&RFlevel,&b_RFlevel);
 	 	 fChain->SetBranchAddress("IFatt",&IFatt,&b_IFatt);
-		   fChain->SetBranchAddress("ph1", &ph1, &b_ph1);
-		   fChain->SetBranchAddress("ph2", &ph2, &b_ph2);
+		   fChain->SetBranchAddress("HeT", &HeT, &b_HeT);
+		   fChain->SetBranchAddress("HeP", &HeP, &b_HeP);
 	    }
 
 
