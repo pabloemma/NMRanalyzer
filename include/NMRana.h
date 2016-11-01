@@ -405,7 +405,8 @@ int NMRana::OpenFile(TString rootfile){
     	 TEmeasurement = true;
     	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
     	 // perform the TEfile read as well, so that we have the map
-    	 TE.ReadTE();
+    	 // this is only used if we use the Yurov file and mesaurement
+    	//  TE.ReadTE();
      }
 
      f = new TFile(rootfile);
@@ -1217,7 +1218,9 @@ void NMRana::Stripper(Long64_t jentry){
 		  }
 */
 
-		  CalibConstant = TE.CalculateTEP("proton",.5,5.004,press_help) ; // needs to change to ROOTfile pressure
+		  // give a pressure if there is none
+		  if( HeP==0.0 ) HeP = 5.5 ; //pressure in Torr
+		  CalibConstant = TE.CalculateTEP("proton",.5,5.004,HeP) ; // needs to change to ROOTfile pressure
 		  CalibConstant = CalibConstant/SignalArea;
 		  CalibConstantVector.push_back(CalibConstant);
 		  CalibTime->SetBinContent(jentry,CalibConstant);
