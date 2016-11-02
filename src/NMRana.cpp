@@ -29,7 +29,7 @@
 #include <TApplication.h>
 #include <TStopwatch.h>
 
-#include "gperftools/profiler.h"
+//#include "gperftools/profiler.h"
 
 
 #ifdef __APPLE__
@@ -170,7 +170,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 	// start profiling with google profuiler
-	ProfilerStart("/home/plm/profile.dat");
+//	ProfilerStart("/home/plm/profile.dat");
 	if(!InputSignalFile.empty() || !InputTEFile.empty() ){
 			SIG.ReadParameterFile(parameter_file);
 // Open ROOT file
@@ -196,7 +196,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 	}
-	ProfilerStop();
+//	ProfilerStop();
 
 	cout<< "Finished working \n";
 	Timer->Print();
