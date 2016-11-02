@@ -29,6 +29,8 @@
 #include <TApplication.h>
 #include <TStopwatch.h>
 
+#include "gperftools/profiler.h"
+
 
 #ifdef __APPLE__
  std::string OS = "OSX";
@@ -167,7 +169,8 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 
-
+	// start profiling with google profuiler
+	ProfilerStart("/home/plm/profile.dat");
 	if(!InputSignalFile.empty() || !InputTEFile.empty() ){
 			SIG.ReadParameterFile(parameter_file);
 // Open ROOT file
@@ -193,7 +196,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 
 	}
-
+	ProfilerStop();
 
 	cout<< "Finished working \n";
 	Timer->Print();

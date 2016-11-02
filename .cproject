@@ -51,6 +51,7 @@
 								<option id="gnu.cpp.link.option.flags.180678893" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value=" " valueType="string"/>
 								<option id="gnu.cpp.link.option.libs.548406117" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="Spectrum"/>
+									<listOptionValue builtIn="false" value="profiler"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.947319596" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="/usr/lib"/>

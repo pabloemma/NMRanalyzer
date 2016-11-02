@@ -109,6 +109,9 @@ public :
    Double_t CalibConstant; // is calculated from area of TE peak and pressure of measuring CalibConstant = pol_calculated/area
    Double_t CalConst;// Calibration constant read from parameter file
 
+   Double_t CurveOffset; // this is the offset which is caluclated as an averag between the left and the right window
+   	   	   	   	   	   	   // it is subratced from the signal and then the calibration constant is calculated and the area
+
    	   Int_t StripLength ; // how many points in the stripchart
 
 
@@ -925,10 +928,14 @@ void NMRana::Loop()
 //  	    FindPeak(NMR_RT_Corr);
   	    //sum the peak area
       StripCanvas->cd();
-//warninghook
+
+      	 // herwe calculate the average left and right of the peak for Patarea
+      PatDiffArea = CalculatePatArea(NMR_RT_Corr);
+
+
+      //warninghook
       if(TEmeasurement) SignalArea = CalculateArea(NMR_RT_Corr);
       else  SignalArea = CalculateArea(NMR_RT_Corr);
-      PatDiffArea = CalculatePatArea(NMR_RT_Corr);
 //end warninghook
 
 
@@ -982,24 +989,13 @@ Double_t NMRana::CalculateArea(TH1D *histo){
 	Double_t sum1 = 0.;
 
 
-    for (Int_t j = low_id; j < high_id; ++j) {
-         sum1 += array->at(j);
-     	  }
-
 		//Double_t sum = histo->Integral(histo->FindBin(fit_x2),histo->FindBin(fit_x3));
     Double_t sum11 =0;
     // determine sum of channels from low channel to high channel as determined from read in.
-    Double_t sum = histo->Integral(low_id,high_id);
-		for(Int_t k=low_id;k<high_id;k++){
-		if(DEBUG ==3)cout<<NMR_pr<<histo->GetBinContent(k)<<"  \n";
-		sum11 += histo->GetBinContent(k);
-		}
-		if(DEBUG==3){
-			cout<<NMR_pr<<sum1<<"  "<<sum<<"  "<<sum11<<"\n";
+    Double_t sum = histo->Integral(low_id,high_id)-(high_id-low_id+1)*CurveOffset;
+    cout<< histo->Integral(low_id,high_id) <<"  "<<(high_id-low_id+1)*CurveOffset<<"  "<<sum<<endl;
 
-		   cout<<NMR_pr<<low_id<<"   "<<high_id<<" \n";
-		}
-    	    return sum ;
+    return sum ;
    // return sum * FreqStep;
 
 
@@ -1009,8 +1005,12 @@ Double_t NMRana::CalculateArea(TH1D *histo){
 
 Double_t NMRana::CalculatePatArea(TH1D *histo){
 	// inetgrates lwer and higher background and takes the difference
-		Double_t low = histo->Integral(Ifit_x1,Ifit_x2)/(Ifit_x1-Ifit_x2);
-		Double_t high = histo->Integral(Ifit_x3,Ifit_x4)/(Ifit_x4-Ifit_x3);
+		Int_t Left_ch = Ifit_x2-Ifit_x1;
+		Int_t Right_ch = Ifit_x4-Ifit_x3;
+		Double_t low = histo->Integral(Ifit_x1,Ifit_x2)/(Left_ch);
+		Double_t high = histo->Integral(Ifit_x3,Ifit_x4)/(Right_ch);
+		// calculate the offset shift which is the average of the left window and the right window
+		CurveOffset = (high+low)/2.;
 		return (high - low);
 }
 
@@ -1233,7 +1233,7 @@ void NMRana::Stripper(Long64_t jentry){
 		  StripCanvas_1->Update();
 
 		  StripCanvas_2->cd();
-		  PressTime->SetBinContent(jentry,press_help);
+		  PressTime->SetBinContent(jentry,HeP);
 		  PressTime ->GetXaxis()->SetRange(jentry-StripLength,jentry+20);
 		  StripCanvas_2->Clear();
 		  PressTime->Draw();
