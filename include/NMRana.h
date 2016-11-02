@@ -263,7 +263,9 @@ NMRana::NMRana(){
 	QC_DISP = false;
     NumberOfStripCharts=-1; // then start with 0 in loop
     CalConst = 1; // set calibration to default 1
-    StripLength =  68400000;
+    //StripLength =  68400000; for very long runs.
+    //slows down program
+    StripLength =  2000;
     PrintWarnings();
 
 
@@ -920,7 +922,7 @@ void NMRana::Loop()
 //		fill the background graph and go to determine the spline
 //      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 //      BackSpline(Background);
-  	    FindPeak(NMR_RT_Corr);
+//  	    FindPeak(NMR_RT_Corr);
   	    //sum the peak area
       StripCanvas->cd();
 //warninghook
