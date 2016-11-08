@@ -316,7 +316,8 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 			temp_file = pos->second;
 		}
 
-
+        // this is historical, qamp is not used anymore
+		//since gain is part of the header
 		if(pos->first.find("QAMP")!= std::string::npos){
 			// amplifier setting for QCurve
 			Qamp = std::stod(pos->second);
@@ -896,8 +897,9 @@ void NMRana::Loop()
       for (UInt_t j = 0; j < array->size(); ++j) {
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
-    	  array->at(j) /= Qamp;
-    	  if(DEBUG==1)raw_histo->Fill(freq_temp,array->at(j));
+       	  // array->at(j) /= Qamp; This is historic
+       	  array->at(j) /= Gain;
+        	  if(DEBUG==1)raw_histo->Fill(freq_temp,array->at(j));
     	  if(Qcurve_array.size()!=0) {
     		 NMR1_NoQ->Fill(freq_temp,array->at(j));
 
@@ -1121,6 +1123,7 @@ void NMRana::FillQcurveArray(){
 	          else {
 	        	  Qcurve_array.at(j) = Qcurve_array.at(j)+array->at(j);
 	          }
+
 	      	  }
 
 
@@ -1128,10 +1131,11 @@ void NMRana::FillQcurveArray(){
 	   }// end of entry loop
 
 	   //now we need to normalize the QCurve to the number of sweeps, which is nentries
-	   if(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<Qamp<<"\n";
+	   // historicif(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<Qamp<<"\n";
+	   if(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<Gain<<"\n";
 	   for (UInt_t j = 0; j < array->size(); ++j) {
 
-		   Qcurve_array.at(j)= Qcurve_array.at(j)/nentries/Qamp;
+		   Qcurve_array.at(j)= Qcurve_array.at(j)/nentries/Gain;
 
 	   }
 
