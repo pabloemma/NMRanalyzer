@@ -262,7 +262,7 @@ public :
 
 NMRana::NMRana(){
 	time_offset = 2082852019 ; // unix offset in seconds
-	TimeControl = 1; // always assume the file is from the newest generation // if not use TIMEC = value in parameter file
+	TimeControl = 2; // always assume the file is from the newest generation // if not use TIMEC = value in parameter file
 	QC_DISP = false;
     NumberOfStripCharts=-1; // then start with 0 in loop
     CalConst = 1; // set calibration to default 1
@@ -414,6 +414,7 @@ int NMRana::OpenFile(TString rootfile){
     	 // this is only used if we use the Yurov file and mesaurement
     	//  TE.ReadTE();
      }
+
 
      f = new TFile(rootfile);
 
@@ -995,7 +996,7 @@ Double_t NMRana::CalculateArea(TH1D *histo){
     Double_t sum11 =0;
     // determine sum of channels from low channel to high channel as determined from read in.
     Double_t sum = histo->Integral(low_id,high_id)-(high_id-low_id+1)*CurveOffset;
-    cout<< histo->Integral(low_id,high_id) <<"  "<<(high_id-low_id+1)*CurveOffset<<"  "<<sum<<endl;
+    //cout<< histo->Integral(low_id,high_id) <<"  "<<(high_id-low_id+1)*CurveOffset<<"  "<<sum<<endl;
 
     return sum ;
    // return sum * FreqStep;
@@ -1163,7 +1164,9 @@ TString NMRana::GetDate(TString input) {
 
       cout<<NMR_pr<<asctime(ltm)<<"  "<<time_test<<"   "<<"    \n";
       cout<<NMR_pr<<" \n \n ******************************************\n\n";
-      if(Int_t(time_test) > 1465948800) TimeControl =1; // this gives a control value for which time the polarization file is from
+      if(Int_t(time_test) > 1465948800 && Int_t(time_test) <= 1468972800 ) TimeControl =1; // this gives a control value for which time the polarization file is from
+      if(Int_t(time_test) > 1468972800 ) TimeControl =2; // this gives a control value for which time the polarization file is from
+
       return  asctime(ltm);
 }
 

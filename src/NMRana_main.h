@@ -18,6 +18,7 @@ std::vector<TString> InputTEFile ; // if there is a list of input files it will 
 
 TString parameter_file; //
 TStopwatch *Timer;
+TString datestring;
 
 
 

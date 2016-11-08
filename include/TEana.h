@@ -197,8 +197,8 @@ TEana::TEana(){
 		lowT = new TGraph(13,pp,tt);
 
 
-		TimeControl = 1;
-		cout<<TEana_pr<< "Using time control  "<<TimeControl<<"\n\n";
+		//TimeControl = 1;
+		//cout<<TEana_pr<< "Using time control  "<<TimeControl<<"\n\n";
 
 }
 
