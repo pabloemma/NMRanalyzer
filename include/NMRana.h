@@ -378,6 +378,8 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		if(pos->first.find("QCURVE")!= std::string::npos){
 			// amplifier setting for QCurve
 		QcurveFileName = pos->second;
+		QC=true;
+
 		cout<<"Qcurve File "<<QcurveFileName<<endl;
 
 		}
