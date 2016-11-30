@@ -263,7 +263,7 @@ public :
 NMRana::NMRana(){
 	time_offset = 2082852019 ; // unix offset in seconds
 	TimeControl = 2; // always assume the file is from the newest generation // if not use TIMEC = value in parameter file
-	QC_DISP = false;
+	QC_DISP = true;
     NumberOfStripCharts=-1; // then start with 0 in loop
     CalConst = 1; // set calibration to default 1
     //StripLength =  68400000; for very long runs.
@@ -385,7 +385,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		}
 
 	}
-	if(QC) GetQcurve(temp_file);
+	if(QC) GetQcurve(QcurveFileName);
 
 
 		// set limits for are either default or what comes in from parameter file
@@ -802,7 +802,7 @@ void NMRana::DrawHistos(){
 	GeneralCanvas->Divide(1,2);
 	GeneralCanvas->cd(1);
 	NMR1->Draw();
-	FitBackground(NMR1);
+	if(!QC) FitBackground(NMR1); // oinly fit if there is nop QCurve
 //	BckFct1->Draw();
 //    FitSpectrum(NMR1,1);
 	GeneralCanvas->cd(2);
