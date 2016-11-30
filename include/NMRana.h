@@ -76,6 +76,7 @@ public :
    Double_t        Peak_Area;
    Double_t        Pol_Calib_Const;
    Double_t        Gain;
+   Double_t			ScanNumber;
    Double_t        Pol_Sign;
    Double_t        Log_Channel;
    Double_t 		Peak_Amp;//
@@ -108,6 +109,7 @@ public :
    Int_t Ifit_x1, Ifit_x2, Ifit_x3, Ifit_x4;// corresponding channel limits for fitting widows
    Double_t CalibConstant; // is calculated from area of TE peak and pressure of measuring CalibConstant = pol_calculated/area
    Double_t CalConst;// Calibration constant read from parameter file
+   Double_t gain_array[3];
 
    Double_t CurveOffset; // this is the offset which is caluclated as an averag between the left and the right window
    	   	   	   	   	   	   // it is subratced from the signal and then the calibration constant is calculated and the area
@@ -158,12 +160,15 @@ public :
 
    TBranch        *b_Temperature;   //!
    TBranch        *b_ScanPoints;   //!
+   TBranch        *b_ScanNumber;   //!
    TBranch        *b_TuneV;   //!
    TBranch        *b_Offset;   //!
    TBranch        *b_ControllerV;   //!
    TBranch        *b_Phase_Voltage;   //!
    TBranch        *b_Peak_Area;   //!
    TBranch        *b_Pol_Calib_Const;   //!
+   TBranch        *b_QcurveAmp;   //!
+
    TBranch        *b_Gain;   //!
    TBranch        *b_Pol_Sign;   //!
    TBranch        *b_Log_Channel;   //!
@@ -270,6 +275,9 @@ NMRana::NMRana(){
     //slows down program
     StripLength =  2000;
     PrintWarnings();
+    gain_array[0]=1;
+    gain_array[1]=20;
+    gain_array[2]=200;
 
 
 }
@@ -320,7 +328,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		//since gain is part of the header
 		if(pos->first.find("QAMP")!= std::string::npos){
 			// amplifier setting for QCurve
-			Qamp = std::stod(pos->second);
+			//Qamp = std::stod(pos->second);
 			cout<<NMR_pr<<" test qamp"<<string2<<"\n";
 
 		}
@@ -802,7 +810,7 @@ void NMRana::DrawHistos(){
 	GeneralCanvas->Divide(1,2);
 	GeneralCanvas->cd(1);
 	NMR1->Draw();
-	if(!QC) FitBackground(NMR1); // oinly fit if there is nop QCurve
+	if(!QC)FitBackground(NMR1); // oinly fit if there is nop QCurve
 //	BckFct1->Draw();
 //    FitSpectrum(NMR1,1);
 	GeneralCanvas->cd(2);
@@ -901,7 +909,7 @@ void NMRana::Loop()
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
        	  // array->at(j) /= Qamp; This is historic
-       	  array->at(j) /= Gain;
+       	  array->at(j) /= gain_array[int(Gain+.01)];
         	  if(DEBUG==1)raw_histo->Fill(freq_temp,array->at(j));
     	  if(Qcurve_array.size()!=0) {
     		 NMR1_NoQ->Fill(freq_temp,array->at(j));
@@ -1135,12 +1143,14 @@ void NMRana::FillQcurveArray(){
 
 	   //now we need to normalize the QCurve to the number of sweeps, which is nentries
 	   // historicif(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<Qamp<<"\n";
-	   if(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<Gain<<"\n";
+	   if(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<gain_array[int(Gain+.01)]<<"\n";
+
 	   for (UInt_t j = 0; j < array->size(); ++j) {
 
-		   Qcurve_array.at(j)= Qcurve_array.at(j)/nentries/Gain;
+		   Qcurve_array.at(j)= Qcurve_array.at(j)/nentries/gain_array[int(Gain+.01)];
 
 	   }
+	   cout<<" nmr ana  "<<gain_array[int(Gain+.01)]<<"  "<<nentries<<" "<<ScanNumber<<endl;
 
 
 
