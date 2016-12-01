@@ -110,6 +110,7 @@ public :
    Double_t CalibConstant; // is calculated from area of TE peak and pressure of measuring CalibConstant = pol_calculated/area
    Double_t CalConst;// Calibration constant read from parameter file
    Double_t gain_array[3];
+   Double_t NumberOfSweeps;  // total number of sweeps
 
    Double_t CurveOffset; // this is the offset which is caluclated as an averag between the left and the right window
    	   	   	   	   	   	   // it is subratced from the signal and then the calibration constant is calculated and the area
@@ -319,19 +320,15 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		cout<<NMR_pr<<"parameters from file  :"<<pos->first<<"\t"<<pos->second <<"\n";
 
 
-		if(pos->first.find("QCurve")!= std::string::npos){
-			QC=true;
-			temp_file = pos->second;
-		}
 
         // this is historical, qamp is not used anymore
 		//since gain is part of the header
-		if(pos->first.find("QAMP")!= std::string::npos){
+		/*if(pos->first.find("QAMP")!= std::string::npos){
 			// amplifier setting for QCurve
 			//Qamp = std::stod(pos->second);
 			cout<<NMR_pr<<" test qamp"<<string2<<"\n";
 
-		}
+		}*/
 		if(pos->first.find("TIMEC")!= std::string::npos){
 			// amplifier setting for QCurve
 			TimeControl = std::stoi(pos->second);
@@ -810,7 +807,12 @@ void NMRana::DrawHistos(){
 	GeneralCanvas->Divide(1,2);
 	GeneralCanvas->cd(1);
 	NMR1->Draw();
-	if(!QC)FitBackground(NMR1); // oinly fit if there is nop QCurve
+	//if(!QC)
+		FitBackground(NMR1); //
+		if(QC) {
+			Qcurve_histo->Scale(4.);
+			Qcurve_histo->Draw("SAME"); //sacle QCurve hist by number of entries.
+		}
 //	BckFct1->Draw();
 //    FitSpectrum(NMR1,1);
 	GeneralCanvas->cd(2);
@@ -842,6 +844,9 @@ void NMRana::DrawHistos(){
 		DebugCanvas->cd();
 		raw_histo->Draw();
 		raw_histo->Write();
+		Qcurve_histo->SetLineColor(kRed);
+		Qcurve_histo->Draw("SAME"); //sacle QCurve hist by number of entries.
+
 		fd->Close();
 	}
 
@@ -885,6 +890,7 @@ void NMRana::Loop()
    }
 
    Long64_t nentries = fChain->GetEntriesFast();
+   NumberOfSweeps = nentries;
    Long64_t time_prev = 0;
    Long64_t nbytes = 0, nb = 0;
 
