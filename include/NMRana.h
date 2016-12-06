@@ -611,10 +611,13 @@ void NMRana::SetupHistos(){
 	   MaxFreq = FreqCenter + (ScanPoints-1.)/2. * FreqStep;
 
 	   NMR1 = new TH1D("NMR1","Signal histogram",IntScanPoints,MinFreq,MaxFreq);
+	   NMR1->Sumw2();
 	   NMR_RT = new TH1D("NMR_RT","Real TimeSignal histogram",IntScanPoints,MinFreq,MaxFreq);
+	   NMR_RT->Sumw2();
 	   NMR_RT->SetLineColor(kSpring-2);
 	   NMR_RT->SetLineWidth(4);
 	   NMR_RT_Corr = new TH1D("NMR_RT_corr","Real TimeSignal background subtracted",IntScanPoints,MinFreq,MaxFreq);
+	   NMR_RT_Corr->Sumw2();
 	   NMR_RT_Corr->SetLineColor(kBlue-2);
 	   NMR_RT_Corr->SetLineWidth(4);
 
@@ -730,7 +733,8 @@ void NMRana::SetupHistos(){
 	   if(Qcurve_array.size()!=0){
 		   Qcurve_histo = new TH1D("Qcurve_hist","Normalized Qcurve histogram",IntScanPoints,MinFreq,MaxFreq);
 		   NMR1_NoQ = new TH1D("NMR1_NoQ","Signal without QCurve subtraction",IntScanPoints,MinFreq,MaxFreq);
-		   }
+		   NMR1_NoQ->Sumw2();
+	   }
 
 	   // Do the graph for the histo
 	   gr_freq = new Double_t[IntScanPoints];
@@ -806,12 +810,12 @@ void NMRana::DrawHistos(){
 // draw histos, mainly for debug purpose
 	GeneralCanvas->Divide(1,2);
 	GeneralCanvas->cd(1);
-	NMR1->Draw();
+	NMR1->Draw("HIST P");
 	//if(!QC)
 		FitBackground(NMR1); //
 		if(QC) {
-			Qcurve_histo->Scale(4.);
-			Qcurve_histo->Draw("SAME"); //sacle QCurve hist by number of entries.
+			Qcurve_histo->Scale(1.);
+			Qcurve_histo->Draw("HIST P SAME"); //sacle QCurve hist by number of entries.
 		}
 //	BckFct1->Draw();
 //    FitSpectrum(NMR1,1);
@@ -824,13 +828,13 @@ void NMRana::DrawHistos(){
 			AuxCanvas->cd(2);
 			Qcurve_histo->Draw();
 			AuxCanvas->cd(1);
-			NMR1_NoQ->Draw();
+			NMR1_NoQ->Draw("HIST P");
 
 		AuxCanvas->Update();
 		}
 		else {
 			AuxCanvas->cd(1);
-			NMR1_NoQ->Draw();
+			NMR1_NoQ->Draw("HIST P");
 			AuxCanvas->Update();
 		}
 
@@ -842,10 +846,10 @@ void NMRana::DrawHistos(){
 
 		TFile *fd = new TFile("debug.root","RECREATE");
 		DebugCanvas->cd();
-		raw_histo->Draw();
+		raw_histo->Draw("HIST P");
 		raw_histo->Write();
 		Qcurve_histo->SetLineColor(kRed);
-		Qcurve_histo->Draw("SAME"); //sacle QCurve hist by number of entries.
+		Qcurve_histo->Draw("HIST P"); //sacle QCurve hist by number of entries.
 
 		fd->Close();
 	}
@@ -895,9 +899,9 @@ void NMRana::Loop()
    Long64_t nbytes = 0, nb = 0;
 
    RTCanvas->cd(1);
-   NMR_RT->Draw();
+   NMR_RT->Draw("HIST P");
    RTCanvas->cd(2);
-   NMR_RT_Corr->Draw();
+   NMR_RT_Corr->Draw("HIST P");
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
 	   NMR_RT->Reset();
 	   NMR_RT_Corr->Reset();
@@ -972,9 +976,9 @@ void NMRana::Loop()
 
 // draw the signal histogram
 	  RTCanvas->cd(1);
-	  NMR_RT->Draw();
+	  NMR_RT->Draw("HIST P");
 	  RTCanvas->cd(2);
-	  NMR_RT_Corr->Draw();
+	  NMR_RT_Corr->Draw("HIST P");
 	  RTCanvas->Modified();
 	  RTCanvas->Update();
 

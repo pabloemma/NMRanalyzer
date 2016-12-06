@@ -128,7 +128,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 		if(temp.Contains(".root")) {
 			// Now check what kind of run it is
-			if(temp.BeginsWith("POL")|| temp.BeginsWith("TER") || temp.BeginsWith("NMR")|| temp.BeginsWith("TEQ")|| temp.BeginsWith("QCU")) {
+			if(temp.BeginsWith("POL")|| temp.BeginsWith("TER") || temp.BeginsWith("NMR")|| temp.BeginsWith("TEQ")|| temp.BeginsWith("QCV")) {
 				InputSignalFile.push_back(InputRootDirectory+temp);
 				// create datestring
 				datestring =temp;
