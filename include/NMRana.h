@@ -200,6 +200,7 @@ public :
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
    TH1D	     *ht[20];// Number of strip charts
    TH1D		 *raw_histo;// this is the histogram filled by the raw numbers//
+   TH1D		 *raw_histo_QC;// this is the histogram filled by the raw numbers and at the end QC subtracted
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
    //
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
@@ -732,6 +733,7 @@ void NMRana::SetupHistos(){
 
 	   if(Qcurve_array.size()!=0){
 		   Qcurve_histo = new TH1D("Qcurve_hist","Normalized Qcurve histogram",IntScanPoints,MinFreq,MaxFreq);
+		   Qcurve_histo->Sumw2();
 		   NMR1_NoQ = new TH1D("NMR1_NoQ","Signal without QCurve subtraction",IntScanPoints,MinFreq,MaxFreq);
 		   NMR1_NoQ->Sumw2();
 	   }
@@ -742,39 +744,49 @@ void NMRana::SetupHistos(){
 	  // Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 
 	   	   // histo for debugging
-	   if(DEBUG==1)	   raw_histo = new TH1D("raw_hist","Raw Signal histogram",IntScanPoints,MinFreq,MaxFreq);
+	   if(DEBUG==1)	 {
+		   raw_histo = new TH1D("raw_histo","Raw Signal histogram",IntScanPoints,MinFreq,MaxFreq);
+		   raw_histo_QC = new TH1D("raw_histo_QC"," Signal histogram with QCurve subtracted",IntScanPoints,MinFreq,MaxFreq);//
+	   }
 
 
 }
 void NMRana::SetupCanvas(){
 	// creates the different Canvas
 	// master canvas for all histograms
-	GeneralCanvas = new TCanvas("GeneralCanvas","NMR signal",200,50,800,800);
+	GeneralCanvas = new TCanvas("GeneralCanvas","NMR signal",200,50,400,400);
 
-
+    Int_t strip_w = 400;
+    Int_t strip_x =800;
+    Int_t strip_y =350;
+    Int_t strip_h = 100;
 	//canvas for all strip charts
-	if(!TEmeasurement) StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1200,50,1400,750);
-	else 		StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",1200,50,1200,300);
+	if(!TEmeasurement) StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",strip_x,strip_y,strip_w,strip_h);
+	else 		StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",strip_x,strip_y,strip_w,strip_h);
 	StripCanvas->SetGrid();
 	StripCanvas->SetFillColor(42);
 	StripCanvas->SetFrameFillColor(33);
     // only do a strip chart for pressure if we have a TE measurement.
 	if(TEmeasurement){
 
-		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1200,350,1200,200);
+		//StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1200,350,1200,200);
+		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",strip_x,strip_y,strip_w,strip_h);
 		StripCanvas_1->SetGrid();
 		StripCanvas_1->SetFillColor(40);
 		StripCanvas_1->SetFrameFillColor(30);
-		StripCanvas_2 =  new TCanvas("StripCanvas_2","Pressure strip charts",1200,550,1200,200);
+		strip_y += strip_h;
+		StripCanvas_2 =  new TCanvas("StripCanvas_2","Pressure strip charts",strip_x,strip_y,strip_w,strip_h);
 		StripCanvas_2->SetGrid();
 		StripCanvas_2->SetFillColor(38);
 		StripCanvas_2->SetFrameFillColor(28);
-		StripCanvas_3 =  new TCanvas("StripCanvas_3","System Temperature strip charts",1200,750,1200,200);
+		strip_y += strip_h;
+		StripCanvas_3 =  new TCanvas("StripCanvas_3","System Temperature strip charts",strip_x,strip_y,strip_w,strip_h);
 		StripCanvas_3->SetGrid();
 		StripCanvas_3->SetFillColor(36);
 		StripCanvas_3->SetFrameFillColor(26);
+		strip_y += strip_h;
 
-		StripCanvas_4 =  new TCanvas("StripCanvas_4","Left Righ Backrond difference strip charts",1200,950,1200,200);
+		StripCanvas_4 =  new TCanvas("StripCanvas_4","Left Righ Backrond difference strip charts",strip_x,strip_y,strip_w,strip_h);
 		StripCanvas_4->SetGrid();
 		StripCanvas_4->SetFillColor(34);
 		StripCanvas_4->SetFrameFillColor(24);
@@ -795,11 +807,11 @@ void NMRana::SetupCanvas(){
 
 	AuxCanvas = new TCanvas("AuxCanvas","Auxiliary plots",1020,700,1000,600);
 
-	if(QC_DISP)AuxCanvas->Divide(1,2); // if we want to see the Qcurve as well
+	if(QC_DISP)AuxCanvas->Divide(1,3); // if we want to see the Qcurve as well
 	else AuxCanvas->Divide(1,1);
 
 	}
-	if(DEBUG ==1)	DebugCanvas = new TCanvas("DebugCanvas","Debugging plots",120,70,1000,1200);
+	if(DEBUG ==1)	DebugCanvas = new TCanvas("DebugCanvas","Debugging plots",120,70,200,200);
 
 }
 
@@ -814,7 +826,8 @@ void NMRana::DrawHistos(){
 	//if(!QC)
 		FitBackground(NMR1); //
 		if(QC) {
-			Qcurve_histo->Scale(1.);
+			cout<<NMR_pr<< "number of sweeps in file "<<NumberOfSweeps<<endl;
+			Qcurve_histo->Scale(NumberOfSweeps);
 			Qcurve_histo->Draw("HIST P SAME"); //sacle QCurve hist by number of entries.
 		}
 //	BckFct1->Draw();
@@ -826,9 +839,14 @@ void NMRana::DrawHistos(){
 	if(Qcurve_array.size()!=0){
 		if(QC_DISP){
 			AuxCanvas->cd(2);
-			Qcurve_histo->Draw();
+			Qcurve_histo->Draw("HIST P");
 			AuxCanvas->cd(1);
 			NMR1_NoQ->Draw("HIST P");
+			AuxCanvas->cd(3);
+			raw_histo_QC=(TH1D*)raw_histo->Clone("raw_histo_QC");
+			// now subtract the Qcurve
+			raw_histo_QC->Add(Qcurve_histo,-1.);
+			raw_histo_QC->Draw("HIST");
 
 		AuxCanvas->Update();
 		}
@@ -894,7 +912,6 @@ void NMRana::Loop()
    }
 
    Long64_t nentries = fChain->GetEntriesFast();
-   NumberOfSweeps = nentries;
    Long64_t time_prev = 0;
    Long64_t nbytes = 0, nb = 0;
 
@@ -909,6 +926,9 @@ void NMRana::Loop()
       if (ientry < 0) break;
       nb = fChain->GetEntry(jentry);   nbytes += nb;
       // if (Cut(ientry) < 0) continue;
+	  //	 cout<<NMR_pr<<nentries<<" in loop Number of sweeps"<<ScanNumber<<endl;
+	  //	 cout<<NMR_pr<<" TuneV "<<TuneV<<endl;
+
 
 //	now fill histogram
 // reset freq_temp to lower bound
@@ -1001,6 +1021,10 @@ void NMRana::Loop()
 
 
 	  	  	 if(TEmeasurement) TE.ShowDistribution(CalibConstantVector);
+	  	  	 // now we need to put the sweep number away, so that we know how to rescale the Qcurve
+	  	  	 // distribution for display.
+	  	  	 // the Qcurve should be subratced on a sweep to seep basis.
+		  	 NumberOfSweeps = nentries;
 
 }
 
