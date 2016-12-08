@@ -754,11 +754,11 @@ void NMRana::SetupHistos(){
 void NMRana::SetupCanvas(){
 	// creates the different Canvas
 	// master canvas for all histograms
-	GeneralCanvas = new TCanvas("GeneralCanvas","NMR signal",200,50,400,400);
+	GeneralCanvas = new TCanvas("GeneralCanvas","NMR signal",500,50,400,400);
 
     Int_t strip_w = 400;
-    Int_t strip_x =800;
-    Int_t strip_y =350;
+    Int_t strip_x =1000;
+    Int_t strip_y =50;
     Int_t strip_h = 100;
 	//canvas for all strip charts
 	if(!TEmeasurement) StripCanvas =  new TCanvas("StripCanvas","NMR strip charts",strip_x,strip_y,strip_w,strip_h);
@@ -768,7 +768,7 @@ void NMRana::SetupCanvas(){
 	StripCanvas->SetFrameFillColor(33);
     // only do a strip chart for pressure if we have a TE measurement.
 	if(TEmeasurement){
-
+		strip_y += strip_h;
 		//StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",1200,350,1200,200);
 		StripCanvas_1 =  new TCanvas("StripCanvas_1","Calibration Constant strip charts",strip_x,strip_y,strip_w,strip_h);
 		StripCanvas_1->SetGrid();
@@ -793,7 +793,7 @@ void NMRana::SetupCanvas(){
 
 	}
 
-	RTCanvas =  new TCanvas("RTCanvas","Real Time charts",100,1000,600,400);
+	RTCanvas =  new TCanvas("RTCanvas","Real Time charts",100,1000,400,300);
 	RTCanvas->SetGrid();
 	RTCanvas->SetFillColor(23);
 	RTCanvas->SetFrameFillColor(16);
@@ -805,13 +805,13 @@ void NMRana::SetupCanvas(){
 
 	if(Qcurve_array.size()!=0){
 
-	AuxCanvas = new TCanvas("AuxCanvas","Auxiliary plots",1020,700,1000,600);
+	AuxCanvas = new TCanvas("AuxCanvas","Auxiliary plots",500,500,200,200);
 
 	if(QC_DISP)AuxCanvas->Divide(1,3); // if we want to see the Qcurve as well
 	else AuxCanvas->Divide(1,1);
 
 	}
-	if(DEBUG ==1)	DebugCanvas = new TCanvas("DebugCanvas","Debugging plots",120,70,200,200);
+	if(DEBUG ==1)	DebugCanvas = new TCanvas("DebugCanvas","Debugging plots",50,700,200,200);
 
 }
 
@@ -827,7 +827,6 @@ void NMRana::DrawHistos(){
 		FitBackground(NMR1); //
 		if(QC) {
 			cout<<NMR_pr<< "number of sweeps in file "<<NumberOfSweeps<<endl;
-			Qcurve_histo->Scale(NumberOfSweeps);
 			Qcurve_histo->Draw("HIST P SAME"); //sacle QCurve hist by number of entries.
 		}
 //	BckFct1->Draw();
@@ -839,6 +838,7 @@ void NMRana::DrawHistos(){
 	if(Qcurve_array.size()!=0){
 		if(QC_DISP){
 			AuxCanvas->cd(2);
+			Qcurve_histo->Scale(NumberOfSweeps);
 			Qcurve_histo->Draw("HIST P");
 			AuxCanvas->cd(1);
 			NMR1_NoQ->Draw("HIST P");

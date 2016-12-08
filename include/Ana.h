@@ -289,12 +289,12 @@ void Ana::FitBackground(TH1D *spectrum){
 	reject2 = fit_limit[1];
 
 	// the upper limit of the lower background window we choose
-	spectrum->Fit(FitBck,"RE0");
+	spectrum->Fit(FitBck,"RE0Q");
 	FitBck->GetParameters(&bck_par[0]);
 	// now we fit the whole spectrum with the new variables
 	reject1 = fit_limit[1];
 	reject2 = fit_limit[2];
-	spectrum->Fit(FitBck,"RE0");
+	spectrum->Fit(FitBck,"RE0Q"); // parameter Q for quiet
 	FitBck->GetParameters(&bck_par[0]);
 
 

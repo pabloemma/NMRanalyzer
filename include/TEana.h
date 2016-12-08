@@ -300,7 +300,7 @@ Double_t TEana::CalculateTEP(std::string particle ,Double_t spin, Double_t field
 
 	TEPol = arg1*cosh(arg1*fact)/sinh(arg1*fact)-arg2*cosh(arg2*fact)/sinh(arg2*fact);
 
-	//cout<<TEana_pr<< "temperature  vs pressure "<<Temp<<"   "<<pressure<<" \n";
+	cout<<TEana_pr<< "temperature  vs pressure "<<Temp<<"   "<<pressure<<" \n";
 
 	return TEPol;
 }
@@ -404,7 +404,7 @@ void TEana::ShowDistribution(std::vector<Double_t> CalibConstantVector){
 
              CalibrationHisto->Fill(CalibConstantVector.at(j));
 	}
-	TCanvas *calib = new TCanvas ("calib","calibration constant distribution",40,50,600,600);
+	TCanvas *calib = new TCanvas ("calib","calibration constant distribution",40,500,200,100);
 	calib->cd();
 	CalibrationHisto->Draw();
 
