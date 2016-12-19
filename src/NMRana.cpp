@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include  <vector>
 #include <string>
+#include <cstdlib> // contaings getenv
 
 #include <iostream>
 #include "NMRana.h"
@@ -101,6 +102,23 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
  All specified arguments (also the ones removed) can always be retrieved
  via the TApplication::Argv() method.
 */
+
+
+	// Get the environment, make sure it is defined. If not exit
+			if(const char* env_p = std::getenv("NMR_ROOT")){
+				NMR_ROOT = env_p;
+				cout<< "NMR_main"<<" your environment is "<<NMR_ROOT<<endl;
+				SIG.SetEnvironment(NMR_ROOT);
+			}
+			else{
+				cout<< "NMR_main"<<" your environment is not defined; most likely you need to set NMR_ROOT environment variable \n ";
+
+						cout<< " You must define it now; Good bye  \n" <<endl;
+						exit(EXIT_FAILURE);
+
+
+			}
+
 
 
 
