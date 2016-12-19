@@ -149,6 +149,10 @@ public :
    Double_t CalibConstantMeanError;
 
 
+   std::string  NMR_ROOT ; // top directory of NMR system, needs to be defined thorugh enviro variable $NMR_ROOT
+
+
+
 
 
 
@@ -242,6 +246,7 @@ public :
    virtual void	    SetTimeControl(int);
    virtual void	    PrintWarnings();
    virtual void 	Finish(); // used to clean up memory
+   virtual void		SetEnvironment(std::string);
 
    // memebre which will be inhertied from TEana
    void     Loop(); // TEana inherits
@@ -283,6 +288,12 @@ NMRana::NMRana(){
 
 
 }
+void NMRana::SetEnvironment(std::string environment){
+	NMR_ROOT = environment ;
+}
+
+
+
 void NMRana::ReadParameterFile(TString ParameterFile){
 	// reads in parameters for running the NMRanalyzer
 	// needs the Qcurve file
