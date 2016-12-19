@@ -20,6 +20,7 @@ TString parameter_file; //
 TStopwatch *Timer;
 TString datestring;
 
+std::string  NMR_ROOT ; // top directory of NMR system, needs to be defined thorugh enviro variable $NMR_ROOT
 
 
 
