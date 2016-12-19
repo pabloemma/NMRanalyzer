@@ -11,6 +11,26 @@
 // from TTree NMRtree/NMR
 // found on file: /Volumes/FastDisk/NMR/april22/ana_folder/NMR3544192508.root
 //////////////////////////////////////////////////////////
+/*
+ * histos:
+ * NMR1: Signal Histogram (all signals in a final histogram)
+ * NMR_RT: Real_time signal histo ; the 20 sweep histograms
+ * NMR_RT_Corr; NMR_RT - Qcurve histogram
+ * Qcurve_histo: Normazlied Qcurve histogram
+ * NMR1_NoQ: NMR signal without Qcurve subtraction
+ *
+ * raw_histo: raw signal; only used in Debug mode
+ * raw_histo_QC: signal histo with QC subtracted.
+ *
+ * Stripcharts:
+ * PolTime: polarization vs time (for regular measurement)
+ * PolTime: TE signal area vs time for TE measurement
+ * CalibTime: Calibration constant vs time; gets calculated from polarziation and temp
+ * PressTime: Pressure vs time (or convesrly temp)
+ * SysTempTime: System temeperature vs time (from NMR system boards)
+ * PatTemp: This is the difference of the backgrounds left - right and an indiaction of temeperature drift.
+ *
+ */
 
 #ifndef NMRana_h
 #define NMRana_h
@@ -314,6 +334,8 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 	ParFile.open(ParameterFile);
 	// check if found and opened
 	if(!ParFile.is_open()){
+		cout<<"error with parameter file "<<ParameterFile<<" \n";
+		cout<< " will terminate \n";
 		exit(EXIT_FAILURE);
 	}
 	// read the lines
@@ -333,15 +355,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 
 
-        // this is historical, qamp is not used anymore
-		//since gain is part of the header
-		/*if(pos->first.find("QAMP")!= std::string::npos){
-			// amplifier setting for QCurve
-			//Qamp = std::stod(pos->second);
-			cout<<NMR_pr<<" test qamp"<<string2<<"\n";
-
-		}*/
-		if(pos->first.find("TIMEC")!= std::string::npos){
+  		if(pos->first.find("TIMEC")!= std::string::npos){
 			// amplifier setting for QCurve
 			TimeControl = std::stoi(pos->second);
 
@@ -436,6 +450,10 @@ int NMRana::OpenFile(TString rootfile){
 
 
      f = new TFile(rootfile);
+     if(!f->IsOpen()){
+    	 cout <<NMR_pr<<"Cannot open ROOT File "<<rootfile<<" \n  will exit \n";
+    	 exit(EXIT_FAILURE);
+     }
 
      f->GetObject("NMRtree",tree);
      Init(tree);
@@ -747,6 +765,20 @@ void NMRana::SetupHistos(){
 		   Qcurve_histo->Sumw2();
 		   NMR1_NoQ = new TH1D("NMR1_NoQ","Signal without QCurve subtraction",IntScanPoints,MinFreq,MaxFreq);
 		   NMR1_NoQ->Sumw2();
+			// Now fill the QCurve histo if it is used
+				  if(Qcurve_array.size()!=0){
+				      Double_t freq_temp = MinFreq;
+
+
+				      for (UInt_t j = 0; j < Qcurve_array.size(); ++j) {
+				    	  // subtract QCurve if existing
+
+				          Qcurve_histo->Fill(freq_temp,Qcurve_array.at(j));
+				          freq_temp = freq_temp+FreqStep;
+				      	  }
+
+				  }
+
 	   }
 
 	   // Do the graph for the histo
@@ -854,10 +886,12 @@ void NMRana::DrawHistos(){
 			AuxCanvas->cd(1);
 			NMR1_NoQ->Draw("HIST P");
 			AuxCanvas->cd(3);
-			raw_histo_QC=(TH1D*)raw_histo->Clone("raw_histo_QC");
-			// now subtract the Qcurve
-			raw_histo_QC->Add(Qcurve_histo,-1.);
-			raw_histo_QC->Draw("HIST");
+			if(DEBUG == 1){
+				raw_histo_QC=(TH1D*)raw_histo->Clone("raw_histo_QC");
+				// now subtract the Qcurve
+				raw_histo_QC->Add(Qcurve_histo,-1.);
+				raw_histo_QC->Draw("HIST");
+			}
 
 		AuxCanvas->Update();
 		}
@@ -1016,19 +1050,6 @@ void NMRana::Loop()
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
    }// end of entry loop
-   // Now fill the QCurve histo if it is used
-	  if(Qcurve_array.size()!=0){
-	      Double_t freq_temp = MinFreq;
-
-
-	      for (UInt_t j = 0; j < Qcurve_array.size(); ++j) {
-	    	  // subtract QCurve if existing
-
-	          Qcurve_histo->Fill(freq_temp,Qcurve_array.at(j));
-	          freq_temp = freq_temp+FreqStep;
-	      	  }
-
-	  }
 
 
 	  	  	 if(TEmeasurement) TE.ShowDistribution(CalibConstantVector);
@@ -1144,12 +1165,17 @@ TH1D *NMRana::SetupStripChart(TString Title){
 void NMRana::GetQcurve(std::string filename) {
 
 	cout<<NMR_pr<<" QCurve file "<<filename<<"\n";
+	// Now add the envieronmnet to it
+	filename = NMR_ROOT+"/QC_files/"+filename;
 
 	QcurveFile = new TFile(filename.c_str());
 	// now create a new tree, so that we have a different name
 	QCUtree = (TTree*)QcurveFile->Get("NMRtree");
 	Init(QCUtree);
 	FillQcurveArray();
+
+
+
 }
 
 void NMRana::FillQcurveArray(){
