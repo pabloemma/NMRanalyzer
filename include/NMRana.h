@@ -132,6 +132,7 @@ public :
    Double_t CalConst;// Calibration constant read from parameter file
    Double_t gain_array[3];
    Double_t NumberOfSweeps;  // total number of sweeps
+   Double_t QfitPar[5] ; // the qcurve function parameters as found from QCana and put in file Qcurve.txt
 
    Double_t CurveOffset; // this is the offset which is caluclated as an averag between the left and the right window
    	   	   	   	   	   	   // it is subratced from the signal and then the calibration constant is calculated and the area
@@ -229,6 +230,7 @@ public :
    TH1D		 *raw_histo;// this is the histogram filled by the raw numbers//
    TH1D		 *raw_histo_QC;// this is the histogram filled by the raw numbers and at the end QC subtracted
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
+   TF1		 *Qfit; // The Qcurve Fit function determin ed from QCana and read in from Qcurve.txt filk
    //
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
    TCanvas	 *StripCanvas;   // shows polarization vs time
@@ -287,6 +289,8 @@ public :
    void		DrawHistos();
    void		Stripper(Long64_t); // darws the stri charts
    Double_t CalculatePatArea(TH1D *); // calculates the difference of left and right background areas
+   static Double_t FitFcn2(Double_t * , Double_t *);
+
    TString  GetDate(TString input);
 
 
@@ -422,7 +426,8 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 	}
 	if(QC){
 		GetQcurve(QcurveFileName);
-		ReadQcurveParFile("QCurveParDec16.csv");
+		//ReadQcurveParFile("QCurveParDec16.csv");
+		ReadQcurveParFile("QCurve.csv");
 	}
 
 
@@ -444,11 +449,12 @@ void NMRana::ReadQcurveParFile(std::string name){
 	// par [0]-par[5]
 	// min found of fit fucntion
 	// tune voltage
-	//
+	// Note if you ever open the file with microsoft excel, make sure you DO NOT save it
+	// MS puts line breaks in, which getline won't understand.
 
 	// open tune file
 	std::string file;
-	Int_t coil;
+	Double_t coil;
 	Double_t par[8];
 	Double_t Min;
 	Double_t tune;
@@ -464,34 +470,64 @@ void NMRana::ReadQcurveParFile(std::string name){
 		exit(EXIT_FAILURE);
 	}
 
-
-	std::string line;
+    int cols = 9; // number of columns
+	std::string line; // problem with line ending is that ffffing excel uses carriage return instead of line feed for files
 	while(getline(Qpar,line)){
-		std::stringstream linestream(line);
-		std::string   value;
-		int k =0;
-		 while(getline(linestream,value,','))
-		    {
-			    if( k == 0) file = value;
-			    else
-			    	par[k-1] = std::stof(value); // convert string to decimal
-			    k++;
-		        //std::cout << "Value(" << value << ")\n";
-		    }
+		size_t len = line.length();
+		size_t tmp =0;
+		if(line.empty()) {continue;}
 
-		 cout<<file;
-		 for (int l =0 ; l<8;l++)
-			 cout<<"  "<<par[l];
-		 cout<<endl;
-		//Qpar >>file>>coil>>par[0]>>par[1]>>par[2]>>par[3]>>par[4]>>Min>>tune;
-		//cout<<" "<<file<<" "<<par[0]<<" "<<par[1]<<" "<<par[2]<<" "<<par[3]<<" "<<par[4]<<" "<<Min<<" "<<tune<<" "<<endl;
+		const char* last_start =&line[0];
+		int num_parts = 0 ;
 
-		if(Qpar.eof())break;
+			// now check for comma
+			while(tmp < len)
+			{
+				if(line[tmp]== ',' || line[tmp] == '\n' || line[tmp] == '\r' )
+				{
+
+					line[tmp] = '\0';
+					if(num_parts == cols) {break;}
+					else if(num_parts == 0) {file = last_start;}
+					else if(num_parts == 1) {coil = atoi(last_start);}
+					else if(num_parts == 7) {Min = atof(last_start);}
+					else if(num_parts == 8) {tune = atof(last_start);}
+					else {par[num_parts - 2] = atof(last_start);}
+					tmp++;
+					num_parts++;
+					last_start = &line[tmp];
+				}
+				tmp++;
+
+
+			}
+
+
+		// if we find the correct qcurve  we extract the parameters and exit the loop.
+		if(file == QcurveFileName)	{
+		cout<<NMR_pr<< " We are using the following  parameters for the fit function \n\n";
+		 cout<<file<<" ";
+		 for (int l =0 ; l<5;l++){
+			 cout<<"  "<<par[l]<<" ";
+			 QfitPar[l] = par[l];
+		 	 cout<<Min<<" "<<tune<<" "<<endl;}
+		 	 break;
+
+
+		}
+		if(Qpar.eof()) break;
 	}
 
 
 }
 
+Double_t NMRana::FitFcn2(Double_t *x , Double_t *par){
+	// start polynomial and x^3-x
+
+	Double_t y = x[0]-213.00;
+     Double_t result = (par[0]+par[1]*x[0]+par[2]*pow(x[0],2.))-(par[3]*pow(y,3)-y*par[4]);
+	return result;
+}
 
 
 int NMRana::OpenFile(TString rootfile){
@@ -837,6 +873,18 @@ void NMRana::SetupHistos(){
 				      	  }
 
 				  }
+			if(QfitPar[0] !=0)	{   // we have a qfit from the file
+				// Now Create Qfit
+
+				Qfit= new TF1("Qfit",FitFcn2,FreqCenter*.9986,FreqCenter*1.0014,5);
+					//	FitH2->SetParameters(7e7,6e5,1500,1116,107);
+					 	Qfit->SetParameters(QfitPar);
+					 	TCanvas * chelp  = new TCanvas();
+					 	Qfit->Draw();
+					 	chelp->Update();
+			}
+
+
 
 	   }
 
