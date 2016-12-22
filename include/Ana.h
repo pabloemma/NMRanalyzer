@@ -82,6 +82,7 @@ public:
 	 static Double_t BackSpline( TGraph *);
 	 TH1D* FitBackground(TH1D*); // this one gets called at every sweep event
 	 TH1D* FitBackground1(TH1D*); // this one gets called at the end by the signal histo
+	 void SubtractLinear(TH1D*); //
 	 void SetFitLimits(Double_t, Double_t, Double_t, Double_t);
 	 Double_t Background(Double_t *, Double_t *);
 	 static Double_t CopyBackground(Double_t *, Double_t *);
@@ -425,5 +426,25 @@ void  Ana::SetFitLimits(Double_t x1, Double_t x2 , Double_t x3, Double_t x4){
 	fit_limit[2] = x3;
 	fit_limit[3] = x4;
 	}
+void Ana::SubtractLinear(TH1D *spec){
+	// determines a linear fit on the QCurve subtracted histogram
+	// first we take the integral on the low x and the high x
+	// take lower range and integrate and higher range
+	// mostly pseudocode right now
 
+	/*  Double_t ylow = spec->Integral();
+	Double_t yhigh = spec->Integral();
+	Double_t xlow = x2-x1;
+	Double_t xhigh = x4-x3;
+	Double_t slope = (yhigh-ylow)/(xlow-xhigh);
+	Double_t offset = y1 - slope*x1;
+	// do the subtraction on the integral
+	 *
+	 *
+	 *
+	 */
+
+
+
+}
 #endif /* ANA_H_ */
