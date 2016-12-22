@@ -80,8 +80,8 @@ public:
 	 static Double_t Background2(Double_t *, Double_t *,Double_t *, Double_t *);
 //	 static Double_t BackSpline(Double_t *, Double_t *,Double_t *, Double_t *, TGraph *); // This will determine a spline back ground
 	 static Double_t BackSpline( TGraph *);
-	 TH1D* FitBackground(TH1D*);
-	 TH1D* FitBackground1(TH1D*);
+	 TH1D* FitBackground(TH1D*); // this one gets called at every sweep event
+	 TH1D* FitBackground1(TH1D*); // this one gets called at the end by the signal histo
 	 void SetFitLimits(Double_t, Double_t, Double_t, Double_t);
 	 Double_t Background(Double_t *, Double_t *);
 	 static Double_t CopyBackground(Double_t *, Double_t *);
