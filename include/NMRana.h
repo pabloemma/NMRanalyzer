@@ -156,6 +156,7 @@ public :
    Long64_t QcurveEntries; // the number of entries in the measured Qcurve
    std::vector<double>  Qcurve_array; // this  QCurve array normalized to the sweep number and the gain.
    Double_t QCtune; // used to make sure that Qcurve tune voltages are the same as from data taking
+   Double_t QCcoil; // used to make sure that Qcurve tune voltages are the same as from data taking
 
 
    	   Int_t StripLength ; // how many points in the stripchart
@@ -1184,6 +1185,12 @@ void NMRana::Loop()
 
 //	Consistency checks:
 // first test that tune voltage between measurement and Qcurve are the same
+      if(NMRchan != QCcoil || NMRchan != QcurveCoil) {
+    	  cout<<NMR_pr<<" !!error QCurve coil not the same as TE: Data coil"<< NMRchan<<"    Qcurve voil : "<<QCcoil<< "Fit Qcurve coil :"<<QcurveCoil<<endl;
+    	  cout<<NMR_pr<<"!!!!!!!!!!!sever failure!!!!!!!"<<endl;
+    	  exit(EXIT_FAILURE);
+      }
+
       if(TuneV != QcurveTune || TuneV != QCtune) {
     	  cout<<NMR_pr<<" !!warning Tune voltages are not the same Data tuneV :"<< TuneV<<"    Qcurve data tunev : "<<QCtune<< "Fit Qcurve tune :"<<QcurveTune<<endl;
       }
@@ -1408,6 +1415,7 @@ void NMRana::FillQcurveArray(){
 	      nb = QCUtree->GetEntry(jentry);   nbytes += nb;
 	      Double_t freq_temp = MinFreq;
 	      QCtune = TuneV;
+	      QCcoil = NMRchan;
 
 	      for (UInt_t j = 0; j < array->size(); ++j) {
 	          //NMR1->Fill(freq_temp,array->at(j));
