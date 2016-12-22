@@ -117,7 +117,6 @@ public :
    Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
    Long64_t	        time_offset;
    std::vector<double>  *array;
-   std::vector<double>  Qcurve_array; // this will contain the QCurve normalized to the sweep number
 
    Double_t MinFreq ; // limits of frequency sweep
    Double_t MaxFreq ;
@@ -132,10 +131,25 @@ public :
    Double_t CalConst;// Calibration constant read from parameter file
    Double_t gain_array[3];
    Double_t NumberOfSweeps;  // total number of sweeps
-   Double_t QfitPar[5] ; // the qcurve function parameters as found from QCana and put in file Qcurve.txt
 
    Double_t CurveOffset; // this is the offset which is caluclated as an averag between the left and the right window
    	   	   	   	   	   	   // it is subratced from the signal and then the calibration constant is calculated and the area
+
+   // The variables asociated with the Qcurve fit from QCana
+   Double_t QcurveCoil; // the corresponding coil
+   Double_t QcurveMin; // the min found in the fit
+   Double_t QcurveTune; // The tune volgae of the QCurve. This will be compared with the tune voltage of the data to make sure
+   	   	   	   	   	     // they agree. if they don;'t give a warning, and l;ater correct with firts
+   Double_t QcurveScale;// This is the number of sweeps in the Qcuvre root file which was used to do the fit. This gives the scale
+   	   	   	   	   	   	   // how much we have to renormalize: It is really fitpar/Qcurve_scale
+   Double_t QfitPar[5]; // the parameters determined from the QCurve fit and written to the Qcurve.txt; these are normalized by QcurveScale !! so they are really
+   	   	   	   	   	   	 // QfitPar/QcurveScale;
+   // end of Qcurve parameters
+
+   // Variables associated with the real Qcurve file
+   Long64_t QcurveEntries; // the number of entries in the measured Qcurve
+   std::vector<double>  Qcurve_array; // this  QCurve array normalized to the sweep number and the gain.
+
 
    	   Int_t StripLength ; // how many points in the stripchart
 
@@ -273,6 +287,7 @@ public :
    virtual void 	Finish(); // used to clean up memory
    virtual void		SetEnvironment(std::string);
    virtual void		ReadQcurveParFile(std::string);
+   virtual void     DrawFitHisto(); // draws signal hist with subtracted fitted background
 
    // memebre which will be inhertied from TEana
    void     Loop(); // TEana inherits
@@ -313,6 +328,13 @@ NMRana::NMRana(){
     gain_array[0]=1;
     gain_array[1]=20;
     gain_array[2]=200;
+    QfitPar[0]=0.;
+    QfitPar[1]=0.;
+    QfitPar[2]=0.;
+    QfitPar[3]=0.;
+    QfitPar[4]=0.;
+
+
 
 
 }
@@ -427,7 +449,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 	if(QC){
 		GetQcurve(QcurveFileName);
 		//ReadQcurveParFile("QCurveParDec16.csv");
-		ReadQcurveParFile("QCurve.csv");
+		ReadQcurveParFile("QCurve.txt");
 	}
 
 
@@ -453,11 +475,8 @@ void NMRana::ReadQcurveParFile(std::string name){
 	// MS puts line breaks in, which getline won't understand.
 
 	// open tune file
-	std::string file;
-	Double_t coil;
-	Double_t par[8];
-	Double_t Min;
-	Double_t tune;
+	std::string file;	Double_t coil;
+	Double_t par[5];
 	std::string dummy;
 	std::string filename = NMR_ROOT+"/QC_files/"+name;
 
@@ -470,7 +489,7 @@ void NMRana::ReadQcurveParFile(std::string name){
 		exit(EXIT_FAILURE);
 	}
 
-    int cols = 9; // number of columns
+    int cols = 10; // number of columns
 	std::string line; // problem with line ending is that ffffing excel uses carriage return instead of line feed for files
 	while(getline(Qpar,line)){
 		size_t len = line.length();
@@ -489,9 +508,10 @@ void NMRana::ReadQcurveParFile(std::string name){
 					line[tmp] = '\0';
 					if(num_parts == cols) {break;}
 					else if(num_parts == 0) {file = last_start;}
-					else if(num_parts == 1) {coil = atoi(last_start);}
-					else if(num_parts == 7) {Min = atof(last_start);}
-					else if(num_parts == 8) {tune = atof(last_start);}
+					else if(num_parts == 1) {QcurveCoil = atoi(last_start);}
+					else if(num_parts == 7) {QcurveMin = atof(last_start);}
+					else if(num_parts == 8) {QcurveTune = atof(last_start);}
+					else if(num_parts == 9) {QcurveScale = atof(last_start);}
 					else {par[num_parts - 2] = atof(last_start);}
 					tmp++;
 					num_parts++;
@@ -504,13 +524,17 @@ void NMRana::ReadQcurveParFile(std::string name){
 
 
 		// if we find the correct qcurve  we extract the parameters and exit the loop.
-		if(file == QcurveFileName)	{
-		cout<<NMR_pr<< " We are using the following  parameters for the fit function \n\n";
-		 cout<<file<<" ";
-		 for (int l =0 ; l<5;l++){
-			 cout<<"  "<<par[l]<<" ";
-			 QfitPar[l] = par[l];
-		 	 cout<<Min<<" "<<tune<<" "<<endl;}
+		if(file == QcurveFileName)
+		{
+			cout<<NMR_pr<< " We are using the following  parameters for the fit function \n\n";
+			cout<<file<<" ";
+			for (int l =0 ; l<5;l++){
+				cout<<"  "<<par[l]<<" ";
+				QfitPar[l] = par[l]/QcurveScale;
+			} // normalzied to number of sweeps
+
+
+		 //		 	 cout<<Min<<" "<<Qcurve_tune<<" "<<Qcurve_scale<<endl;
 		 	 break;
 
 
@@ -522,9 +546,9 @@ void NMRana::ReadQcurveParFile(std::string name){
 }
 
 Double_t NMRana::FitFcn2(Double_t *x , Double_t *par){
-	// start polynomial and x^3-x
+	//  polynomial fit function from QCana
 
-	Double_t y = x[0]-213.00;
+	Double_t y = x[0]-213.0;
      Double_t result = (par[0]+par[1]*x[0]+par[2]*pow(x[0],2.))-(par[3]*pow(y,3)-y*par[4]);
 	return result;
 }
@@ -879,10 +903,10 @@ void NMRana::SetupHistos(){
 				Qfit= new TF1("Qfit",FitFcn2,FreqCenter*.9986,FreqCenter*1.0014,5);
 					//	FitH2->SetParameters(7e7,6e5,1500,1116,107);
 					 	Qfit->SetParameters(QfitPar);
-					 	TCanvas * chelp  = new TCanvas();
-					 	Qfit->Draw();
-					 	chelp->Update();
-			}
+
+					 	//cout<<"************************** value for 212.71 :"<<Qfit->Eval(212.71)<<"value for 213.26 : "<<  Qfit->Eval(213.26)<<"\n\n" <<endl;
+
+				}
 
 
 
@@ -965,6 +989,42 @@ void NMRana::SetupCanvas(){
 
 }
 
+void NMRana::DrawFitHisto(){
+	// this creates at the end a new function from the original QCurve fit but scaled by the number of entries
+	// then it subtracts this new function from the uncorrected histo gram and draws it
+	// this way we make sure we have the same limits as the function
+	// originally this is just a test to compare the fitted functuion with the actual subtracted qcurve
+	       TF1 *Qfit1= new TF1("Qfit1",FitFcn2,FreqCenter*.9986,FreqCenter*1.0014,5);
+		//	FitH2->SetParameters(7e7,6e5,1500,1116,107);
+	   	   Long64_t nentries = fChain->GetEntriesFast();
+
+		 	Qfit1->SetParameters(QfitPar[0]*nentries,QfitPar[1]*nentries,QfitPar[2]*nentries,QfitPar[3]*nentries,QfitPar[4]*nentries);
+		 	TCanvas *c10 = new TCanvas();
+		 	TH1D *newhisto = new TH1D("newhisto","test hist of signal with fitted background subtracted ",IntScanPoints,FreqCenter*.9986,FreqCenter*1.0014);
+		 	newhisto->Sumw2();
+		 	// Now fille the new histo with the signal noq histo gram
+		 	// first get number of channels in NMR1_NoQ
+
+		 	for (Int_t k=0 ; k < NMR1_NoQ->GetNbinsX(); k++){
+		 		//cout<<k<<"  "<<NMR1_NoQ->GetBinCenter(k)<<"  "<<NMR1_NoQ->GetBinContent(k)<<endl;
+		 		newhisto->Fill(NMR1_NoQ->GetBinCenter(k),NMR1_NoQ->GetBinContent(k));
+		 	}
+
+		 	c10->Divide(1,2);
+		 	//newhisto->Add(Qfit,-1.);
+		 	c10->cd(1);
+		 	newhisto->Draw("HIST P");
+		 	Qfit->SetLineColor(3);
+		 	Qfit->Draw("SAME");
+		 	c10->cd(2);
+		 	Qcurve_histo->Draw();
+		 	Qfit->Draw("SAME");
+		 	c10->Update();
+
+
+}
+
+
 void NMRana::DrawHistos(){
 
 	// analyze spectra
@@ -978,6 +1038,12 @@ void NMRana::DrawHistos(){
 		if(QC) {
 			cout<<NMR_pr<< "number of sweeps in file "<<NumberOfSweeps<<endl;
 			Qcurve_histo->Draw("HIST P SAME"); //sacle QCurve hist by number of entries.
+			if(QfitPar[0] !=0)	{   // we have a qfit from the file
+		    Qfit->Draw("SAME");
+		    //TH1F *htemp = new TH1F("htemp","rescaled function",100,FreqCenter*.9986,FreqCenter*1.0014);
+		    //htemp->Add(Qfit,1/200.);
+		    //htemp->Draw("SAME");
+			}
 		}
 //	BckFct1->Draw();
 //    FitSpectrum(NMR1,1);
@@ -987,8 +1053,9 @@ void NMRana::DrawHistos(){
 
 	if(Qcurve_array.size()!=0){
 		if(QC_DISP){
+
 			AuxCanvas->cd(2);
-			Qcurve_histo->Scale(NumberOfSweeps);
+			Qcurve_histo->Scale();
 			Qcurve_histo->Draw("HIST P");
 			AuxCanvas->cd(1);
 			NMR1_NoQ->Draw("HIST P");
@@ -1023,7 +1090,7 @@ void NMRana::DrawHistos(){
 
 		fd->Close();
 	}
-
+   DrawFitHisto();
 }
 
 void NMRana::Loop()
@@ -1287,11 +1354,11 @@ void NMRana::GetQcurve(std::string filename) {
 
 void NMRana::FillQcurveArray(){
 	// this function fill the Qcurve array and normalizes it
-	   Long64_t nentries = QCUtree->GetEntriesFast();
+	   Long64_t QcurveEntries = QCUtree->GetEntriesFast();
 	   Long64_t nbytes = 0, nb = 0;
-       if(DEBUG ==1) cout<<NMR_pr<<"FillQcurve>  "<<" nentries"<< nentries<<" \n";
+       if(DEBUG ==1) cout<<NMR_pr<<"FillQcurve>  "<<" QcurveEntries"<< QcurveEntries<<" \n";
        Qcurve_array.clear();
-	   for (Long64_t jentry=0; jentry<nentries;jentry++) {
+	   for (Long64_t jentry=0; jentry<QcurveEntries;jentry++) {
 	      Long64_t ientry = LoadTree(jentry);
 	      if (ientry < 0) break;
 	      nb = QCUtree->GetEntry(jentry);   nbytes += nb;
@@ -1321,14 +1388,15 @@ void NMRana::FillQcurveArray(){
 
 	   //now we need to normalize the QCurve to the number of sweeps, which is nentries
 	   // historicif(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<Qamp<<"\n";
+
 	   if(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<gain_array[int(Gain+.01)]<<"\n";
 
 	   for (UInt_t j = 0; j < array->size(); ++j) {
 
-		   Qcurve_array.at(j)= Qcurve_array.at(j)/nentries/gain_array[int(Gain+.01)];
+		   Qcurve_array.at(j)= Qcurve_array.at(j)/QcurveEntries/gain_array[int(Gain+.01)];
 
 	   }
-	   cout<<" nmr ana  "<<gain_array[int(Gain+.01)]<<"  "<<nentries<<" "<<ScanNumber<<endl;
+	   cout<<" nmr ana  "<<gain_array[int(Gain+.01)]<<"  "<<QcurveEntries<<" "<<ScanNumber<<endl;
 
 
 
