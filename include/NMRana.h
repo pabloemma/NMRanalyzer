@@ -1055,7 +1055,7 @@ void NMRana::DrawHistos(){
 	NMR1->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
 	NMR1->Draw("HIST P");
 	// if(!QC) {
-		NMR1_B = FitBackground(NMR1); //
+		NMR1_B = FitBackground1(NMR1); //
 		NMR1_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
 		NMR1_B->SetLineColor(2);
 		NMR1_B->Draw("HIST  SAME");
@@ -1221,6 +1221,7 @@ void NMRana::Loop()
     		 NMR1->Fill(freq_temp,DataTemp- QcurTemp);
     		 NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
     		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
+    		 // now take background out
      	  	  }
     	  else{
     		  NMR1->Fill(freq_temp,DataTemp);
@@ -1266,7 +1267,10 @@ void NMRana::Loop()
 	  RTCanvas->cd(1);
 	  NMR_RT->Draw("HIST P");
 	  RTCanvas->cd(2);
-	  NMR_RT_Corr->Draw("HIST P");
+	  //NMR_RT_Corr->Draw("HIST P");
+		 TH1D * temp = FitBackground(NMR_RT_Corr);
+
+	  temp->Draw("HIST P");
 	  RTCanvas->Modified();
 	  RTCanvas->Update();
 

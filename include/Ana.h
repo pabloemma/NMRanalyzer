@@ -74,12 +74,14 @@ public:
  virtual void FindOffset(TH1D* );
 
 	 static Double_t CombinedFit(Double_t *, Double_t *); // Gaus folded with Lorentzian distribution
-	Int_t FitSpectrum(TH1D *, Int_t  );
+		Int_t FitSpectrum(TH1D *, Int_t  );
+
 	 static Double_t GausPeak(Double_t *, Double_t *);
 	 static Double_t Background2(Double_t *, Double_t *,Double_t *, Double_t *);
 //	 static Double_t BackSpline(Double_t *, Double_t *,Double_t *, Double_t *, TGraph *); // This will determine a spline back ground
 	 static Double_t BackSpline( TGraph *);
 	 TH1D* FitBackground(TH1D*);
+	 TH1D* FitBackground1(TH1D*);
 	 void SetFitLimits(Double_t, Double_t, Double_t, Double_t);
 	 Double_t Background(Double_t *, Double_t *);
 	 static Double_t CopyBackground(Double_t *, Double_t *);
@@ -266,7 +268,8 @@ void Ana::makeTF1(){
 
 
 
-TH1D* Ana::FitBackground(TH1D *spectrum1){
+//TH1D* Ana::FitBackground(TH1D *spectrum1){
+	TH1D* Ana::FitBackground(TH1D *spectrum){
 	// this just determines the backgtound parameters of the spectrum
 	// Currently it is a simple 2degree polynomial
 
@@ -282,6 +285,7 @@ TH1D* Ana::FitBackground(TH1D *spectrum1){
 
 	// First copy spectrum into new histo, so we do not overwrite stuff
 
+	/*
 	Int_t nchan = spectrum1->GetNbinsX();
  	TH1D *spectrum = new TH1D("spectrum","Spectrum for background subtraction ",nchan,spectrum1->GetBinCenter(0),spectrum1->GetBinCenter(nchan-1));
  	// delete spectrum and recreate it so no memery leak; stupid way
@@ -294,7 +298,7 @@ TH1D* Ana::FitBackground(TH1D *spectrum1){
 
  		spectrum->Fill(spectrum1->GetBinCenter(k),spectrum1->GetBinContent(k));
  	}
-
+*/
 
 
 	 ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Fumili2"); // faster minimizer
@@ -335,6 +339,77 @@ TH1D* Ana::FitBackground(TH1D *spectrum1){
 
     return spectrum;
 }
+TH1D* Ana::FitBackground1(TH1D *spectrum1){
+		//TH1D* Ana::FitBackground(TH1D *spectrum){
+		// this just determines the backgtound parameters of the spectrum
+		// Currently it is a simple 2degree polynomial
+
+	   //check for offset
+	/*	Double_t offset = spectrum->GetBinContent(spectrum->GetMinimumBin());
+	    if(offset<0.){
+	    for(Int_t k=0;k<spectrum->GetNbinsX();k++){
+	    	spectrum->AddBinContent(k,-1.*offset);
+	   	   }
+	    }
+	*/
+			// check if spectrum exists, if yes delete so that we do not get mem leaks
+
+		// First copy spectrum into new histo, so we do not overwrite stuff
+
+
+		Int_t nchan = spectrum1->GetNbinsX();
+	 	TH1D *spectrum = new TH1D("spectrum","Spectrum for background subtraction ",nchan,spectrum1->GetBinCenter(0),spectrum1->GetBinCenter(nchan-1));
+	 	// delete spectrum and recreate it so no memery leak; stupid way
+
+	 	spectrum->Sumw2();
+	 	// Now fille the new histo with the signal noq histo gram
+	 	// first get number of channels in NMR1_NoQ
+
+	 	for (Int_t k=0 ; k < spectrum1->GetNbinsX(); k++){
+
+	 		spectrum->Fill(spectrum1->GetBinCenter(k),spectrum1->GetBinContent(k));
+	 	}
+
+
+
+		 ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Fumili2"); // faster minimizer
+		makeTF1();
+		FitBck->SetNpx(1000);
+		FitBck->SetLineWidth(4);
+		FitBck->SetLineColor(kYellow);
+
+	// first we try to get starting pararemets by fitting the background only
+		// to the lower background area
+		reject1 = fit_limit[0];
+		reject2 = fit_limit[1];
+
+		// the upper limit of the lower background window we choose
+		spectrum->Fit(FitBck,"RE0Q");
+		FitBck->GetParameters(&bck_par[0]);
+		// now we fit the whole spectrum with the new variables
+		reject1 = fit_limit[1];
+		reject2 = fit_limit[2];
+		spectrum->Fit(FitBck,"RE0Q"); // parameter Q for quiet
+		FitBck->GetParameters(&bck_par[0]);
+
+
+		// Create new function to subtract from spectrum
+		// need to do this since otherwise it only subtracts in the range defined by the fit range
+		FitBckCopy = new TF1("FitBckCopy",CopyBackground,fit_limit[0],fit_limit[3],4);
+		FitBckCopy->SetParameters(bck_par);
+	// 	now subtract the background
+		spectrum->Add(FitBckCopy,-1.);
+
+
+		//TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",fit_limit[0],fit_limit[3]);
+	//	TF1 *BckFct = new TF1("BckFct","[0]+[1]*x+[2]*x*x + [3]*pow(x,3)",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
+	//	BckFct->SetParameters(bck_par);
+
+	//    BckFct1 = (TF1*)BckFct->Clone("BckFct1");
+
+
+	    return spectrum;
+	}
 
 Double_t Ana::BackSpline(TGraph *gr1){
 	TCanvas * chelp = new TCanvas();
