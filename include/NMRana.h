@@ -13,9 +13,12 @@
 //////////////////////////////////////////////////////////
 /*
  * histos:
- * NMR1: Signal Histogram (all signals in a final histogram)
- * NMR_RT: Real_time signal histo ; the 20 sweep histograms
- * NMR_RT_Corr; NMR_RT - Qcurve histogram
+ * NMR1: Signal Histogram (all signals in a final histogram) withb Qcurve subtrtacted
+ * NMR1_Qfit: Signal Histogram with Qfit subtracted
+ * NMR_RT: Real_time signal histo ; the 20 sweep histograms // reset everye sweep
+ * NMR_RT_Corr; NMR_RT - Qcurve histogram reset every sweep;  from this we calculate the polarization
+ * * however careful; I am doing a linear background subtraction det
+ * *
  * Qcurve_histo: Normazlied Qcurve histogram
  * NMR1_NoQ: NMR signal without Qcurve subtraction
  *
@@ -110,8 +113,6 @@ public :
    Double_t 		HeT;
    Double_t			HeP;
 
-   Double_t 	   *gr_freq;
-   Double_t		   *gr_amp; // needed for creating and filling the background graph
 
    Double_t			Qamp; // amplifier setting for Qcurve
    Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
@@ -131,6 +132,7 @@ public :
    Double_t CalConst;// Calibration constant read from parameter file
    Double_t gain_array[3];
    Double_t NumberOfSweeps;  // total number of sweeps
+   Double_t TotalEntries; //running tally of all the entries from the different runs, used to renormaize the histograms NMR1, NMR1-NoQ and NMR1_Qfit
 
    Double_t CurveOffset; // this is the offset which is caluclated as an averag between the left and the right window
    	   	   	   	   	   	   // it is subratced from the signal and then the calibration constant is calculated and the area
@@ -142,6 +144,7 @@ public :
    	   	   	   	   	     // they agree. if they don;'t give a warning, and l;ater correct with firts
    Double_t QcurveScale;// This is the number of sweeps in the Qcuvre root file which was used to do the fit. This gives the scale
    	   	   	   	   	   	   // how much we have to renormalize: It is really fitpar/Qcurve_scale
+   Double_t QcurveGain; // gain for QCurve measurement
    Double_t QfitPar[5]; // the parameters determined from the QCurve fit and written to the Qcurve.txt; these are normalized by QcurveScale !! so they are really
    	   	   	   	   	   	 // QfitPar/QcurveScale;
    // end of Qcurve parameters
@@ -232,6 +235,8 @@ public :
    // the block for the histograms
    TH1D 	 *NMR1; // Signal histogram
    TH1D		 *NMR1_NoQ ; // Signal without Qcurve subtraction
+   TH1D		 *NMR1_Qfit ; // Signal Qfit subtraction
+
    TH1D      *NMR_RT;// real time display of the NMR signal
    TH1D      *NMR_RT_Corr;// real time display of the NMR signal, with background fit subtracted
    TH1D		 *PolTime; // polarization vs time
@@ -333,6 +338,7 @@ NMRana::NMRana(){
     QfitPar[2]=0.;
     QfitPar[3]=0.;
     QfitPar[4]=0.;
+    TotalEntries = 0;
 
 
 
@@ -489,7 +495,7 @@ void NMRana::ReadQcurveParFile(std::string name){
 		exit(EXIT_FAILURE);
 	}
 
-    int cols = 10; // number of columns
+    int cols = 11; // number of columns
 	std::string line; // problem with line ending is that ffffing excel uses carriage return instead of line feed for files
 	while(getline(Qpar,line)){
 		size_t len = line.length();
@@ -512,6 +518,7 @@ void NMRana::ReadQcurveParFile(std::string name){
 					else if(num_parts == 7) {QcurveMin = atof(last_start);}
 					else if(num_parts == 8) {QcurveTune = atof(last_start);}
 					else if(num_parts == 9) {QcurveScale = atof(last_start);}
+					else if(num_parts == 10) {QcurveGain = atof(last_start);}
 					else {par[num_parts - 2] = atof(last_start);}
 					tmp++;
 					num_parts++;
@@ -530,7 +537,7 @@ void NMRana::ReadQcurveParFile(std::string name){
 			cout<<file<<" ";
 			for (int l =0 ; l<5;l++){
 				cout<<"  "<<par[l]<<" ";
-				QfitPar[l] = par[l]/QcurveScale;
+				QfitPar[l] = par[l]/QcurveScale/gain_array[int(QcurveGain+.01)]; // normalize to gain
 			} // normalzied to number of sweeps
 
 
@@ -626,8 +633,6 @@ void NMRana::Finish(){
 		cout<<NMR_pr<<" *"<<endl;
 		cout<<NMR_pr<< "***************************************************************"<<endl;
 
-	  	 //delete [] gr_freq;
-	  	 //delete [] gr_amp;
 
 }
 Int_t NMRana::GetEntry(Long64_t entry)
@@ -761,6 +766,8 @@ void NMRana::SetupHistos(){
 
 	   NMR1 = new TH1D("NMR1","Signal histogram",IntScanPoints,MinFreq,MaxFreq);
 	   NMR1->Sumw2();
+	   NMR1_Qfit = new TH1D("NMR1_Qfit","Signal histogram with Qcurve fit subtracted",IntScanPoints,MinFreq,MaxFreq);
+	   NMR1_Qfit->Sumw2();
 	   NMR_RT = new TH1D("NMR_RT","Real TimeSignal histogram",IntScanPoints,MinFreq,MaxFreq);
 	   NMR_RT->Sumw2();
 	   NMR_RT->SetLineColor(kSpring-2);
@@ -913,8 +920,6 @@ void NMRana::SetupHistos(){
 	   }
 
 	   // Do the graph for the histo
-	   gr_freq = new Double_t[IntScanPoints];
-	   gr_amp = new Double_t[IntScanPoints];
 	  // Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
 
 	   	   // histo for debugging
@@ -1030,24 +1035,31 @@ void NMRana::DrawHistos(){
 	// analyze spectra
 	// FindPeak(NMR1);  // temporarily removed, does only seem to be a waste of time
 // draw histos, mainly for debug purpose
-	GeneralCanvas->Divide(1,2);
-	GeneralCanvas->cd(1);
+	GeneralCanvas->Divide(1,3);
+	// renormalize the histos by the total number of entries we read in
+	Double_t NE = 1/TotalEntries;
+	NMR1->Scale(NE);
+	NMR1_Qfit->Scale(NE);
+	NMR1_NoQ->Scale(NE);
 	NMR1->Draw("HIST P");
+	GeneralCanvas->cd(1);
 	//if(!QC)
 		FitBackground(NMR1); //
 		if(QC) {
-			cout<<NMR_pr<< "number of sweeps in file "<<NumberOfSweeps<<endl;
 			Qcurve_histo->Draw("HIST P SAME"); //sacle QCurve hist by number of entries.
-			if(QfitPar[0] !=0)	{   // we have a qfit from the file
-		    Qfit->Draw("SAME");
-		    //TH1F *htemp = new TH1F("htemp","rescaled function",100,FreqCenter*.9986,FreqCenter*1.0014);
-		    //htemp->Add(Qfit,1/200.);
-		    //htemp->Draw("SAME");
-			}
 		}
 //	BckFct1->Draw();
 //    FitSpectrum(NMR1,1);
 	GeneralCanvas->cd(2);
+	NMR1_Qfit->Draw("HIST P");
+	if(QfitPar[0] !=0)	{   // we have a qfit from the file
+    Qfit->Draw("SAME");
+    //TH1F *htemp = new TH1F("htemp","rescaled function",100,FreqCenter*.9986,FreqCenter*1.0014);
+    //htemp->Add(Qfit,1/200.);
+    //htemp->Draw("SAME");
+	}
+
+	GeneralCanvas->cd(3);
 	PolTime->Draw();
 	GeneralCanvas->Update();
 
@@ -1055,7 +1067,6 @@ void NMRana::DrawHistos(){
 		if(QC_DISP){
 
 			AuxCanvas->cd(2);
-			Qcurve_histo->Scale();
 			Qcurve_histo->Draw("HIST P");
 			AuxCanvas->cd(1);
 			NMR1_NoQ->Draw("HIST P");
@@ -1090,7 +1101,7 @@ void NMRana::DrawHistos(){
 
 		fd->Close();
 	}
-   DrawFitHisto();
+   // DrawFitHisto();
 }
 
 void NMRana::Loop()
@@ -1153,31 +1164,33 @@ void NMRana::Loop()
 // reset freq_temp to lower bound
       Double_t freq_temp = MinFreq;
 
-
+      Double_t DataTemp = 0.; // holds the point of data at position j of data array
+      Double_t QcurTemp; // holds the point of data at position j of Qcurev array
       for (UInt_t j = 0; j < array->size(); ++j) {
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
-       	  // array->at(j) /= Qamp; This is historic
-       	  array->at(j) /= gain_array[int(Gain+.01)];
-        	  if(DEBUG==1)raw_histo->Fill(freq_temp,array->at(j));
+       	  DataTemp = array->at(j) / gain_array[int(Gain+.01)];  // take gain out
+       	  QcurTemp = Qcurve_array.at(j);
+
+
+
+        	  if(DEBUG==1)raw_histo->Fill(freq_temp,DataTemp);
+
     	  if(Qcurve_array.size()!=0) {
-    		 NMR1_NoQ->Fill(freq_temp,array->at(j));
+    		 NMR1_NoQ->Fill(freq_temp,DataTemp);
 
 
-    		 NMR1->Fill(freq_temp,array->at(j)- Qcurve_array.at(j));
-    		 NMR_RT_Corr->Fill(freq_temp,array->at(j)- Qcurve_array.at(j));
-             gr_freq[j] = freq_temp;
-             gr_amp[j] = array->at(j)- Qcurve_array.at(j);
+    		 NMR1->Fill(freq_temp,DataTemp- QcurTemp);
+    		 NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+    		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
      	  	  }
     	  else{
-    		  NMR1->Fill(freq_temp,array->at(j));
-    		  NMR_RT_Corr->Fill(freq_temp,array->at(j));
-              gr_freq[j] = freq_temp;
-              gr_amp[j] = array->at(j);
+    		  NMR1->Fill(freq_temp,DataTemp);
+    		  NMR_RT_Corr->Fill(freq_temp,DataTemp);
 
 
     	  	  }
-          NMR_RT->Fill(freq_temp,array->at(j));
+          NMR_RT->Fill(freq_temp,DataTemp);
 
           freq_temp = freq_temp+FreqStep;
 
@@ -1185,8 +1198,6 @@ void NMRana::Loop()
     	  // for backgroiund graph
       	  }
 //		fill the background graph and go to determine the spline
-//      Background = new TGraph(IntScanPoints,gr_freq,gr_amp);
-//      BackSpline(Background);
 //  	    FindPeak(NMR_RT_Corr);
   	    //sum the peak area
       StripCanvas->cd();
@@ -1232,6 +1243,8 @@ void NMRana::Loop()
 	  	  	 // the Qcurve should be subratced on a sweep to seep basis.
 		  	 NumberOfSweeps = nentries;
 
+   //scale NMR1 and NMR1_NoQ to one sweep. This might be a problem for having many files
+		  	TotalEntries += nentries;
 }
 
 Double_t NMRana::CalculateArea(TH1D *histo){
