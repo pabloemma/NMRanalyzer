@@ -48,6 +48,7 @@ public:
 	TF1 *BckFct; // function from background fit
 	TF1 *BckFct1; // copy of function from background fit
 
+
 	Int_t npeaks;	//number of peaks to find
 
 	Double_t *xpeaks; // xpositions of peaks
@@ -78,7 +79,7 @@ public:
 	 static Double_t Background2(Double_t *, Double_t *,Double_t *, Double_t *);
 //	 static Double_t BackSpline(Double_t *, Double_t *,Double_t *, Double_t *, TGraph *); // This will determine a spline back ground
 	 static Double_t BackSpline( TGraph *);
-	 void FitBackground(TH1D*);
+	 TH1D* FitBackground(TH1D*);
 	 void SetFitLimits(Double_t, Double_t, Double_t, Double_t);
 	 Double_t Background(Double_t *, Double_t *);
 	 static Double_t CopyBackground(Double_t *, Double_t *);
@@ -265,7 +266,7 @@ void Ana::makeTF1(){
 
 
 
-void Ana::FitBackground(TH1D *spectrum1){
+TH1D* Ana::FitBackground(TH1D *spectrum1){
 	// this just determines the backgtound parameters of the spectrum
 	// Currently it is a simple 2degree polynomial
 
@@ -277,11 +278,14 @@ void Ana::FitBackground(TH1D *spectrum1){
    	   }
     }
 */
+		// check if spectrum exists, if yes delete so that we do not get mem leaks
 
 	// First copy spectrum into new histo, so we do not overwrite stuff
 
 	Int_t nchan = spectrum1->GetNbinsX();
  	TH1D *spectrum = new TH1D("spectrum","Spectrum for background subtraction ",nchan,spectrum1->GetBinCenter(0),spectrum1->GetBinCenter(nchan-1));
+ 	// delete spectrum and recreate it so no memery leak; stupid way
+
  	spectrum->Sumw2();
  	// Now fille the new histo with the signal noq histo gram
  	// first get number of channels in NMR1_NoQ
@@ -329,7 +333,7 @@ void Ana::FitBackground(TH1D *spectrum1){
 //    BckFct1 = (TF1*)BckFct->Clone("BckFct1");
 
 
-    //return 1;
+    return spectrum;
 }
 
 Double_t Ana::BackSpline(TGraph *gr1){

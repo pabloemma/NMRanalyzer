@@ -15,6 +15,9 @@
  * histos:
  * NMR1: Signal Histogram (all signals in a final histogram) withb Qcurve subtrtacted
  * NMR1_Qfit: Signal Histogram with Qfit subtracted
+ * NMR1_B ; // created by Ana::Fitbackground and is the background fitted and subtracted NMR1 spectrum
+ * NMR1_Qfit_B ; // created by Ana::Fitbackground and is the background fitted and subtracted NMR1_Qfit spectrum
+ *
  * NMR_RT: Real_time signal histo ; the 20 sweep histograms // reset everye sweep
  * NMR_RT_Corr; NMR_RT - Qcurve histogram reset every sweep;  from this we calculate the polarization
  * * however careful; I am doing a linear background subtraction det
@@ -152,6 +155,7 @@ public :
    // Variables associated with the real Qcurve file
    Long64_t QcurveEntries; // the number of entries in the measured Qcurve
    std::vector<double>  Qcurve_array; // this  QCurve array normalized to the sweep number and the gain.
+   Double_t QCtune; // used to make sure that Qcurve tune voltages are the same as from data taking
 
 
    	   Int_t StripLength ; // how many points in the stripchart
@@ -236,6 +240,9 @@ public :
    TH1D 	 *NMR1; // Signal histogram
    TH1D		 *NMR1_NoQ ; // Signal without Qcurve subtraction
    TH1D		 *NMR1_Qfit ; // Signal Qfit subtraction
+   TH1D 	 *NMR1_B ; // created by Ana::Fitbackground and is the background fitted and subtracted NMR1 spectrum
+   TH1D 	 *NMR1_Qfit_B ; // created by Ana::Fitbackground and is the background fitted and subtracted NMR1 spectrum
+
 
    TH1D      *NMR_RT;// real time display of the NMR signal
    TH1D      *NMR_RT_Corr;// real time display of the NMR signal, with background fit subtracted
@@ -766,7 +773,7 @@ void NMRana::SetupHistos(){
 
 	   NMR1 = new TH1D("NMR1","Signal histogram",IntScanPoints,MinFreq,MaxFreq);
 	   NMR1->Sumw2();
-	   NMR1_Qfit = new TH1D("NMR1_Qfit","Signal histogram with Qcurve fit subtracted",IntScanPoints,MinFreq,MaxFreq);
+	   NMR1_Qfit = new TH1D("NMR1_Qfit","Signal histogram with Qcurve fit subtracted",IntScanPoints,FreqCenter*.9986,FreqCenter*1.0014);
 	   NMR1_Qfit->Sumw2();
 	   NMR_RT = new TH1D("NMR_RT","Real TimeSignal histogram",IntScanPoints,MinFreq,MaxFreq);
 	   NMR_RT->Sumw2();
@@ -1041,19 +1048,35 @@ void NMRana::DrawHistos(){
 	NMR1->Scale(NE);
 	NMR1_Qfit->Scale(NE);
 	NMR1_NoQ->Scale(NE);
-	NMR1->Draw("HIST P");
+
 	GeneralCanvas->cd(1);
-	//if(!QC)
-		FitBackground(NMR1); //
-		if(QC) {
-			Qcurve_histo->Draw("HIST P SAME"); //sacle QCurve hist by number of entries.
-		}
-//	BckFct1->Draw();
+
+	NMR1->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
+	NMR1->Draw("HIST P");
+	// if(!QC) {
+		NMR1_B = FitBackground(NMR1); //
+		NMR1_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
+		NMR1_B->SetLineColor(2);
+		NMR1_B->Draw("HIST  SAME");
+
+	//}
+		//if(QC) {
+		//	Qcurve_histo->Draw("HIST P SAME"); //
+		// }
+
+
+
+		//	BckFct1->Draw();
 //    FitSpectrum(NMR1,1);
 	GeneralCanvas->cd(2);
 	NMR1_Qfit->Draw("HIST P");
+	/*NMR1_Qfit_B = FitBackground(NMR1_Qfit); //
+	NMR1_Qfit_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
+	NMR1_Qfit_B->SetLineColor(2);
+	NMR1_Qfit_B->Draw("HIST  SAME");*/
+
 	if(QfitPar[0] !=0)	{   // we have a qfit from the file
-    Qfit->Draw("SAME");
+    //Qfit->Draw("SAME");
     //TH1F *htemp = new TH1F("htemp","rescaled function",100,FreqCenter*.9986,FreqCenter*1.0014);
     //htemp->Add(Qfit,1/200.);
     //htemp->Draw("SAME");
@@ -1158,6 +1181,14 @@ void NMRana::Loop()
       // if (Cut(ientry) < 0) continue;
 	  //	 cout<<NMR_pr<<nentries<<" in loop Number of sweeps"<<ScanNumber<<endl;
 	  //	 cout<<NMR_pr<<" TuneV "<<TuneV<<endl;
+
+//	Consistency checks:
+// first test that tune voltage between measurement and Qcurve are the same
+      if(TuneV != QcurveTune || TuneV != QCtune) {
+    	  cout<<NMR_pr<<" !!warning Tune voltages are not the same Data tuneV :"<< TuneV<<"    Qcurve data tunev : "<<QCtune<< "Fit Qcurve tune :"<<QcurveTune<<endl;
+      }
+
+
 
 
 //	now fill histogram
@@ -1376,7 +1407,7 @@ void NMRana::FillQcurveArray(){
 	      if (ientry < 0) break;
 	      nb = QCUtree->GetEntry(jentry);   nbytes += nb;
 	      Double_t freq_temp = MinFreq;
-
+	      QCtune = TuneV;
 
 	      for (UInt_t j = 0; j < array->size(); ++j) {
 	          //NMR1->Fill(freq_temp,array->at(j));
