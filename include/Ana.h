@@ -265,7 +265,7 @@ void Ana::makeTF1(){
 
 
 
-void Ana::FitBackground(TH1D *spectrum){
+void Ana::FitBackground(TH1D *spectrum1){
 	// this just determines the backgtound parameters of the spectrum
 	// Currently it is a simple 2degree polynomial
 
@@ -277,6 +277,22 @@ void Ana::FitBackground(TH1D *spectrum){
    	   }
     }
 */
+
+	// First copy spectrum into new histo, so we do not overwrite stuff
+
+	Int_t nchan = spectrum1->GetNbinsX();
+ 	TH1D *spectrum = new TH1D("spectrum","Spectrum for background subtraction ",nchan,spectrum1->GetBinCenter(0),spectrum1->GetBinCenter(nchan-1));
+ 	spectrum->Sumw2();
+ 	// Now fille the new histo with the signal noq histo gram
+ 	// first get number of channels in NMR1_NoQ
+
+ 	for (Int_t k=0 ; k < spectrum1->GetNbinsX(); k++){
+
+ 		spectrum->Fill(spectrum1->GetBinCenter(k),spectrum1->GetBinContent(k));
+ 	}
+
+
+
 	 ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Fumili2"); // faster minimizer
 	makeTF1();
 	FitBck->SetNpx(1000);
@@ -324,7 +340,7 @@ Double_t Ana::BackSpline(TGraph *gr1){
 
 }
 void  Ana::SetFitLimits(Double_t x1, Double_t x2 , Double_t x3, Double_t x4){
-	// this sets the lower and upper window of the quadratic background fit for the backgriound subtraction
+	// this sets the lower and upper window of the quadratic background fit for the background subtraction
 	fit_limit[0] = x1;
 	fit_limit[1] = x2;
 	fit_limit[2] = x3;
