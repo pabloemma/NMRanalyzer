@@ -126,6 +126,14 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 	theApp->GetOptions(&argc,argv);
 
 
+	extern Bool_t gPrintViaErrorHandler;
+
+	gPrintViaErrorHandler = true;
+
+
+	//	extern int gErrorIgnoreLevel;
+//	gErrorIgnoreLevel = 9999;
+
 
 	InputRootDirectory = theApp->WorkingDirectory();
 
