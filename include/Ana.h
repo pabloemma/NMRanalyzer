@@ -82,7 +82,7 @@ public:
 	 static Double_t BackSpline( TGraph *);
 	 TH1D* FitBackground(TH1D*); // this one gets called at every sweep event
 	 TH1D* FitBackground1(TH1D*); // this one gets called at the end by the signal histo
-	 void SubtractLinear(TH1D*); //
+	 void SubtractLinear(TH1D*,Int_t,Int_t,Int_t,Int_t,Double_t, Double_t); //
 	 void SetFitLimits(Double_t, Double_t, Double_t, Double_t);
 	 Double_t Background(Double_t *, Double_t *);
 	 static Double_t CopyBackground(Double_t *, Double_t *);
@@ -302,7 +302,21 @@ void Ana::makeTF1(){
 */
 
 
-	 ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Fumili2"); // faster minimizer
+	 //ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Fumili2"); // faster minimizer
+
+		ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2","Minimize");
+		ROOT::Math::MinimizerOptions::SetDefaultStrategy(2);
+		ROOT::Math::MinimizerOptions::SetDefaultTolerance(.0001);
+		ROOT::Math::MinimizerOptions::SetDefaultPrecision(1.e-10);
+		ROOT::Math::MinimizerOptions::SetDefaultMaxIterations(100000);
+		ROOT::Math::MinimizerOptions::SetDefaultMaxFunctionCalls(1000000);
+		ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(0);
+
+//		extern int gErrorIgnoreLevel;
+//		gErrorIgnoreLevel = 1001;
+
+
+
 	makeTF1();
 	FitBck->SetNpx(1000);
 	FitBck->SetLineWidth(4);
@@ -426,24 +440,24 @@ void  Ana::SetFitLimits(Double_t x1, Double_t x2 , Double_t x3, Double_t x4){
 	fit_limit[2] = x3;
 	fit_limit[3] = x4;
 	}
-void Ana::SubtractLinear(TH1D *spec){
+void Ana::SubtractLinear(TH1D *spec,Int_t Ifit_x1,Int_t Ifit_x2,Int_t Ifit_x3,Int_t Ifit_x4, Double_t xlow,Double_t xhigh){
 	// determines a linear fit on the QCurve subtracted histogram
 	// first we take the integral on the low x and the high x
 	// take lower range and integrate and higher range
 	// mostly pseudocode right now
 
-	/*  Double_t ylow = spec->Integral();
-	Double_t yhigh = spec->Integral();
-	Double_t xlow = x2-x1;
-	Double_t xhigh = x4-x3;
-	Double_t slope = (yhigh-ylow)/(xlow-xhigh);
-	Double_t offset = y1 - slope*x1;
-	// do the subtraction on the integral
-	 *
-	 *
-	 *
-	 */
 
+
+    Double_t ylow = spec->Integral(Ifit_x1,Ifit_x2)/(Ifit_x2-Ifit_x1+1);
+	Double_t yhigh = spec->Integral(Ifit_x3,Ifit_x4)/(Ifit_x4-Ifit_x3+1);
+	Double_t slope = (yhigh-ylow)/(xhigh-xlow);
+	Double_t offset = ylow - slope*xlow;
+
+    for (Int_t k =0; k < spec->GetNbinsX(); k++){
+    	Double_t newval = offset +slope*spec->GetBinCenter(k);
+      	Double_t temp = spec->GetBinContent(k)-newval;
+    	spec->SetBinContent(k,temp);
+    }
 
 
 }
