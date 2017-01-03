@@ -126,6 +126,11 @@ public :
    Double_t MaxFreq ;
    Double_t low_x;  //area limits
    Double_t high_x;
+
+   Double_t low_fit_x;  // center of lower fit window; fit_x2+fit_x1/2
+   Double_t high_fit_x; //width of higher fit window; used by subtract linear to remove any slope
+
+
    Double_t SignalArea ; // the summed area of every signal // not normalized yet
    Double_t SignalAreaNormalized ; // aka polarization
 
@@ -472,7 +477,11 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		cout<<NMR_pr<<"the integration limits are wrong Low limit is larger than high limit  "<<lownmr<<"  "<<hinmr<<"\n";
 	}
 	else  AreaSetLimits(lownmr,hinmr);
-	if(FitLimit)SetFitLimits(fit_x1,fit_x2,fit_x3,fit_x4);
+	if(FitLimit){
+		SetFitLimits(fit_x1,fit_x2,fit_x3,fit_x4);
+		low_fit_x = (fit_x2 + fit_x1)/2.;
+		high_fit_x = (fit_x4 + fit_x3)/2.;
+	}
 
 
 }
@@ -784,7 +793,6 @@ void NMRana::SetupHistos(){
 	   NMR_RT_Corr->Sumw2();
 	   NMR_RT_Corr->SetLineColor(kBlue-2);
 	   NMR_RT_Corr->SetLineWidth(4);
-
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
 	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
@@ -980,7 +988,9 @@ void NMRana::SetupCanvas(){
 
 	}
 
-	RTCanvas =  new TCanvas("RTCanvas","Real Time charts",100,1000,400,300);
+	//RTCanvas =  new TCanvas("RTCanvas","Real Time charts",100,1000,400,300);
+	// For debugging purposes
+	RTCanvas =  new TCanvas("RTCanvas","Real Time charts",100,200,800,800);
 	RTCanvas->SetGrid();
 	RTCanvas->SetFillColor(23);
 	RTCanvas->SetFrameFillColor(16);
@@ -1245,22 +1255,6 @@ void NMRana::Loop()
       PatDiffArea = CalculatePatArea(NMR_RT_Corr);
 
 
-      //warninghook
-      if(TEmeasurement) SignalArea = CalculateArea(NMR_RT_Corr);
-      else  SignalArea = CalculateArea(NMR_RT_Corr);
-//end warninghook
-
-
-      // Convert to polarization
-            SignalArea *=CalConst;
-
-// now for every point in a TE we will calculate the polarization from the pressure
-// the ratio of calculated polarization/ area gives the calibration constant calib
-// so that calib*area = polarization of the reL SIGNAL
-// at the end we will calculate an average caibration constant with a deviation
-
-      Stripper(jentry); // draw all the strip charts
-
 
 
 // draw the signal histogram
@@ -1269,10 +1263,33 @@ void NMRana::Loop()
 	  RTCanvas->cd(2);
 	  //NMR_RT_Corr->Draw("HIST P");
 		 TH1D * temp = FitBackground(NMR_RT_Corr);
+		 SubtractLinear(temp,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4,low_fit_x,high_fit_x);
+
+		 if(TEmeasurement) SignalArea = CalculateArea(temp);
+	      else  SignalArea = CalculateArea(NMR_RT_Corr);
+
+      if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
 
 	  temp->Draw("HIST P");
 	  RTCanvas->Modified();
 	  RTCanvas->Update();
+
+
+	     //warninghook
+	//end warninghook
+
+
+	      // Convert to polarization
+	            SignalArea *=CalConst;
+
+	// now for every point in a TE we will calculate the polarization from the pressure
+	// the ratio of calculated polarization/ area gives the calibration constant calib
+	// so that calib*area = polarization of the reL SIGNAL
+	// at the end we will calculate an average caibration constant with a deviation
+
+	      Stripper(jentry); // draw all the strip charts
+
+
 
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
