@@ -257,6 +257,7 @@ public :
    TH1D		 *PressTime ; // Pressure vs time for TE measurement
    TH1D		 *SysTempTime ; // Pressure vs time for TE measurement
    TH1D		 *PatTemp; // pats way to check for temeparture shifts, uses low and high integral of signal and stakes the difference
+   TH1D		*CrateTemp; // temperature of crate vs time
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
    TH1D	     *ht[20];// Number of strip charts
    TH1D		 *raw_histo;// this is the histogram filled by the raw numbers//
@@ -270,6 +271,7 @@ public :
    TCanvas	 *StripCanvas_2; // for TE measurement shows the pressure over time.
    TCanvas	 *StripCanvas_3; // for TE measurement shows the system tempearture over time.
    TCanvas	 *StripCanvas_4; //  background over time.
+   TCanvas	 *StripCanvas_5; //  Crate temperature
 
    TCanvas	 *AuxCanvas;   // all the auxiliary plots, like Qcurve
    TCanvas	 *RTCanvas ;    // Life time display canvas, get used in Loop
@@ -845,6 +847,9 @@ void NMRana::SetupHistos(){
 		   PatTemp = SetupStripChart("Background difference vs time");
 		   PatTemp->SetMaximum(20.);
 		   PatTemp->SetMinimum(-20.);
+		   CrateTemp = SetupStripChart("Crate Temp vs time");
+		   CrateTemp->SetMaximum(30.);
+		   CrateTemp->SetMinimum(20.);
 
 	   }
 
@@ -987,6 +992,11 @@ void NMRana::SetupCanvas(){
 		StripCanvas_4->SetGrid();
 		StripCanvas_4->SetFillColor(34);
 		StripCanvas_4->SetFrameFillColor(24);
+		strip_y += strip_h;
+		StripCanvas_5 =  new TCanvas("StripCanvas_5","Crate temperature",strip_x,strip_y,strip_w,strip_h);
+		StripCanvas_5->SetGrid();
+		StripCanvas_5->SetFillColor(34);
+		StripCanvas_5->SetFrameFillColor(24);
 
 	}
 
@@ -1173,7 +1183,8 @@ void NMRana::Loop()
    if(TEmeasurement){
 	   StripCanvas_1->cd();
 	   StripCanvas_2->cd();
-	   StripCanvas_3->cd();
+	   StripCanvas_4->cd();
+	   StripCanvas_5->cd();
 
    }
 
@@ -1267,8 +1278,10 @@ void NMRana::Loop()
 		 TH1D * temp = FitBackground(NMR_RT_Corr);
 		 SubtractLinear(temp,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4,low_fit_x,high_fit_x);
 
-		 if(TEmeasurement) SignalArea = CalculateArea(temp);
-	      else  SignalArea = CalculateArea(NMR_RT_Corr);
+		 /*if(TEmeasurement) SignalArea = CalculateArea(temp);
+	      else  SignalArea = CalculateArea(NMR_RT_Corr);*/
+		 SignalArea = CalculateArea(temp);
+
 
       //if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
 
