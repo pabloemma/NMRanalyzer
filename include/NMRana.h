@@ -794,8 +794,10 @@ void NMRana::SetupHistos(){
 	   NMR_RT_Corr->SetLineColor(kBlue-2);
 	   NMR_RT_Corr->SetLineWidth(4);
 	   // Determine the Integration or summation limits for peak in terms of channels.
-	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
-	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
+	   //	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
+	   //	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
+	   	   low_id = NMR1->GetXaxis()->FindBin(fit_x1);
+	   	   high_id = NMR1->GetXaxis()->FindBin(fit_x4);
 	   Ifit_x1 = NMR1->GetXaxis()->FindBin(fit_x1);
 	   Ifit_x2 = NMR1->GetXaxis()->FindBin(fit_x2);
 	   Ifit_x3 = NMR1->GetXaxis()->FindBin(fit_x3);
@@ -834,7 +836,7 @@ void NMRana::SetupHistos(){
 		   CalibTime = SetupStripChart("Calibration Constant (pol over TEarea) vs time");
 		   CalibTime->SetMaximum(100.);
 		   CalibTime->SetMinimum(0.);
-		   PressTime = SetupStripChart("TE pressure vs time");
+		   PressTime = SetupStripChart("TE pressure [Torr] vs time");
 		   PressTime->SetMaximum(20.);
 		   PressTime->SetMinimum(0.);
 		   SysTempTime = SetupStripChart("TEmperature vs time");
@@ -1268,7 +1270,7 @@ void NMRana::Loop()
 		 if(TEmeasurement) SignalArea = CalculateArea(temp);
 	      else  SignalArea = CalculateArea(NMR_RT_Corr);
 
-      if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
+      //if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
 
 	  temp->Draw("HIST P");
 	  RTCanvas->Modified();
@@ -1317,7 +1319,7 @@ Double_t NMRana::CalculateArea(TH1D *histo){
 		//Double_t sum = histo->Integral(histo->FindBin(fit_x2),histo->FindBin(fit_x3));
     Double_t sum11 =0;
     // determine sum of channels from low channel to high channel as determined from read in.
-    Double_t sum = histo->Integral(low_id,high_id)-(high_id-low_id+1)*CurveOffset;
+    Double_t sum = histo->Integral(low_id,high_id);
     //cout<< histo->Integral(low_id,high_id) <<"  "<<(high_id-low_id+1)*CurveOffset<<"  "<<sum<<endl;
 
     return sum ;
@@ -1560,7 +1562,7 @@ void NMRana::Stripper(Long64_t jentry){
 
 		  // give a pressure if there is none
 		  if( HeP==0.0 ) HeP = 5.5 ; //pressure in Torr
-		  CalibConstant = TE.CalculateTEP("proton",.5,5.004,HeP) ; // needs to change to ROOTfile pressure
+		  CalibConstant = TE.CalculateTEP("proton",.5,5.0027,HeP) ; // needs to change to ROOTfile pressure
 		  CalibConstant = CalibConstant/SignalArea;
 		  CalibConstantVector.push_back(CalibConstant);
 		  CalibTime->SetBinContent(jentry,CalibConstant);
