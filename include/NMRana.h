@@ -376,7 +376,7 @@ NMRana::NMRana(){
 	//Set the QCurve to fastAna
 	fastAna->setQCurve(qcHist);
 
-	cout<<NMR_pr<< "Evereything initialized"<<endl;
+	cout<<NMR_pr<< "Everything initialized"<<endl;
 
 
 
