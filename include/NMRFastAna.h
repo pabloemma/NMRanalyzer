@@ -113,7 +113,8 @@ void NMRFastAna::init()
 	fcn = ROOT::Math::Functor(this, &NMRFastAna::chisq, 2);
 
 	//Initialize Fitter
-	minimizer = ROOT::Math::Factory::CreateMinimizer("Minuit2", "Combined");
+	//minimizer = ROOT::Math::Factory::CreateMinimizer("Minuit2", "Combined");
+	minimizer = ROOT::Math::Factory::CreateMinimizer("Minuit", "Combined");
 	minimizer->SetMaxFunctionCalls(1000000);
 	minimizer->SetMaxIterations(10000);
 	minimizer->SetTolerance(0.0001);
