@@ -65,6 +65,7 @@
 
 #include "Ana.h"
 #include "TEana.h"
+#include "NMRFastAna.h"  //Kun's Qcurve hifting class
 
 using namespace std;
 
@@ -354,6 +355,28 @@ NMRana::NMRana(){
     QfitPar[3]=0.;
     QfitPar[4]=0.;
     TotalEntries = 0;
+
+    // Now initialize and instantiate NMRFastANa
+
+    cout<<NMR_pr<< "Initializing NMRFastAna" <<endl;
+
+	NMRFastAna* fastAna = new NMRFastAna();
+	fastAna->setFreqRange(212.7, 213.3);
+	fastAna->setExclusionWin(213.0, 0.1);
+	fastAna->setSampleRate(1);
+	fastAna->setXOffsetRange(-50, 50);
+	fastAna->setYOffsetRange(-1., 1.);
+	fastAna->init();
+
+	// temp fix
+	TH1D* qcHist = new TH1D("qcHist", "qcHist", ScanPoints, MinFreq, MaxFreq);
+	qcHist->Sumw2();
+
+
+	//Set the QCurve to fastAna
+	fastAna->setQCurve(qcHist);
+
+	cout<<NMR_pr<< "Evereything initialized"<<endl;
 
 
 
