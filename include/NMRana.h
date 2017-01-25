@@ -165,7 +165,7 @@ public :
    Double_t QCtune; // used to make sure that Qcurve tune voltages are the same as from data taking
    Double_t QCcoil; // used to make sure that Qcurve tune voltages are the same as from data taking
 
-
+   const char * analysis_text_file; // if cosen in parameter file, redirects output to analysis text file
    	   Int_t StripLength ; // how many points in the stripchart
 
 
@@ -194,6 +194,7 @@ public :
    Bool_t QC_DISP; // If we have a Qcurve we can display it with setting this switch to 1
    Bool_t FitLimit;
    Bool_t QCshift; // if true calcuate the QCurve shift and subtract the shifted Curve
+   Bool_t TXT ;//output to file
    TTree *QCUtree;
    std::map<std::string,std::string> Parameters; // input parameters
    std::vector<Double_t> CalibConstantVector; // this hold the calculated calibration constants and will calculate mean and error
@@ -434,6 +435,27 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 	// Now print out parameter map
 	for( std::map<string,string>::iterator pos=Parameters.begin(); pos !=  Parameters.end(); ++pos){
+
+		if(pos->first.find("ANATEXT")!= std::string::npos){
+			// amplifier setting for QCurve
+		std:;string filenamestring = pos->second;
+		analysis_text_file = filenamestring.c_str();
+		cout<<endl;
+		cout<<endl;
+		cout<<endl;
+		cout<<NMR_pr<<"**************************************************"<<endl;
+		cout<<NMR_pr<<"!!!!!!!!!!input redirected to "<< analysis_text_file<<" !!!!!!!"<<endl;
+		cout<<NMR_pr<<"**************************************************"<<endl;
+		cout<<endl;
+		cout<<endl;
+		cout<<endl;
+
+		freopen(analysis_text_file,"w",stdout); // redirect cout
+
+		TXT=true;
+
+		}
+
 		cout<<NMR_pr<<"parameters from file  :"<<pos->first<<"\t"<<pos->second <<"\n";
 
 
@@ -503,6 +525,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		if(help == 1) QCshift = true;
 		else QCshift = false;
 		}
+
 
 	}
 	if(QC){
@@ -836,8 +859,8 @@ void NMRana::SetupHistos(){
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   //	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
 	   //	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
-	   	   low_id = NMR1->GetXaxis()->FindBin(fit_x1);
-	   	   high_id = NMR1->GetXaxis()->FindBin(fit_x4);
+	   	   low_id = NMR1->GetXaxis()->FindBin(fit_x2);
+	   	   high_id = NMR1->GetXaxis()->FindBin(fit_x3);
 	   Ifit_x1 = NMR1->GetXaxis()->FindBin(fit_x1);
 	   Ifit_x2 = NMR1->GetXaxis()->FindBin(fit_x2);
 	   Ifit_x3 = NMR1->GetXaxis()->FindBin(fit_x3);
@@ -1192,6 +1215,11 @@ void NMRana::DrawHistos(){
 		fd->Close();
 	}
    // DrawFitHisto();
+	// print out the different integrals;
+	// they are unnormalized
+	cout<<NMR_pr<< "*************   Integral of histo NMR1 "<<NMR1->Integral(low_id,high_id)<<endl;
+	cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
+
 }
 
 void NMRana::Loop()
