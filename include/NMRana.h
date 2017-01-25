@@ -122,6 +122,7 @@ public :
    Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
    Long64_t	        time_offset;
    std::vector<double>  *array;
+   std::vector<int>  xoffset ; // vector of offsert for Qcurve, filled by NMRfastana
 
    Double_t MinFreq ; // limits of frequency sweep
    Double_t MaxFreq ;
@@ -192,6 +193,7 @@ public :
    Bool_t QC; // set true for qcurve subtraction
    Bool_t QC_DISP; // If we have a Qcurve we can display it with setting this switch to 1
    Bool_t FitLimit;
+   Bool_t QCshift; // if true calcuate the QCurve shift and subtract the shifted Curve
    TTree *QCUtree;
    std::map<std::string,std::string> Parameters; // input parameters
    std::vector<Double_t> CalibConstantVector; // this hold the calculated calibration constants and will calculate mean and error
@@ -263,6 +265,7 @@ public :
    TH1D	     *ht[20];// Number of strip charts
    TH1D		 *raw_histo;// this is the histogram filled by the raw numbers//
    TH1D		 *raw_histo_QC;// this is the histogram filled by the raw numbers and at the end QC subtracted
+
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
    TF1		 *Qfit; // The Qcurve Fit function determin ed from QCana and read in from Qcurve.txt filk
    //
@@ -283,6 +286,7 @@ public :
    TDatime *td ; // Datetime for time histogram
    TTimeStamp *RootTimeStamp;
    TFile *QcurveFile; //
+   NMRFastAna* fastAna; // the fast system
    std::string QcurveFileName ; // Qcurve file name
 
 
@@ -309,6 +313,7 @@ public :
    virtual void		SetEnvironment(std::string);
    virtual void		ReadQcurveParFile(std::string);
    virtual void     DrawFitHisto(); // draws signal hist with subtracted fitted background
+   virtual void		InitFastAna(); // initializes the fast Qcurve treatment
 
    // memebre which will be inhertied from TEana
    void     Loop(); // TEana inherits
@@ -355,26 +360,10 @@ NMRana::NMRana(){
     QfitPar[3]=0.;
     QfitPar[4]=0.;
     TotalEntries = 0;
+    QCshift = true ; // default calculate Qcurve shift.
 
     // Now initialize and instantiate NMRFastANa
 
-    cout<<NMR_pr<< "Initializing NMRFastAna" <<endl;
-
-	NMRFastAna* fastAna = new NMRFastAna();
-	fastAna->setFreqRange(212.7, 213.3);
-	fastAna->setExclusionWin(213.0, 0.1);
-	fastAna->setSampleRate(1);
-	fastAna->setXOffsetRange(-50, 50);
-	fastAna->setYOffsetRange(-1., 1.);
-	fastAna->init();
-
-	// temp fix
-	TH1D* qcHist = new TH1D("qcHist", "qcHist", ScanPoints, MinFreq, MaxFreq);
-	qcHist->Sumw2();
-
-
-	//Set the QCurve to fastAna
-	fastAna->setQCurve(qcHist);
 
 	cout<<NMR_pr<< "Everything initialized"<<endl;
 
@@ -386,7 +375,27 @@ void NMRana::SetEnvironment(std::string environment){
 	NMR_ROOT = environment ;
 }
 
+void NMRana::InitFastAna(){
+	// initializes the fast ana system, which is used for the QCurve shifting
+    cout<<NMR_pr<< "Initializing NMRFastAna" <<endl;
 
+	fastAna = new NMRFastAna();
+	fastAna->setFreqRange(212.7, 213.3);
+	fastAna->setExclusionWin(213.0, 0.1);
+	fastAna->setSampleRate(1);
+	fastAna->setXOffsetRange(-50, 50);
+	fastAna->setYOffsetRange(-1., 1.);
+	fastAna->init();
+
+
+
+	//Set the QCurve to fastAna
+	fastAna->setQCurve(Qcurve_histo);
+
+
+
+
+}
 
 void NMRana::ReadParameterFile(TString ParameterFile){
 	// reads in parameters for running the NMRanalyzer
@@ -487,6 +496,12 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 		cout<<"Qcurve File "<<QcurveFileName<<endl;
 
+		}
+		if(pos->first.find("QCSHIFT")!= std::string::npos){
+			// shift qcurve or not
+		Int_t help = std::stod(pos->second);
+		if(help == 1) QCshift = true;
+		else QCshift = false;
 		}
 
 	}
@@ -974,6 +989,12 @@ void NMRana::SetupHistos(){
 		   raw_histo_QC = new TH1D("raw_histo_QC"," Signal histogram with QCurve subtracted",IntScanPoints,MinFreq,MaxFreq);//
 	   }
 
+	   // Initialze the QCurve Fast Ana system
+	   InitFastAna();
+
+
+
+
 
 }
 void NMRana::SetupCanvas(){
@@ -1175,29 +1196,6 @@ void NMRana::DrawHistos(){
 
 void NMRana::Loop()
 {
-//   In a ROOT session, you can do:
-//      Root > .L NMRana.C
-//      Root > NMRana t
-//      Root > t.GetEntry(12); // Fill t data members with entry number 12
-//      Root > t.Show();       // Show values of entry 12
-//      Root > t.Show(16);     // Read and show values of entry 16
-//      Root > t.Loop();       // Loop on all entries
-//
-
-//     This is the loop skeleton where:
-//    jentry is the global entry number in the chain
-//    ientry is the entry number in the current Tree
-//  Note that the argument to GetEntry must be:
-//    jentry for TChain::GetEntry
-//    ientry for TTree::GetEntry and TBranch::GetEntry
-//
-//       To read only selected branches, Insert statements like:
-// METHOD1:
-//    fChain->SetBranchStatus("*",0);  // disable all branches
-//    fChain->SetBranchStatus("branchname",1);  // activate branchname
-// METHOD2: replace line
-//    fChain->GetEntry(jentry);       //read all branches
-//by  b_branchname->GetEntry(ientry); //read only this branch
    if (fChain == 0) return;
 
 
@@ -1214,6 +1212,23 @@ void NMRana::Loop()
    Long64_t nentries = fChain->GetEntriesFast();
    Long64_t time_prev = 0;
    Long64_t nbytes = 0, nb = 0;
+   // insert Kun's fst analyzer to get the QCurve offset
+	for(int i = 0; i < nentries; ++i)   //This is equivalent to NMRana::Loop()
+	{
+		fChain->GetEntry(i);
+
+		TH1D* teHist = new TH1D("teHist", "teHist", ScanPoints, MinFreq, MaxFreq);
+		for(int j = 0; j < ScanPoints; ++j)
+		{
+			teHist->Fill(MinFreq+j*FreqStep, array->at(j)/gain_array[int(Gain+0.01)]);
+		}
+		//cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
+		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
+		//fastAna->plot(Form("res_%d.pdf", i));
+		// fill array of offsets
+		delete teHist;
+	}
+
 
    RTCanvas->cd(1);
    NMR_RT->Draw("HIST P");
@@ -1254,7 +1269,13 @@ void NMRana::Loop()
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
        	  DataTemp = array->at(j) / gain_array[int(Gain+.01)];  // take gain out
-       	  QcurTemp = Qcurve_array.at(j);
+       	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
+          Int_t shift = j+xoffset.at(jentry);
+          if(QCshift){
+               if(shift<Qcurve_array.size() and shift >=0 ) QcurTemp = Qcurve_array.at(shift);
+        		  else QcurTemp = 0.;
+          }
+          else QcurTemp = Qcurve_array.at(j);
 
 
 
@@ -1265,7 +1286,11 @@ void NMRana::Loop()
 
 
     		 NMR1->Fill(freq_temp,DataTemp- QcurTemp);
-    		 NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+
+       		 //NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+    		 // correct for the Qcurve shift
+    		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp+xoffset.at(jentry)*FreqStep));
+    		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
     		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
     		 // now take background out
      	  	  }
