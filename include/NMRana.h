@@ -23,6 +23,8 @@
  * * however careful; I am doing a linear background subtraction det
  * *
  * Qcurve_histo: Normazlied Qcurve histogram
+ * Qcurve_histo_shifted: shifted QCurve hist  by number of channels, so that the min of the data and the qcurve agree
+ *                        only used at the moment when we do the aux plots
  * NMR1_NoQ: NMR signal without Qcurve subtraction
  *
  * raw_histo: raw signal; only used in Debug mode
@@ -263,6 +265,7 @@ public :
    TH1D		 *PatTemp; // pats way to check for temeparture shifts, uses low and high integral of signal and stakes the difference
    TH1D		*CrateTemp; // temperature of crate vs time
    TH1D		 *Qcurve_histo; // Displays Qcurve if it will be subtracted
+   TH1D		 *Qcurve_histo_shifted; // Displays Qcurve shifted if it will be subtracted
    TH1D	     *ht[20];// Number of strip charts
    TH1D		 *raw_histo;// this is the histogram filled by the raw numbers//
    TH1D		 *raw_histo_QC;// this is the histogram filled by the raw numbers and at the end QC subtracted
@@ -852,10 +855,12 @@ void NMRana::SetupHistos(){
 	   NMR_RT->Sumw2();
 	   NMR_RT->SetLineColor(kSpring-2);
 	   NMR_RT->SetLineWidth(4);
+	   NMR_RT->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
 	   NMR_RT_Corr = new TH1D("NMR_RT_corr","Real TimeSignal background subtracted",IntScanPoints,MinFreq,MaxFreq);
 	   NMR_RT_Corr->Sumw2();
 	   NMR_RT_Corr->SetLineColor(kBlue-2);
 	   NMR_RT_Corr->SetLineWidth(4);
+	   NMR_RT_Corr->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   //	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
 	   //	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
@@ -971,13 +976,15 @@ void NMRana::SetupHistos(){
 
 
 	   if(Qcurve_array.size()!=0){
-		   Qcurve_histo = new TH1D("Qcurve_hist","Normalized Qcurve histogram",IntScanPoints,MinFreq,MaxFreq);
+		   Qcurve_histo = new TH1D("Qcurve_histo","Normalized Qcurve histogram",IntScanPoints,MinFreq,MaxFreq);
 		   Qcurve_histo->Sumw2();
+		   Qcurve_histo_shifted = new TH1D("Qcurve_histo_shifted","Normalized Qcurve histogram shifted ",IntScanPoints,MinFreq,MaxFreq);
+		   Qcurve_histo_shifted->Sumw2();
 		   NMR1_NoQ = new TH1D("NMR1_NoQ","Signal without QCurve subtraction",IntScanPoints,MinFreq,MaxFreq);
 		   NMR1_NoQ->Sumw2();
 			// Now fill the QCurve histo if it is used
 				  if(Qcurve_array.size()!=0){
-				      Double_t freq_temp = MinFreq;
+				      Double_t freq_temp = MinFreq; //shift everything by 22 steps
 
 
 				      for (UInt_t j = 0; j < Qcurve_array.size(); ++j) {
@@ -1143,16 +1150,16 @@ void NMRana::DrawHistos(){
 
 	NMR1->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
 	NMR1->Draw("HIST P");
-	// if(!QC) {
+	 if(!QC) {
 		NMR1_B = FitBackground1(NMR1); //
 		NMR1_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
 		NMR1_B->SetLineColor(2);
 		NMR1_B->Draw("HIST  SAME");
-
-	//}
-		//if(QC) {
-		//	Qcurve_histo->Draw("HIST P SAME"); //
-		// }
+	 }
+	//
+		if(QC) {
+			Qcurve_histo->Draw("HIST P SAME"); //
+		 }
 
 
 
@@ -1179,15 +1186,34 @@ void NMRana::DrawHistos(){
 	if(Qcurve_array.size()!=0){
 		if(QC_DISP){
 
+			// now find how much to shift the qcurve
+			Int_t temp_shift = fastAna->getXOffset(NMR1_NoQ);
+	 		 	for (Int_t k=0 ; k < Qcurve_histo->GetNbinsX(); k++){
+
+	 		 		Qcurve_histo_shifted->Fill(Qcurve_histo->GetBinCenter(k)+temp_shift*FreqStep,Qcurve_histo->GetBinContent(k));
+	 		 	}
+
+
+			Qcurve_histo->SetLineColor(3);
+			//Qcurve_histo->SetMarkerStyle(21);
+			Qcurve_histo_shifted->SetLineColor(4);
+			//Qcurve_histo_shifted->SetMarkerStyle(22);
+			NMR1_NoQ->SetLineColor(2);
+			//NMR1_NoQ->SetMarkerStyle(23);
+
 			AuxCanvas->cd(2);
-			Qcurve_histo->Draw("HIST P");
+			Qcurve_histo->Draw("HIST ");
+			NMR1_NoQ->Draw("SAME HIST ");
+			Qcurve_histo_shifted->Draw("SAME HIST ");
+
 			AuxCanvas->cd(1);
 			NMR1_NoQ->Draw("HIST P");
 			AuxCanvas->cd(3);
 			if(DEBUG == 1){
-				raw_histo_QC=(TH1D*)raw_histo->Clone("raw_histo_QC");
+				raw_histo_QC=(TH1D*)NMR1_NoQ->Clone("raw_histo_QC");
 				// now subtract the Qcurve
-				raw_histo_QC->Add(Qcurve_histo,-1.);
+				raw_histo_QC->Add(Qcurve_histo_shifted,-1.);
+				raw_histo_QC->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
 				raw_histo_QC->Draw("HIST");
 			}
 
@@ -1350,18 +1376,25 @@ void NMRana::Loop()
 	  RTCanvas->cd(1);
 	  NMR_RT->Draw("HIST P");
 	  RTCanvas->cd(2);
-	  //NMR_RT_Corr->Draw("HIST P");
-		 TH1D * temp = FitBackground(NMR_RT_Corr);
+	  NMR_RT_Corr->Draw("HIST P");
+		 /* TH1D * temp = FitBackground(NMR_RT_Corr);
 		 SubtractLinear(temp,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4,low_fit_x,high_fit_x);
+		 		 SignalArea = CalculateArea(temp);
+
+
+		 */
 
 		 /*if(TEmeasurement) SignalArea = CalculateArea(temp);
 	      else  SignalArea = CalculateArea(NMR_RT_Corr);*/
-		 SignalArea = CalculateArea(temp);
+		 SignalArea = CalculateArea(NMR_RT_Corr);
 
 
       //if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
 
-	  temp->Draw("HIST P");
+	  //temp->Draw("HIST P");
+	  NMR_RT_Corr->Draw("HIST P");
+
+
 	  RTCanvas->Modified();
 	  RTCanvas->Update();
 
