@@ -125,6 +125,7 @@ public :
    Long64_t	        time_offset;
    std::vector<double>  *array;
    std::vector<int>  xoffset ; // vector of offsert for Qcurve, filled by NMRfastana
+   std::vector<double>  yoffset ; // vector of y offsert for Qcurve, filled by NMRfastana
 
    Double_t MinFreq ; // limits of frequency sweep
    Double_t MaxFreq ;
@@ -409,6 +410,7 @@ void NMRana::Loop()
 		}
 		//cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
 		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
+		yoffset.push_back(fastAna->getYOffset()); // fill vector of xoffsets
 		//fastAna->plot(Form("res_%d.pdf", i));
 		// fill array of offsets
 		delete teHist;
@@ -418,10 +420,12 @@ void NMRana::Loop()
    RTCanvas->cd(1);
    NMR_RT->Draw("HIST P");
    RTCanvas->cd(2);
+
    NMR_RT_Corr->Draw("HIST P");
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
 	   NMR_RT->Reset();
 	   NMR_RT_Corr->Reset();
+
 	   Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
       nb = fChain->GetEntry(jentry);   nbytes += nb;
@@ -458,6 +462,7 @@ void NMRana::Loop()
           Int_t shift = j-xoffset.at(jentry);
           if(QCshift){
                if(shift<Qcurve_array.size() and shift >=0 ){ QcurTemp = Qcurve_array.at(shift);
+          cout<<"Data "<<DataTemp<<"   Qcurve "<<QcurTemp<<"    yoffset "<<yoffset.at(jentry)<<"   diffe "<<DataTemp-QcurTemp<<endl;
               }
                else QcurTemp = 0.;
           }
@@ -522,6 +527,11 @@ void NMRana::Loop()
       //if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
 
 	  //temp->Draw("HIST P");
+		   if(TEmeasurement) {
+			   NMR_RT_Corr->GetYaxis()->SetRangeUser(-.000005,.16e-3);
+
+		   }
+
 	  NMR_RT_Corr->Draw("HIST P");
 
 
@@ -558,6 +568,135 @@ void NMRana::Loop()
 
    //scale NMR1 and NMR1_NoQ to one sweep. This might be a problem for having many files
 		  	TotalEntries += nentries;
+}
+
+
+
+void NMRana::DrawHistos(){
+
+	// analyze spectra
+	// FindPeak(NMR1);  // temporarily removed, does only seem to be a waste of time
+// draw histos, mainly for debug purpose
+	if(Qcurve_array.size()!=0){
+		if(QC_DISP){
+
+			// now find how much to shift the qcurve
+			Int_t temp_shift = fastAna->getXOffset(NMR1_NoQ);
+			cout<< " temporary shift "<<temp_shift<<endl;
+	 		 	for (Int_t k=0 ; k < Qcurve_histo->GetNbinsX(); k++){
+
+	 		 		Qcurve_histo_shifted->Fill(Qcurve_histo->GetBinCenter(k)-temp_shift*FreqStep,Qcurve_histo->GetBinContent(k));
+	 		 	}
+
+
+			Qcurve_histo->SetLineColor(3);
+			//Qcurve_histo->SetMarkerStyle(21);
+			Qcurve_histo_shifted->SetLineColor(4);
+			//Qcurve_histo_shifted->SetMarkerStyle(22);
+			NMR1_NoQ->SetLineColor(1);
+			//NMR1_NoQ->SetMarkerStyle(23);
+
+			AuxCanvas->cd(2);
+			Qcurve_histo->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
+			Qcurve_histo->Draw("HIST ");
+			NMR1_NoQ->Draw("SAME HIST ");
+			Qcurve_histo_shifted->Draw("SAME HIST ");
+
+			AuxCanvas->cd(1);
+			NMR1_NoQ->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
+			NMR1_NoQ->Draw("HIST ");
+			AuxCanvas->cd(3);
+			if(DEBUG == 1){
+				raw_histo_QC=(TH1D*)NMR1_NoQ->Clone("raw_histo_QC");
+				// now subtract the Qcurve
+				Double_t NE = 1/TotalEntries;
+
+				raw_histo_QC->Scale(NE);
+				//raw_histo_QC->Add(Qcurve_histo_shifted,-1.);
+				raw_histo_QC->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
+				raw_histo_QC->Draw("HIST");
+			}
+
+		AuxCanvas->Update();
+		}
+		else {
+			AuxCanvas->cd(1);
+			NMR1_NoQ->Draw("HIST P");
+			AuxCanvas->Update();
+		}
+
+	}
+	if(DEBUG==1){
+		// first get current directory
+
+
+
+		TFile *fd = new TFile("debug.root","RECREATE");
+		DebugCanvas->cd();
+		raw_histo->Draw("HIST P");
+		raw_histo->Write();
+		Qcurve_histo->SetLineColor(kRed);
+		Qcurve_histo->Draw("HIST "); //sacle QCurve hist by number of entries.
+		Qcurve_histo_shifted->Draw("HIST SAME"); //sacle QCurve hist by number of entries.
+
+		fd->Close();
+	}
+
+	GeneralCanvas->Divide(1,3);
+	// renormalize the histos by the total number of entries we read in
+	Double_t NE = 1/TotalEntries;
+	NMR1->Scale(NE);
+	NMR1_Qfit->Scale(NE);
+	NMR1_NoQ->Scale(NE);
+
+	GeneralCanvas->cd(1);
+
+	NMR1->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
+	NMR1->Draw("HIST ");
+	 if(!QC) {
+		NMR1_B = FitBackground1(NMR1); //
+		NMR1_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
+		NMR1_B->SetLineColor(2);
+		NMR1_B->Draw("HIST  SAME");
+	 }
+	//
+		if(QC) {
+			Qcurve_histo_shifted->Draw("HIST  SAME"); //
+		 }
+
+
+
+		//	BckFct1->Draw();
+//    FitSpectrum(NMR1,1);
+	GeneralCanvas->cd(2);
+	NMR1_Qfit->Draw("HIST ");
+	/*NMR1_Qfit_B = FitBackground(NMR1_Qfit); //
+	NMR1_Qfit_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
+	NMR1_Qfit_B->SetLineColor(2);
+	NMR1_Qfit_B->Draw("HIST  SAME");*/
+
+	if(QfitPar[0] !=0)	{   // we have a qfit from the file
+    //Qfit->Draw("SAME");
+    //TH1F *htemp = new TH1F("htemp","rescaled function",100,FreqCenter*.9986,FreqCenter*1.0014);
+    //htemp->Add(Qfit,1/200.);
+    //htemp->Draw("SAME");
+	}
+
+	GeneralCanvas->cd(3);
+	PolTime->Draw();
+	GeneralCanvas->Update();
+
+
+
+
+
+
+   // DrawFitHisto();
+	// print out the different integrals;
+	// they are unnormalized
+	cout<<NMR_pr<< "*************   Integral of histo NMR1 "<<NMR1->Integral(low_id,high_id)<<endl;
+	cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
+
 }
 
 
@@ -1069,6 +1208,7 @@ void NMRana::SetupHistos(){
 	   NMR_RT_Corr->SetLineColor(kBlue-2);
 	   NMR_RT_Corr->SetLineWidth(4);
 	   NMR_RT_Corr->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
+
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   //	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
 	   //	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
@@ -1342,121 +1482,6 @@ void NMRana::DrawFitHisto(){
 }
 
 
-void NMRana::DrawHistos(){
-
-	// analyze spectra
-	// FindPeak(NMR1);  // temporarily removed, does only seem to be a waste of time
-// draw histos, mainly for debug purpose
-	GeneralCanvas->Divide(1,3);
-	// renormalize the histos by the total number of entries we read in
-	Double_t NE = 1/TotalEntries;
-	NMR1->Scale(NE);
-	NMR1_Qfit->Scale(NE);
-	NMR1_NoQ->Scale(NE);
-
-	GeneralCanvas->cd(1);
-
-	NMR1->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
-	NMR1->Draw("HIST P");
-	 if(!QC) {
-		NMR1_B = FitBackground1(NMR1); //
-		NMR1_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
-		NMR1_B->SetLineColor(2);
-		NMR1_B->Draw("HIST  SAME");
-	 }
-	//
-		if(QC) {
-			Qcurve_histo->Draw("HIST P SAME"); //
-		 }
-
-
-
-		//	BckFct1->Draw();
-//    FitSpectrum(NMR1,1);
-	GeneralCanvas->cd(2);
-	NMR1_Qfit->Draw("HIST P");
-	/*NMR1_Qfit_B = FitBackground(NMR1_Qfit); //
-	NMR1_Qfit_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
-	NMR1_Qfit_B->SetLineColor(2);
-	NMR1_Qfit_B->Draw("HIST  SAME");*/
-
-	if(QfitPar[0] !=0)	{   // we have a qfit from the file
-    //Qfit->Draw("SAME");
-    //TH1F *htemp = new TH1F("htemp","rescaled function",100,FreqCenter*.9986,FreqCenter*1.0014);
-    //htemp->Add(Qfit,1/200.);
-    //htemp->Draw("SAME");
-	}
-
-	GeneralCanvas->cd(3);
-	PolTime->Draw();
-	GeneralCanvas->Update();
-
-	if(Qcurve_array.size()!=0){
-		if(QC_DISP){
-
-			// now find how much to shift the qcurve
-			Int_t temp_shift = fastAna->getXOffset(NMR1_NoQ);
-	 		 	for (Int_t k=0 ; k < Qcurve_histo->GetNbinsX(); k++){
-
-	 		 		Qcurve_histo_shifted->Fill(Qcurve_histo->GetBinCenter(k)+temp_shift*FreqStep,Qcurve_histo->GetBinContent(k));
-	 		 	}
-
-
-			Qcurve_histo->SetLineColor(3);
-			//Qcurve_histo->SetMarkerStyle(21);
-			Qcurve_histo_shifted->SetLineColor(4);
-			//Qcurve_histo_shifted->SetMarkerStyle(22);
-			NMR1_NoQ->SetLineColor(1);
-			//NMR1_NoQ->SetMarkerStyle(23);
-
-			AuxCanvas->cd(2);
-			Qcurve_histo->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
-			Qcurve_histo->Draw("HIST ");
-			NMR1_NoQ->Draw("SAME HIST ");
-			Qcurve_histo_shifted->Draw("SAME HIST ");
-
-			AuxCanvas->cd(1);
-			NMR1_NoQ->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
-			NMR1_NoQ->Draw("HIST P");
-			AuxCanvas->cd(3);
-			if(DEBUG == 1){
-				raw_histo_QC=(TH1D*)NMR1_NoQ->Clone("raw_histo_QC");
-				// now subtract the Qcurve
-				raw_histo_QC->Add(Qcurve_histo_shifted,-1.);
-				raw_histo_QC->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
-				raw_histo_QC->Draw("HIST");
-			}
-
-		AuxCanvas->Update();
-		}
-		else {
-			AuxCanvas->cd(1);
-			NMR1_NoQ->Draw("HIST P");
-			AuxCanvas->Update();
-		}
-
-	}
-	if(DEBUG==1){
-		// first get current directory
-
-
-
-		TFile *fd = new TFile("debug.root","RECREATE");
-		DebugCanvas->cd();
-		raw_histo->Draw("HIST P");
-		raw_histo->Write();
-		Qcurve_histo->SetLineColor(kRed);
-		Qcurve_histo->Draw("HIST P"); //sacle QCurve hist by number of entries.
-
-		fd->Close();
-	}
-   // DrawFitHisto();
-	// print out the different integrals;
-	// they are unnormalized
-	cout<<NMR_pr<< "*************   Integral of histo NMR1 "<<NMR1->Integral(low_id,high_id)<<endl;
-	cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
-
-}
 
 
 Double_t NMRana::CalculateArea(TH1D *histo){
