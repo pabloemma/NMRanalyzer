@@ -1198,15 +1198,17 @@ void NMRana::DrawHistos(){
 			//Qcurve_histo->SetMarkerStyle(21);
 			Qcurve_histo_shifted->SetLineColor(4);
 			//Qcurve_histo_shifted->SetMarkerStyle(22);
-			NMR1_NoQ->SetLineColor(2);
+			NMR1_NoQ->SetLineColor(1);
 			//NMR1_NoQ->SetMarkerStyle(23);
 
 			AuxCanvas->cd(2);
+			Qcurve_histo->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
 			Qcurve_histo->Draw("HIST ");
 			NMR1_NoQ->Draw("SAME HIST ");
 			Qcurve_histo_shifted->Draw("SAME HIST ");
 
 			AuxCanvas->cd(1);
+			NMR1_NoQ->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
 			NMR1_NoQ->Draw("HIST P");
 			AuxCanvas->cd(3);
 			if(DEBUG == 1){
