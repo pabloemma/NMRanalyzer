@@ -375,6 +375,203 @@ NMRana::NMRana(){
 
 
 }
+
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!start of main loop!!!!!!!!!!!!!!!!!!
+
+void NMRana::Loop()
+{
+   if (fChain == 0) return;
+
+
+   	   // go to strip chart
+   StripCanvas->cd();
+   if(TEmeasurement){
+	   StripCanvas_1->cd();
+	   StripCanvas_2->cd();
+	   StripCanvas_4->cd();
+	   StripCanvas_5->cd();
+
+   }
+
+   Long64_t nentries = fChain->GetEntriesFast();
+   Long64_t time_prev = 0;
+   Long64_t nbytes = 0, nb = 0;
+   // insert Kun's fst analyzer to get the QCurve offset
+	for(int i = 0; i < nentries; ++i)   //This is equivalent to NMRana::Loop()
+	{
+		fChain->GetEntry(i);
+
+		TH1D* teHist = new TH1D("teHist", "teHist", ScanPoints, MinFreq, MaxFreq);
+		for(int j = 0; j < ScanPoints; ++j)
+		{
+			teHist->Fill(MinFreq+j*FreqStep, array->at(j)/gain_array[int(Gain+0.01)]);
+		}
+		//cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
+		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
+		//fastAna->plot(Form("res_%d.pdf", i));
+		// fill array of offsets
+		delete teHist;
+	}
+
+
+   RTCanvas->cd(1);
+   NMR_RT->Draw("HIST P");
+   RTCanvas->cd(2);
+   NMR_RT_Corr->Draw("HIST P");
+   for (Long64_t jentry=0; jentry<nentries;jentry++) {
+	   NMR_RT->Reset();
+	   NMR_RT_Corr->Reset();
+	   Long64_t ientry = LoadTree(jentry);
+      if (ientry < 0) break;
+      nb = fChain->GetEntry(jentry);   nbytes += nb;
+      // if (Cut(ientry) < 0) continue;
+	  //	 cout<<NMR_pr<<nentries<<" in loop Number of sweeps"<<ScanNumber<<endl;
+	  //	 cout<<NMR_pr<<" TuneV "<<TuneV<<endl;
+
+//	Consistency checks:
+// first test that tune voltage between measurement and Qcurve are the same
+      if(NMRchan != QCcoil || NMRchan != QcurveCoil) {
+    	  cout<<NMR_pr<<" !!error QCurve coil not the same as TE: Data coil"<< NMRchan<<"    Qcurve voil : "<<QCcoil<< "Fit Qcurve coil :"<<QcurveCoil<<endl;
+    	  cout<<NMR_pr<<"!!!!!!!!!!!sever failure!!!!!!!"<<endl;
+    	  exit(EXIT_FAILURE);
+      }
+
+      if(TuneV != QcurveTune || TuneV != QCtune) {
+    	  cout<<NMR_pr<<" !!warning Tune voltages are not the same Data tuneV :"<< TuneV<<"    Qcurve data tunev : "<<QCtune<< "Fit Qcurve tune :"<<QcurveTune<<endl;
+      }
+
+
+
+
+//	now fill histogram
+// reset freq_temp to lower bound
+      Double_t freq_temp = MinFreq;
+
+      Double_t DataTemp = 0.; // holds the point of data at position j of data array
+      Double_t QcurTemp; // holds the point of data at position j of Qcurev array
+      for (UInt_t j = 0; j < array->size(); ++j) {
+    	  // subtract QCurve if existing
+    	  //renormailze signal by amplifier setting
+       	  DataTemp = array->at(j) / gain_array[int(Gain+.01)];  // take gain out
+       	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
+          Int_t shift = j-xoffset.at(jentry);
+          if(QCshift){
+               if(shift<Qcurve_array.size() and shift >=0 ){ QcurTemp = Qcurve_array.at(shift);
+              }
+               else QcurTemp = 0.;
+          }
+          else QcurTemp = Qcurve_array.at(j);
+
+
+        	  if(DEBUG==1)raw_histo->Fill(freq_temp,DataTemp);
+
+    	  if(Qcurve_array.size()!=0) {
+    		 NMR1_NoQ->Fill(freq_temp,DataTemp);
+
+
+    		 NMR1->Fill(freq_temp,DataTemp- QcurTemp);
+
+       		 //NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+    		 // correct for the Qcurve shift
+    		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp-xoffset.at(jentry)*FreqStep));
+    		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+    		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
+    		 // now take background out
+     	  	  }
+    	  else{
+    		  NMR1->Fill(freq_temp,DataTemp);
+    		  NMR_RT_Corr->Fill(freq_temp,DataTemp);
+
+
+    	  	  }
+          NMR_RT->Fill(freq_temp,DataTemp);
+
+          freq_temp = freq_temp+FreqStep;
+
+
+    	  // for backgroiund graph
+      	  }
+//		fill the background graph and go to determine the spline
+//  	    FindPeak(NMR_RT_Corr);
+  	    //sum the peak area
+      StripCanvas->cd();
+
+      	 // herwe calculate the average left and right of the peak for Patarea
+      PatDiffArea = CalculatePatArea(NMR_RT_Corr);
+
+
+
+
+// draw the signal histogram
+	  RTCanvas->cd(1);
+	  NMR_RT->Draw("HIST P");
+	  RTCanvas->cd(2);
+	  NMR_RT_Corr->Draw("HIST P");
+		  TH1D * temp = FitBackground(NMR_RT_Corr);
+		 SubtractLinear(temp,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4,low_fit_x,high_fit_x);
+		 		 SignalArea = CalculateArea(temp);
+
+
+
+
+		 if(TEmeasurement) SignalArea = CalculateArea(temp);
+	      else  SignalArea = CalculateArea(NMR_RT_Corr);
+
+
+      //if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
+
+	  //temp->Draw("HIST P");
+	  NMR_RT_Corr->Draw("HIST P");
+
+
+	  RTCanvas->Modified();
+	  RTCanvas->Update();
+
+
+	     //warninghook
+	//end warninghook
+
+
+	      // Convert to polarization
+	            SignalArea *=CalConst;
+
+	// now for every point in a TE we will calculate the polarization from the pressure
+	// the ratio of calculated polarization/ area gives the calibration constant calib
+	// so that calib*area = polarization of the reL SIGNAL
+	// at the end we will calculate an average caibration constant with a deviation
+
+	      Stripper(jentry); // draw all the strip charts
+
+
+
+	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
+
+   }// end of entry loop
+
+
+	  	  	 if(TEmeasurement) TE.ShowDistribution(CalibConstantVector);
+	  	  	 // now we need to put the sweep number away, so that we know how to rescale the Qcurve
+	  	  	 // distribution for display.
+	  	  	 // the Qcurve should be subratced on a sweep to seep basis.
+		  	 NumberOfSweeps = nentries;
+
+   //scale NMR1 and NMR1_NoQ to one sweep. This might be a problem for having many files
+		  	TotalEntries += nentries;
+}
+
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!end of main loop!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
+
+//!!!!!!!!!!!!!!!!! Initialization block !!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 void NMRana::SetEnvironment(std::string environment){
 	NMR_ROOT = environment ;
 }
@@ -635,15 +832,6 @@ void NMRana::ReadQcurveParFile(std::string name){
 
 }
 
-Double_t NMRana::FitFcn2(Double_t *x , Double_t *par){
-	//  polynomial fit function from QCana
-
-	Double_t y = x[0]-213.0;
-     Double_t result = (par[0]+par[1]*x[0]+par[2]*pow(x[0],2.))-(par[3]*pow(y,3)-y*par[4]);
-	return result;
-}
-
-
 int NMRana::OpenFile(TString rootfile){
 
 	// oepn file and initialize tree
@@ -699,25 +887,6 @@ int NMRana::OpenChain(std::vector<TString> RootFileArray){
 
 }
 
-void NMRana::CloseFile(){
-	f->Close();
-}
-
-NMRana::~NMRana()
-{
-   if (!fChain) return;
-   delete fChain->GetCurrentFile();
-}
-void NMRana::Finish(){
-	// clean up memory
-		cout<<NMR_pr<< "***************************************************************"<<endl;
-		cout<<NMR_pr<<" *"<<endl;
-		cout<<NMR_pr<<"                  Analysis finished"<<endl;
-		cout<<NMR_pr<<" *"<<endl;
-		cout<<NMR_pr<< "***************************************************************"<<endl;
-
-
-}
 Int_t NMRana::GetEntry(Long64_t entry)
 {
 // Read contents of entry.
@@ -797,6 +966,45 @@ void NMRana::Init(TTree *tree)
    Notify();
 }
 
+
+//!!!!!!!!!!!!!!!end initialization block !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+Double_t NMRana::FitFcn2(Double_t *x , Double_t *par){
+	//  polynomial fit function from QCana
+
+	Double_t y = x[0]-213.0;
+     Double_t result = (par[0]+par[1]*x[0]+par[2]*pow(x[0],2.))-(par[3]*pow(y,3)-y*par[4]);
+	return result;
+}
+
+
+//!!!!!!!!!!!!!!! finish everything up !!!!!!!!!!!!!!!!!!
+
+void NMRana::CloseFile(){
+	f->Close();
+}
+
+NMRana::~NMRana()
+{
+   if (!fChain) return;
+   delete fChain->GetCurrentFile();
+}
+void NMRana::Finish(){
+	// clean up memory
+		cout<<NMR_pr<< "***************************************************************"<<endl;
+		cout<<NMR_pr<<" *"<<endl;
+		cout<<NMR_pr<<"                  Analysis finished"<<endl;
+		cout<<NMR_pr<<" *"<<endl;
+		cout<<NMR_pr<< "***************************************************************"<<endl;
+
+
+}
+
+
+//!!!!!!!!!!!!!!! end of finish everything up !!!!!!!!!!!!!!!!!!
+
+
+
 Bool_t NMRana::Notify()
 {
    // The Notify() function is called when a new file is opened. This
@@ -820,7 +1028,7 @@ Int_t NMRana::Cut(Long64_t entry)
 // This function may be called from Loop.
 // returns  1 if entry is accepted.
 // returns -1 otherwise.
-   return 1;   
+   return 1;
 }
 void NMRana::SetupHistos(){
 // Here we setup histos if needed
@@ -1250,187 +1458,6 @@ void NMRana::DrawHistos(){
 
 }
 
-void NMRana::Loop()
-{
-   if (fChain == 0) return;
-
-
-   	   // go to strip chart
-   StripCanvas->cd();
-   if(TEmeasurement){
-	   StripCanvas_1->cd();
-	   StripCanvas_2->cd();
-	   StripCanvas_4->cd();
-	   StripCanvas_5->cd();
-
-   }
-
-   Long64_t nentries = fChain->GetEntriesFast();
-   Long64_t time_prev = 0;
-   Long64_t nbytes = 0, nb = 0;
-   // insert Kun's fst analyzer to get the QCurve offset
-	for(int i = 0; i < nentries; ++i)   //This is equivalent to NMRana::Loop()
-	{
-		fChain->GetEntry(i);
-
-		TH1D* teHist = new TH1D("teHist", "teHist", ScanPoints, MinFreq, MaxFreq);
-		for(int j = 0; j < ScanPoints; ++j)
-		{
-			teHist->Fill(MinFreq+j*FreqStep, array->at(j)/gain_array[int(Gain+0.01)]);
-		}
-		//cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
-		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
-		//fastAna->plot(Form("res_%d.pdf", i));
-		// fill array of offsets
-		delete teHist;
-	}
-
-
-   RTCanvas->cd(1);
-   NMR_RT->Draw("HIST P");
-   RTCanvas->cd(2);
-   NMR_RT_Corr->Draw("HIST P");
-   for (Long64_t jentry=0; jentry<nentries;jentry++) {
-	   NMR_RT->Reset();
-	   NMR_RT_Corr->Reset();
-	   Long64_t ientry = LoadTree(jentry);
-      if (ientry < 0) break;
-      nb = fChain->GetEntry(jentry);   nbytes += nb;
-      // if (Cut(ientry) < 0) continue;
-	  //	 cout<<NMR_pr<<nentries<<" in loop Number of sweeps"<<ScanNumber<<endl;
-	  //	 cout<<NMR_pr<<" TuneV "<<TuneV<<endl;
-
-//	Consistency checks:
-// first test that tune voltage between measurement and Qcurve are the same
-      if(NMRchan != QCcoil || NMRchan != QcurveCoil) {
-    	  cout<<NMR_pr<<" !!error QCurve coil not the same as TE: Data coil"<< NMRchan<<"    Qcurve voil : "<<QCcoil<< "Fit Qcurve coil :"<<QcurveCoil<<endl;
-    	  cout<<NMR_pr<<"!!!!!!!!!!!sever failure!!!!!!!"<<endl;
-    	  exit(EXIT_FAILURE);
-      }
-
-      if(TuneV != QcurveTune || TuneV != QCtune) {
-    	  cout<<NMR_pr<<" !!warning Tune voltages are not the same Data tuneV :"<< TuneV<<"    Qcurve data tunev : "<<QCtune<< "Fit Qcurve tune :"<<QcurveTune<<endl;
-      }
-
-
-
-
-//	now fill histogram
-// reset freq_temp to lower bound
-      Double_t freq_temp = MinFreq;
-
-      Double_t DataTemp = 0.; // holds the point of data at position j of data array
-      Double_t QcurTemp; // holds the point of data at position j of Qcurev array
-      for (UInt_t j = 0; j < array->size(); ++j) {
-    	  // subtract QCurve if existing
-    	  //renormailze signal by amplifier setting
-       	  DataTemp = array->at(j) / gain_array[int(Gain+.01)];  // take gain out
-       	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
-          Int_t shift = j-xoffset.at(jentry);
-          if(QCshift){
-               if(shift<Qcurve_array.size() and shift >=0 ){ QcurTemp = Qcurve_array.at(shift);
-              }
-               else QcurTemp = 0.;
-          }
-          else QcurTemp = Qcurve_array.at(j);
-
-
-        	  if(DEBUG==1)raw_histo->Fill(freq_temp,DataTemp);
-
-    	  if(Qcurve_array.size()!=0) {
-    		 NMR1_NoQ->Fill(freq_temp,DataTemp);
-
-
-    		 NMR1->Fill(freq_temp,DataTemp- QcurTemp);
-
-       		 //NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
-    		 // correct for the Qcurve shift
-    		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp-xoffset.at(jentry)*FreqStep));
-    		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
-    		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
-    		 // now take background out
-     	  	  }
-    	  else{
-    		  NMR1->Fill(freq_temp,DataTemp);
-    		  NMR_RT_Corr->Fill(freq_temp,DataTemp);
-
-
-    	  	  }
-          NMR_RT->Fill(freq_temp,DataTemp);
-
-          freq_temp = freq_temp+FreqStep;
-
-
-    	  // for backgroiund graph
-      	  }
-//		fill the background graph and go to determine the spline
-//  	    FindPeak(NMR_RT_Corr);
-  	    //sum the peak area
-      StripCanvas->cd();
-
-      	 // herwe calculate the average left and right of the peak for Patarea
-      PatDiffArea = CalculatePatArea(NMR_RT_Corr);
-
-
-
-
-// draw the signal histogram
-	  RTCanvas->cd(1);
-	  NMR_RT->Draw("HIST P");
-	  RTCanvas->cd(2);
-	  NMR_RT_Corr->Draw("HIST P");
-		 /* TH1D * temp = FitBackground(NMR_RT_Corr);
-		 SubtractLinear(temp,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4,low_fit_x,high_fit_x);
-		 		 SignalArea = CalculateArea(temp);
-
-
-		 */
-
-		 /*if(TEmeasurement) SignalArea = CalculateArea(temp);
-	      else  SignalArea = CalculateArea(NMR_RT_Corr);*/
-		 SignalArea = CalculateArea(NMR_RT_Corr);
-
-
-      //if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
-
-	  //temp->Draw("HIST P");
-	  NMR_RT_Corr->Draw("HIST P");
-
-
-	  RTCanvas->Modified();
-	  RTCanvas->Update();
-
-
-	     //warninghook
-	//end warninghook
-
-
-	      // Convert to polarization
-	            SignalArea *=CalConst;
-
-	// now for every point in a TE we will calculate the polarization from the pressure
-	// the ratio of calculated polarization/ area gives the calibration constant calib
-	// so that calib*area = polarization of the reL SIGNAL
-	// at the end we will calculate an average caibration constant with a deviation
-
-	      Stripper(jentry); // draw all the strip charts
-
-
-
-	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
-
-   }// end of entry loop
-
-
-	  	  	 if(TEmeasurement) TE.ShowDistribution(CalibConstantVector);
-	  	  	 // now we need to put the sweep number away, so that we know how to rescale the Qcurve
-	  	  	 // distribution for display.
-	  	  	 // the Qcurve should be subratced on a sweep to seep basis.
-		  	 NumberOfSweeps = nentries;
-
-   //scale NMR1 and NMR1_NoQ to one sweep. This might be a problem for having many files
-		  	TotalEntries += nentries;
-}
 
 Double_t NMRana::CalculateArea(TH1D *histo){
 	// this function calculates the area of the NMR perak by simpy summing it in
