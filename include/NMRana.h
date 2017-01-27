@@ -324,6 +324,7 @@ public :
    void     Loop(); // TEana inherits
    void		SetupCanvas();
    TH1D * 	SetupStripChart(TString);
+   TH1D *    CopyHisto(const char *, const char *,TH1D *); // Instead of cloning a histo really does a copy
    void	    SetupHistos();
    void		ReadParameterFile(TString );
    void     Init(TTree *tree);
@@ -462,7 +463,6 @@ void NMRana::Loop()
           Int_t shift = j-xoffset.at(jentry);
           if(QCshift){
                if(shift<Qcurve_array.size() and shift >=0 ){ QcurTemp = Qcurve_array.at(shift);
-          cout<<"Data "<<DataTemp<<"   Qcurve "<<QcurTemp<<"    yoffset "<<yoffset.at(jentry)<<"   diffe "<<DataTemp-QcurTemp<<endl;
               }
                else QcurTemp = 0.;
           }
@@ -581,7 +581,18 @@ void NMRana::DrawHistos(){
 		if(QC_DISP){
 
 			// now find how much to shift the qcurve
-			Int_t temp_shift = fastAna->getXOffset(NMR1_NoQ);
+			// determine the average of all offsets
+			Int_t temp_shift = 0;
+
+			for (Int_t k=0;k < xoffset.size() ; k++){
+				temp_shift +=xoffset.at(k);
+			}
+			temp_shift = temp_shift/xoffset.size();
+
+
+
+
+			temp_shift = -21;
 			cout<< " temporary shift "<<temp_shift<<endl;
 	 		 	for (Int_t k=0 ; k < Qcurve_histo->GetNbinsX(); k++){
 
@@ -607,12 +618,14 @@ void NMRana::DrawHistos(){
 			NMR1_NoQ->Draw("HIST ");
 			AuxCanvas->cd(3);
 			if(DEBUG == 1){
-				raw_histo_QC=(TH1D*)NMR1_NoQ->Clone("raw_histo_QC");
+				cout<<MinFreq<<"   "<<MaxFreq<<endl;
+				raw_histo_QC = CopyHisto("raw_histo_QC","Qcurve subtracted signal",NMR1_NoQ);
+				//raw_histo_QC=(TH1D*)NMR1_NoQ->Clone("raw_histo_QC");
 				// now subtract the Qcurve
 				Double_t NE = 1/TotalEntries;
 
 				raw_histo_QC->Scale(NE);
-				//raw_histo_QC->Add(Qcurve_histo_shifted,-1.);
+				raw_histo_QC->Add(Qcurve_histo_shifted,-1.);
 				raw_histo_QC->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
 				raw_histo_QC->Draw("HIST");
 			}
@@ -1482,7 +1495,24 @@ void NMRana::DrawFitHisto(){
 }
 
 
+TH1D * NMRana::CopyHisto(const char *hiname , const char *hititle,TH1D *temphist){
+	// instead of cloning copies a histo
 
+		Int_t chan = temphist->GetNbinsX();
+		Double_t xl = temphist->GetXaxis()->GetBinCenter(0);
+		Double_t xh = temphist->GetXaxis()->GetBinCenter(temphist->GetNbinsX()-1);
+
+		cout<< "copy histo"<< xl<< "   "<<xh<<"   "<<chan<<endl;
+		TH1D * hi =  new TH1D(hiname,hititle,chan,xl,xh)	;
+
+	 	for (Int_t k=0 ; k < temphist->GetNbinsX(); k++){
+
+	 		hi->Fill(temphist->GetBinCenter(k),temphist->GetBinContent(k));
+	 	}
+     return hi;
+
+
+}
 
 Double_t NMRana::CalculateArea(TH1D *histo){
 	// this function calculates the area of the NMR perak by simpy summing it in
