@@ -258,7 +258,8 @@ public :
 
 
    TH1D      *NMR_RT;// real time display of the NMR signal
-   TH1D      *NMR_RT_Corr;// real time display of the NMR signal, with background fit subtracted
+   TH1D      *NMR_RT_Corr;// real time display of the NMR signal, with qcurve subtracted
+   TH1D      *NMR_RT_Corr_Fit;// real time display of the NMR signal, with qcurrve subtracted and background fit subtracted
    TH1D		 *PolTime; // polarization vs time
    TH1D		 *CalibTime; // TE calibration constant vs time
    TH1D		 *PressTime ; // Pressure vs time for TE measurement
@@ -426,6 +427,7 @@ void NMRana::Loop()
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
 	   NMR_RT->Reset();
 	   NMR_RT_Corr->Reset();
+	   NMR_RT_Corr_Fit->Reset();
 
 	   Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
@@ -463,6 +465,7 @@ void NMRana::Loop()
           Int_t shift = j-xoffset.at(jentry);
           if(QCshift){
                if(shift<Qcurve_array.size() and shift >=0 ){ QcurTemp = Qcurve_array.at(shift);
+               DataTemp = DataTemp-yoffset.at(jentry); //subtract the fitted offset
               }
                else QcurTemp = 0.;
           }
@@ -481,12 +484,14 @@ void NMRana::Loop()
     		 // correct for the Qcurve shift
     		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp-xoffset.at(jentry)*FreqStep));
     		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
-    		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
-    		 // now take background out
+       		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
+       		 NMR_RT_Corr_Fit->Fill(freq_temp,DataTemp- QcurTemp);
+     		 // now take background out
      	  	  }
     	  else{
     		  NMR1->Fill(freq_temp,DataTemp);
     		  NMR_RT_Corr->Fill(freq_temp,DataTemp);
+        	  NMR_RT_Corr_Fit->Fill(freq_temp,DataTemp);
 
 
     	  	  }
@@ -512,27 +517,31 @@ void NMRana::Loop()
 	  RTCanvas->cd(1);
 	  NMR_RT->Draw("HIST P");
 	  RTCanvas->cd(2);
-	  NMR_RT_Corr->Draw("HIST P");
-		  TH1D * temp = FitBackground(NMR_RT_Corr);
-		 SubtractLinear(temp,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4,low_fit_x,high_fit_x);
-		 		 SignalArea = CalculateArea(temp);
+	  // copy histo so that we can fit the background without affecting the original hist
+
+		   NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
+		 //SubtractLinear(NMR_RT_Corr,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4);
+		  //temp->Draw("HIST P");
+		 		 //SignalArea = CalculateArea(temp);
+
+	 		 //SignalArea = CalculateArea(temp);
 
 
 
 
-		 if(TEmeasurement) SignalArea = CalculateArea(temp);
-	      else  SignalArea = CalculateArea(NMR_RT_Corr);
+		 if(TEmeasurement) SignalArea = CalculateArea(NMR_RT_Corr_Fit);
+	      else  SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 
 
       //if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
 
 	  //temp->Draw("HIST P");
-		   if(TEmeasurement) {
-			   NMR_RT_Corr->GetYaxis()->SetRangeUser(-.000005,.16e-3);
+		  /*if(TEmeasurement) {
+			   NMR_RT_Corr_Fit->GetYaxis()->SetRangeUser(-.00005,.16e-3);
 
-		   }
+		   }*/
 
-	  NMR_RT_Corr->Draw("HIST P");
+	  NMR_RT_Corr_Fit->Draw("HIST P");
 
 
 	  RTCanvas->Modified();
@@ -1216,11 +1225,17 @@ void NMRana::SetupHistos(){
 	   NMR_RT->SetLineColor(kSpring-2);
 	   NMR_RT->SetLineWidth(4);
 	   NMR_RT->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
-	   NMR_RT_Corr = new TH1D("NMR_RT_corr","Real TimeSignal background subtracted",IntScanPoints,MinFreq,MaxFreq);
+	   NMR_RT_Corr = new TH1D("NMR_RT_Corr","Real TimeSignal Qcurve subtracted",IntScanPoints,MinFreq,MaxFreq);
 	   NMR_RT_Corr->Sumw2();
 	   NMR_RT_Corr->SetLineColor(kBlue-2);
 	   NMR_RT_Corr->SetLineWidth(4);
 	   NMR_RT_Corr->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
+
+	   NMR_RT_Corr_Fit = new TH1D("NMR_RT_Corr_Fit","Real TimeSignal Fit background subtracted",IntScanPoints,MinFreq,MaxFreq);
+	   NMR_RT_Corr_Fit->Sumw2();
+	   NMR_RT_Corr_Fit->SetLineColor(kBlue-2);
+	   NMR_RT_Corr_Fit->SetLineWidth(4);
+	   NMR_RT_Corr_Fit->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
 
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   //	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
@@ -1499,8 +1514,8 @@ TH1D * NMRana::CopyHisto(const char *hiname , const char *hititle,TH1D *temphist
 	// instead of cloning copies a histo
 
 		Int_t chan = temphist->GetNbinsX();
-		Double_t xl = temphist->GetXaxis()->GetBinCenter(0);
-		Double_t xh = temphist->GetXaxis()->GetBinCenter(temphist->GetNbinsX()-1);
+		Double_t xl = temphist->GetXaxis()->GetXmin();
+		Double_t xh = temphist->GetXaxis()->GetXmax();
 
 		cout<< "copy histo"<< xl<< "   "<<xh<<"   "<<chan<<endl;
 		TH1D * hi =  new TH1D(hiname,hititle,chan,xl,xh)	;
