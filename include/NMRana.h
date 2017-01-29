@@ -529,7 +529,9 @@ void NMRana::Loop()
 
 
 
-		 if(TEmeasurement) SignalArea = CalculateArea(NMR_RT_Corr_Fit);
+		 if(TEmeasurement){ SignalArea = CalculateArea(NMR_RT_Corr_Fit);
+		 cout<<NMR_pr<<"signal area    "<<SignalArea<<endl;
+		 }
 	      else  SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 
 
@@ -1238,8 +1240,8 @@ void NMRana::SetupHistos(){
 	   NMR_RT_Corr_Fit->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
 
 	   // Determine the Integration or summation limits for peak in terms of channels.
-	   //	   low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
-	   //	   high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
+	   	  // low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
+	   	  // high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
 	   	   low_id = NMR1->GetXaxis()->FindBin(fit_x2);
 	   	   high_id = NMR1->GetXaxis()->FindBin(fit_x3);
 	   Ifit_x1 = NMR1->GetXaxis()->FindBin(fit_x1);
@@ -1770,7 +1772,7 @@ void NMRana::Stripper(Long64_t jentry){
 		  if(jentry ==0)cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
 		  StripCanvas_1->cd();
 		  // temporary fix for separate time file
-		  //replace press_help with pressure variable from ROOT file
+		  //replace press_help with pressure variable from ROOT file//
 		  Double_t press_help =5.5;
 /*		  if( Control==0) {
 			  Double_t press_help  = TE.FindPofT(root_time.tv_sec); // here we find the nearest time stamp in the Yuorv file and return
@@ -1782,7 +1784,7 @@ void NMRana::Stripper(Long64_t jentry){
 */
 
 		  // give a pressure if there is none
-		  if( HeP==0.0 ) HeP = 5.5 ; //pressure in Torr
+		  //if( HeP==0.0 ) HeP = 5.5 ; //pressure in Torr
 		  CalibConstant = TE.CalculateTEP("proton",.5,5.0027,HeP) ; // needs to change to ROOTfile pressure
 		  CalibConstant = CalibConstant/SignalArea;
 		  CalibConstantVector.push_back(CalibConstant);
