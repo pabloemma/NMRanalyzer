@@ -397,7 +397,8 @@ void NMRana::Loop()
 
    }
 
-   Long64_t nentries = fChain->GetEntriesFast();
+   Long64_t nentries = fChain->GetEntries();
+   cout<<NMR_pr<<" Loop netyries "<<nentries<<" tree number  "<<fChain->GetEntries()<<endl;
    Long64_t time_prev = 0;
    Long64_t nbytes = 0, nb = 0;
    // insert Kun's fst analyzer to get the QCurve offset
@@ -410,7 +411,7 @@ void NMRana::Loop()
 		{
 			teHist->Fill(MinFreq+j*FreqStep, array->at(j)/gain_array[int(Gain+0.01)]);
 		}
-		//cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
+//		cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
 		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
 		yoffset.push_back(fastAna->getYOffset()); // fill vector of xoffsets
 		//fastAna->plot(Form("res_%d.pdf", i));
@@ -530,7 +531,7 @@ void NMRana::Loop()
 
 
 		 if(TEmeasurement){ SignalArea = CalculateArea(NMR_RT_Corr_Fit);
-		 cout<<NMR_pr<<"signal area    "<<SignalArea<<endl;
+		 //cout<<NMR_pr<<"signal area    "<<SignalArea<<endl;
 		 }
 	      else  SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 
@@ -1065,6 +1066,7 @@ Long64_t NMRana::LoadTree(Long64_t entry)
    if (centry < 0) return centry;
    if (fChain->GetTreeNumber() != fCurrent) {
       fCurrent = fChain->GetTreeNumber();
+
       Notify();
    }
    return centry;
