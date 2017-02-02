@@ -33,7 +33,7 @@ NMR_DST();
 	void AddBranches();
 	void CloseFile();
 	void WriteTree();
-	void FillTree();
+	void FillTree(Double_t );
 
 	Int_t area;
 
@@ -60,11 +60,13 @@ void	NMR_DST::OpenFile(TString DSTfile){
 
 		     cout<<DST_pr<<"opening root outputfile "<<DSTfile<<"\n";
 
-		     f = new TFile(DSTfile);
+		     f = new TFile(DSTfile,"RECREATE");
 		     if(!f->IsOpen()){
 		    	 cout <<DST_pr<<"Cannot open DST File "<<DSTfile<<" \n  will exit \n";
 		    	 exit(EXIT_FAILURE);
 		     }
+		CreateTree();
+		AddBranches();
 
 
 		}
@@ -78,12 +80,12 @@ void    NMR_DST::CreateTree(){
      }
 
 void	NMR_DST::AddBranches()	{
-		Dtree->Branch("area",&area,"area/I");
+		Dtree->Branch("area",&area,"area/D");
 
 	}
-void	NMR_DST::FillTree(){
+void	NMR_DST::FillTree(Double_t area){
 		Dtree->Fill();
-		cout<<DST_pr<<area<<endl;
+		//cout<<DST_pr<<area<<endl;
 
 	}
 void	NMR_DST::CloseFile(){
