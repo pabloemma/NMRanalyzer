@@ -68,7 +68,7 @@
 #include "Ana.h"
 #include "TEana.h"
 #include "NMRFastAna.h"  //Kun's Qcurve hifting class
-
+#include "NMR_DST.h"
 using namespace std;
 
 // Fixed size dimensions of array or collections stored in the TTree if any.
@@ -127,8 +127,10 @@ public :
    std::vector<int>  xoffset ; // vector of offsert for Qcurve, filled by NMRfastana
    std::vector<double>  yoffset ; // vector of y offsert for Qcurve, filled by NMRfastana
 
-   Double_t MinFreq ; // limits of frequency sweep
+   Double_t MinFreq ; // limits of frequency sweep for histos
    Double_t MaxFreq ;
+   Double_t MinFreqR ; // real limits of frequency sweep
+   Double_t MaxFreqR ;
    Double_t low_x;  //area limits
    Double_t high_x;
 
@@ -293,6 +295,7 @@ public :
    TTimeStamp *RootTimeStamp;
    TFile *QcurveFile; //
    NMRFastAna* fastAna; // the fast system
+   NMR_DST *DST;// handles output
    std::string QcurveFileName ; // Qcurve file name
 
 
@@ -373,7 +376,7 @@ NMRana::NMRana(){
 
 
 	cout<<NMR_pr<< "Everything initialized"<<endl;
-
+    //DST = new NMR_DST();
 
 
 
@@ -397,8 +400,8 @@ void NMRana::Loop()
 
    }
 
-   Long64_t nentries = fChain->GetEntries();
-   cout<<NMR_pr<<" Loop netyries "<<nentries<<" tree number  "<<fChain->GetEntries()<<endl;
+   Long64_t nentries = fChain->GetEntries(); //
+   //cout<<NMR_pr<<" Loop netyries "<<nentries<<" tree number  "<<fChain->GetEntries()<<endl;
    Long64_t time_prev = 0;
    Long64_t nbytes = 0, nb = 0;
    // insert Kun's fst analyzer to get the QCurve offset
@@ -409,7 +412,7 @@ void NMRana::Loop()
 		TH1D* teHist = new TH1D("teHist", "teHist", ScanPoints, MinFreq, MaxFreq);
 		for(int j = 0; j < ScanPoints; ++j)
 		{
-			teHist->Fill(MinFreq+j*FreqStep, array->at(j)/gain_array[int(Gain+0.01)]);
+			teHist->Fill(MinFreqR+j*FreqStep, array->at(j)/gain_array[int(Gain+0.01)]);
 		}
 //		cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
 		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
@@ -454,7 +457,7 @@ void NMRana::Loop()
 
 //	now fill histogram
 // reset freq_temp to lower bound
-      Double_t freq_temp = MinFreq;
+      Double_t freq_temp = MinFreqR;
 
       Double_t DataTemp = 0.; // holds the point of data at position j of data array
       Double_t QcurTemp; // holds the point of data at position j of Qcurev array
@@ -1217,8 +1220,10 @@ void NMRana::SetupHistos(){
 
 
 	   // histo limits
-	   MinFreq = (FreqCenter) - (ScanPoints-1.)/2. * FreqStep;
-	   MaxFreq = FreqCenter + (ScanPoints-1.)/2. * FreqStep;
+	   MinFreq = (FreqCenter) - (ScanPoints-1.)/2. * FreqStep-FreqStep/2.;
+	   MinFreqR = (FreqCenter) - (ScanPoints-1.)/2. * FreqStep;
+	   MaxFreq = FreqCenter + (ScanPoints-1.)/2. * FreqStep+FreqStep/2.;
+	   MaxFreqR = (FreqCenter) + (ScanPoints-1.)/2. * FreqStep;
 
 	   NMR1 = new TH1D("NMR1","Signal histogram",IntScanPoints,MinFreq,MaxFreq);
 	   NMR1->Sumw2();
@@ -1364,7 +1369,7 @@ void NMRana::SetupHistos(){
 		   NMR1_NoQ->Sumw2();
 			// Now fill the QCurve histo if it is used
 				  if(Qcurve_array.size()!=0){
-				      Double_t freq_temp = MinFreq; //shift everything by 22 steps
+				      Double_t freq_temp = MinFreqR; //shift everything by 22 steps
 
 
 				      for (UInt_t j = 0; j < Qcurve_array.size(); ++j) {
@@ -1661,7 +1666,7 @@ void NMRana::FillQcurveArray(){
 	      Long64_t ientry = LoadTree(jentry);
 	      if (ientry < 0) break;
 	      nb = QCUtree->GetEntry(jentry);   nbytes += nb;
-	      Double_t freq_temp = MinFreq;
+	      Double_t freq_temp = MinFreqR;
 	      QCtune = TuneV;
 	      QCcoil = NMRchan;
 
