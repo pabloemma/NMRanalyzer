@@ -47,6 +47,15 @@ private:
 
 };
 
+NMR_DST::NMR_DST(){
+
+}
+
+NMR_DST::~NMR_DST(){
+
+}
+
+
 void	NMR_DST::OpenFile(TString DSTfile){
 
 		     cout<<DST_pr<<"opening root outputfile "<<DSTfile<<"\n";
