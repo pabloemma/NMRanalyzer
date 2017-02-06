@@ -376,7 +376,8 @@ NMRana::NMRana(){
 
 
 	cout<<NMR_pr<< "Everything initialized"<<endl;
-    //DST = new NMR_DST();
+    DST = new NMR_DST();
+    DST->OpenFile("/Users/klein/scratch/DST.root");
 
 
 
@@ -571,6 +572,8 @@ void NMRana::Loop()
 
 
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
+
+	  DST->FillTree(SignalArea);
 
    }// end of entry loop
 
@@ -1150,6 +1153,7 @@ Double_t NMRana::FitFcn2(Double_t *x , Double_t *par){
 
 void NMRana::CloseFile(){
 	f->Close();
+	DST->CloseFile();
 }
 
 NMRana::~NMRana()
