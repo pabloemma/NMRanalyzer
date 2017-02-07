@@ -657,7 +657,7 @@ void NMRana::DrawHistos(){
 		}
 
 	}
-	if(DEBUG==1){
+	/*if(DEBUG==1){
 		// first get current directory
 
 
@@ -671,7 +671,7 @@ void NMRana::DrawHistos(){
 		Qcurve_histo_shifted->Draw("HIST SAME"); //sacle QCurve hist by number of entries.
 
 		fd->Close();
-	}
+	}*/
 
 	GeneralCanvas->Divide(1,3);
 	// renormalize the histos by the total number of entries we read in
@@ -727,6 +727,14 @@ void NMRana::DrawHistos(){
 	// they are unnormalized
 	cout<<NMR_pr<< "*************   Integral of histo NMR1 "<<NMR1->Integral(low_id,high_id)<<endl;
 	cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
+
+	// writing DST file
+	TFile *mydst = new TFile("/Users/klein/scratch/DST1.root","recreate");
+	TTree *mytr = DST->WriteTree();
+	mytr->Print();
+	mytr->Write();
+	mydst->Close();
+
 
 }
 
@@ -1160,6 +1168,7 @@ NMRana::~NMRana()
 {
    if (!fChain) return;
    delete fChain->GetCurrentFile();
+
 }
 void NMRana::Finish(){
 	// clean up memory
@@ -1168,6 +1177,7 @@ void NMRana::Finish(){
 		cout<<NMR_pr<<"                  Analysis finished"<<endl;
 		cout<<NMR_pr<<" *"<<endl;
 		cout<<NMR_pr<< "***************************************************************"<<endl;
+		DST->WriteTree();
 
 
 }

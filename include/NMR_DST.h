@@ -32,17 +32,17 @@ NMR_DST();
 	void CreateTree();
 	void AddBranches();
 	void CloseFile();
-	void WriteTree();
+	TTree * WriteTree();
 	void FillTree(Double_t );
 
-	Int_t area;
+	Double_t area;
+    TFile *f1;
+    TTree *Dtree;
 
 
 private:
 	Int_t BranchCounter; // this keeps track of the number of branches we will have
     std::string DST_pr = "DST> ";
-    TFile *f;
-    TTree *Dtree;
 
 
 };
@@ -58,13 +58,13 @@ NMR_DST::~NMR_DST(){
 
 void	NMR_DST::OpenFile(TString DSTfile){
 
-		     cout<<DST_pr<<"opening root outputfile "<<DSTfile<<"\n";
+		     //cout<<DST_pr<<"opening root outputfile "<<DSTfile<<"\n";
 
-		     f = new TFile(DSTfile,"RECREATE");
-		     if(!f->IsOpen()){
+		     //f1 = new TFile(DSTfile,"RECREATE");
+		     /*if(!f1->IsOpen()){
 		    	 cout <<DST_pr<<"Cannot open DST File "<<DSTfile<<" \n  will exit \n";
 		    	 exit(EXIT_FAILURE);
-		     }
+		     }*/
 		CreateTree();
 		AddBranches();
 
@@ -75,23 +75,41 @@ void	NMR_DST::OpenFile(TString DSTfile){
 void    NMR_DST::CreateTree(){
     	//
     	 //this creates the DST tree
-    	Dtree = new TTree("DTree","analyzed variables from NMRanalyzer");
+	    cout<<DST_pr<<"at producing tree"<<endl;
+    	Dtree = new TTree("Dtree","analyzed variables from NMRanalyzer");
+    	Dtree->Print();
 
      }
 
 void	NMR_DST::AddBranches()	{
 		Dtree->Branch("area",&area,"area/D");
+		Dtree->Print();
 
 	}
-void	NMR_DST::FillTree(Double_t area){
+void	NMR_DST::FillTree(Double_t ar){
+		area = ar;
 		Dtree->Fill();
+		//Dtree->Show(0);
+
 		//cout<<DST_pr<<area<<endl;
 
 	}
 void	NMR_DST::CloseFile(){
-		Dtree->Write();
-		f->Close();
+		f1->Close();
 
+	}
+TTree	* NMR_DST::WriteTree(){
+		//f1->cd();
+		//f1->ls();
+	    cout<<DST_pr<<"writing tree"<<endl;
+	    //Dtree->Print();
+	    Dtree->Show(50);
+	    //Dtree->Write();
+	   // Dtree->Write(f1->GetName());
+		// Int_t test1 = f1->Write();
+	    //f1->Close();
+		//cout<<DST_pr<<test1<<"  "<<endl;
+        return Dtree;
 	}
 
 #endif
