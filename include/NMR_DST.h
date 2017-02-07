@@ -103,7 +103,7 @@ TTree	* NMR_DST::WriteTree(){
 		//f1->ls();
 	    cout<<DST_pr<<"writing tree"<<endl;
 	    //Dtree->Print();
-	    Dtree->Show(50);
+	    //Dtree->Show(50);
 	    //Dtree->Write();
 	   // Dtree->Write(f1->GetName());
 		// Int_t test1 = f1->Write();
