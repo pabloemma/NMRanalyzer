@@ -33,7 +33,7 @@ NMR_DST();
 	void AddBranches();
 	void CloseFile();
 	TTree * WriteTree();
-	void FillTree(Double_t );
+	void FillTree(Double_t ,Long64_t);
 
 	Double_t area;    TFile *f1;
     TTree *Dtree;
@@ -42,6 +42,7 @@ NMR_DST();
 private:
 	Int_t BranchCounter; // this keeps track of the number of branches we will have
     std::string DST_pr = "DST> ";
+    Long64_t time;
 
 
 };
@@ -74,12 +75,15 @@ void    NMR_DST::CreateTree(){
      }
 
 void	NMR_DST::AddBranches()	{
-		Dtree->Branch("area",&area,"area/D");
+	Dtree->Branch("area",&area,"area/D");
+	Dtree->Branch("time",&time,"time/L");
+
 		Dtree->Print();
 
 	}
-void	NMR_DST::FillTree(Double_t ar){
+void	NMR_DST::FillTree(Double_t ar ,Long64_t timel){
 		area = ar;
+		time = timel;
 		Dtree->Fill();
 		//Dtree->Show(0);
 

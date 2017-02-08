@@ -573,7 +573,7 @@ void NMRana::Loop()
 
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
-	  DST->FillTree(SignalArea);
+	  DST->FillTree(SignalArea,timel);
 
    }// end of entry loop
 
