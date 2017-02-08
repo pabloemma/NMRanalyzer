@@ -28,15 +28,14 @@ public:
 NMR_DST();
 ~NMR_DST();
 
-	void OpenFile(TString);
+	void OpenFile();
 	void CreateTree();
 	void AddBranches();
 	void CloseFile();
 	TTree * WriteTree();
 	void FillTree(Double_t );
 
-	Double_t area;
-    TFile *f1;
+	Double_t area;    TFile *f1;
     TTree *Dtree;
 
 
@@ -56,15 +55,8 @@ NMR_DST::~NMR_DST(){
 }
 
 
-void	NMR_DST::OpenFile(TString DSTfile){
+void	NMR_DST::OpenFile(){
 
-		     //cout<<DST_pr<<"opening root outputfile "<<DSTfile<<"\n";
-
-		     //f1 = new TFile(DSTfile,"RECREATE");
-		     /*if(!f1->IsOpen()){
-		    	 cout <<DST_pr<<"Cannot open DST File "<<DSTfile<<" \n  will exit \n";
-		    	 exit(EXIT_FAILURE);
-		     }*/
 		CreateTree();
 		AddBranches();
 

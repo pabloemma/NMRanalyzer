@@ -377,7 +377,7 @@ NMRana::NMRana(){
 
 	cout<<NMR_pr<< "Everything initialized"<<endl;
     DST = new NMR_DST();
-    DST->OpenFile("/Users/klein/scratch/DST.root");
+    DST->OpenFile();
 
 
 
