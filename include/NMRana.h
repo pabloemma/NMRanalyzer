@@ -406,6 +406,7 @@ void NMRana::Loop()
    Long64_t time_prev = 0;
    Long64_t nbytes = 0, nb = 0;
    // insert Kun's fst analyzer to get the QCurve offset
+   if(QC){
 	for(int i = 0; i < nentries; ++i)   //This is equivalent to NMRana::Loop()
 	{
 		fChain->GetEntry(i);
@@ -422,7 +423,7 @@ void NMRana::Loop()
 		// fill array of offsets
 		delete teHist;
 	}
-
+} // end of fastana
 
    RTCanvas->cd(1);
    NMR_RT->Draw("HIST P");
@@ -443,12 +444,13 @@ void NMRana::Loop()
 
 //	Consistency checks:
 // first test that tune voltage between measurement and Qcurve are the same
+      if(QC){
       if(NMRchan != QCcoil || NMRchan != QcurveCoil) {
     	  cout<<NMR_pr<<" !!error QCurve coil not the same as TE: Data coil"<< NMRchan<<"    Qcurve voil : "<<QCcoil<< "Fit Qcurve coil :"<<QcurveCoil<<endl;
     	  cout<<NMR_pr<<"!!!!!!!!!!!sever failure!!!!!!!"<<endl;
     	  exit(EXIT_FAILURE);
+         }
       }
-
       if(TuneV != QcurveTune || TuneV != QCtune) {
     	  cout<<NMR_pr<<" !!warning Tune voltages are not the same Data tuneV :"<< TuneV<<"    Qcurve data tunev : "<<QCtune<< "Fit Qcurve tune :"<<QcurveTune<<endl;
       }
@@ -466,15 +468,16 @@ void NMRana::Loop()
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
        	  DataTemp = array->at(j) / gain_array[int(Gain+.01)];  // take gain out
-       	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
-          Int_t shift = j-xoffset.at(jentry);
           if(QCshift){
+           	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
+              Int_t shift = j-xoffset.at(jentry);
+           	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
                if(shift<Qcurve_array.size() and shift >=0 ){ QcurTemp = Qcurve_array.at(shift);
                DataTemp = DataTemp-yoffset.at(jentry); //subtract the fitted offset
               }
                else QcurTemp = 0.;
           }
-          else QcurTemp = Qcurve_array.at(j);
+          else if(Qcurve_array.size()!=0)QcurTemp = Qcurve_array.at(j);
 
 
         	  if(DEBUG==1)raw_histo->Fill(freq_temp,DataTemp);
@@ -677,8 +680,11 @@ void NMRana::DrawHistos(){
 	// renormalize the histos by the total number of entries we read in
 	Double_t NE = 1/TotalEntries;
 	NMR1->Scale(NE);
-	NMR1_Qfit->Scale(NE);
+	if(QC){
+		NMR1_Qfit->Scale(NE);
+
 	NMR1_NoQ->Scale(NE);
+    }
 
 	GeneralCanvas->cd(1);
 
@@ -726,7 +732,7 @@ void NMRana::DrawHistos(){
 	// print out the different integrals;
 	// they are unnormalized
 	cout<<NMR_pr<< "*************   Integral of histo NMR1 "<<NMR1->Integral(low_id,high_id)<<endl;
-	cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
+	if(QC)cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
 
 	// writing DST file
 	TFile *mydst = new TFile("/Users/klein/scratch/DST1.root","recreate");
@@ -1418,8 +1424,9 @@ void NMRana::SetupHistos(){
 		   raw_histo_QC = new TH1D("raw_histo_QC"," Signal histogram with QCurve subtracted",IntScanPoints,MinFreq,MaxFreq);//
 	   }
 
-	   // Initialze the QCurve Fast Ana system
-	   InitFastAna();
+	   // Initialze the QCurve Fast Ana system, but only if there is aQcurve
+
+	   if(QC) InitFastAna();
 
 
 

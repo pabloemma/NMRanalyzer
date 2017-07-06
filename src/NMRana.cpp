@@ -107,7 +107,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 	// Get the environment, make sure it is defined. If not exit
 			if(const char* env_p = std::getenv("NMR_ROOT")){
 				NMR_ROOT = env_p;
-				cout<< "NMR_main"<<" your environment is "<<NMR_ROOT<<endl;
+				cout<< "NMR_main" <<" your environment is "<<NMR_ROOT<<endl;
 				SIG.SetEnvironment(NMR_ROOT);
 			}
 			else{
@@ -137,6 +137,9 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 	InputRootDirectory = theApp->WorkingDirectory();
 
+	InputRootDirectory = "/home/klein/NMRanalysis/LanlData/root/";
+	cout<<"root data dir"<<InputRootDirectory<<"\n";
+
     Timer = new TStopwatch; // create a stopwatch
     Timer->Start();
 	// First we look at the filenames and put thenm into a TObjArray
@@ -150,6 +153,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 	TString temp = std::string(theApp->Argv(k));  //Argv with index is char*
 		if(temp.Contains("-f")){
 			parameter_file = std::string(theApp->Argv(k+1));
+
 		}
 
 		if(temp.Contains(".root")) {
