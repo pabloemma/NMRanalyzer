@@ -137,7 +137,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 	InputRootDirectory = theApp->WorkingDirectory();
 
-	InputRootDirectory = "/home/klein/NMRanalysis/LanlData/root/";
+	if(InputRootDirectory =="") InputRootDirectory = "/home/klein/NMRanalysis/LanlData/root/";
 	cout<<"root data dir"<<InputRootDirectory<<"\n";
 
     Timer = new TStopwatch; // create a stopwatch
