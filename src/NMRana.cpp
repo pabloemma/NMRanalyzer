@@ -115,8 +115,8 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 				cout<<"NMR_main"<<" This means that the program does not find the directory where the par files and qc curve etc are located \n";
 				cout<<"NMR_main"<<" You should have a directory, which has the following subdirectories: NMR_par,QC_files, TE_files \n";
 				cout<<"NMR_main"<<" I define one for you, but most likely this will bomb and you have to go into the main code and change the line around line 118 \n";
-				std::string env_p1="/Volumes/macsmall/nmrwork/";
-				NMR_ROOT= env_p1;
+				//std::string env_p1="/Volumes/macsmall/nmrwork/";
+				//NMR_ROOT= env_p1;
 				cout<<"NMR_main"<<NMR_ROOT<<"   this is what I define for you \n";
 						//cout<< " You must define it now; Good bye  \n" <<endl;
 						//exit(EXIT_FAILURE);
