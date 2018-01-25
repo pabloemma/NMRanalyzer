@@ -448,7 +448,7 @@ void NMRana::Loop()
       if(NMRchan != QCcoil || NMRchan != QcurveCoil) {
     	  cout<<NMR_pr<<" !!error QCurve coil not the same as TE: Data coil"<< NMRchan<<"    Qcurve voil : "<<QCcoil<< "Fit Qcurve coil :"<<QcurveCoil<<endl;
     	  cout<<NMR_pr<<"!!!!!!!!!!!sever failure!!!!!!!"<<endl;
-    	  exit(EXIT_FAILURE);
+    	  //exit(EXIT_FAILURE);
          }
       }
       if(TuneV != QcurveTune || TuneV != QCtune) {
@@ -539,6 +539,7 @@ void NMRana::Loop()
 
 		 if(TEmeasurement){ SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 		 //cout<<NMR_pr<<"signal area    "<<SignalArea<<endl;
+		 cout<<CalculateArea(NMR_RT_Corr_Fit)<<" temp    "<<CalculateArea(NMR_RT_Corr)<<"\n";
 		 }
 	      else  SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 

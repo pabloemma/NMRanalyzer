@@ -300,7 +300,7 @@ Double_t TEana::CalculateTEP(std::string particle ,Double_t spin, Double_t field
 
 	TEPol = arg1*cosh(arg1*fact)/sinh(arg1*fact)-arg2*cosh(arg2*fact)/sinh(arg2*fact);
 
-	 //cout<<TEana_pr<< "temperature  vs pressure "<<Temp<<"   "<<pressure<<"  Polarization  "<<TEPol<< "\n";
+	// cout<<TEana_pr<< "temperature  vs pressure "<<Temp<<"   "<<pressure<<"  Polarization  "<<TEPol<< "\n";
 
 	return TEPol;
 }

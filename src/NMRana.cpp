@@ -159,6 +159,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 	TString temp = std::string(theApp->Argv(k));  //Argv with index is char*
 		if(temp.Contains("-f")){
 			parameter_file = std::string(theApp->Argv(k+1));
+			cout<<"parameter file"<<parameter_file<<"\n";
 
 		}
 
