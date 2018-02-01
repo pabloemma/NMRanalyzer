@@ -143,8 +143,7 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 	InputRootDirectory = theApp->WorkingDirectory();
 
-	if(InputRootDirectory =="") InputRootDirectory = "/home/klein/NMRanalysis/LanlData/root/";
-	cout<<"root data dir"<<InputRootDirectory<<"\n";
+	//if(InputRootDirectory =="") InputRootDirectory = "/home/klein/macsmall_disk";
 
     Timer = new TStopwatch; // create a stopwatch
     Timer->Start();
@@ -157,11 +156,19 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 
 	for (Int_t k=0;k < theApp->Argc();k++){  // find the filenames
 	TString temp = std::string(theApp->Argv(k));  //Argv with index is char*
-		if(temp.Contains("-f")){
-			parameter_file = std::string(theApp->Argv(k+1));
-			cout<<"parameter file"<<parameter_file<<"\n";
+	if(temp.Contains("-f")){
+		parameter_file = std::string(theApp->Argv(k+1));
+		cout<<"parameter file"<<parameter_file<<"\n";
+	    }
+	if(temp.Contains("-d")){
+		InputRootDirectory = std::string(theApp->Argv(k+1));
+//		cout<<"parameter file"<<parameter_file<<"\n";
 
 		}
+
+	   cout<<"root data dir"<<InputRootDirectory<<"\n";
+
+
 
 		if(temp.Contains(".root")) {
 			// Now check what kind of run it is

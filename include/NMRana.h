@@ -361,9 +361,14 @@ NMRana::NMRana(){
     //slows down program
     StripLength =  2000;
     PrintWarnings();
+/*    //currently set all the gain arrays to 1
+    //pat thinks we only will run on one setting
     gain_array[0]=1;
     gain_array[1]=20;
-    gain_array[2]=200;
+    gain_array[2]=200; */
+    gain_array[0]=1.;
+    gain_array[1]=1.;
+    gain_array[2]=1.;
     QfitPar[0]=0.;
     QfitPar[1]=0.;
     QfitPar[2]=0.;
@@ -539,7 +544,7 @@ void NMRana::Loop()
 
 		 if(TEmeasurement){ SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 		 //cout<<NMR_pr<<"signal area    "<<SignalArea<<endl;
-		 cout<<CalculateArea(NMR_RT_Corr_Fit)<<" temp    "<<CalculateArea(NMR_RT_Corr)<<"\n";
+		 //cout<<CalculateArea(NMR_RT_Corr_Fit)<<" temp    "<<CalculateArea(NMR_RT_Corr)<<"\n";
 		 }
 	      else  SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 
@@ -736,10 +741,15 @@ void NMRana::DrawHistos(){
 	if(QC)cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
 
 	// writing DST file
-	TFile *mydst = new TFile("/Users/klein/scratch/DST1.root","recreate");
+	TFile *mydst = new TFile("/home/klein/scratch/DST1.root","recreate");
 	TTree *mytr = DST->WriteTree();
 	mytr->Print();
 	mytr->Write();
+	NMR1_NoQ->Write();
+	NMR1->Write();
+	NMR1_Qfit->Write();
+	Qcurve_histo->Write();
+	NMR_RT_Corr_Fit->Write();
 	mydst->Close();
 
 
@@ -1270,12 +1280,12 @@ void NMRana::SetupHistos(){
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   	  // low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
 	   	  // high_id = NMR1->GetXaxis()->FindBin(HighArea_X);
-	   	   low_id = NMR1->GetXaxis()->FindBin(fit_x2);
-	   	   high_id = NMR1->GetXaxis()->FindBin(fit_x3);
-	   Ifit_x1 = NMR1->GetXaxis()->FindBin(fit_x1);
-	   Ifit_x2 = NMR1->GetXaxis()->FindBin(fit_x2);
-	   Ifit_x3 = NMR1->GetXaxis()->FindBin(fit_x3);
-	   Ifit_x4 = NMR1->GetXaxis()->FindBin(fit_x4);
+	   	   low_id = NMR_RT_Corr_Fit->GetXaxis()->FindBin(fit_x2);
+	   	   high_id = NMR_RT_Corr_Fit->GetXaxis()->FindBin(fit_x3);
+	   Ifit_x1 = NMR_RT_Corr_Fit->GetXaxis()->FindBin(fit_x1);
+	   Ifit_x2 = NMR_RT_Corr_Fit->GetXaxis()->FindBin(fit_x2);
+	   Ifit_x3 = NMR_RT_Corr_Fit->GetXaxis()->FindBin(fit_x3);
+	   Ifit_x4 = NMR_RT_Corr_Fit->GetXaxis()->FindBin(fit_x4);
 
        //
 
@@ -1798,7 +1808,7 @@ void NMRana::Stripper(Long64_t jentry){
 	  StripCanvas->Update();
 
 	  if(TEmeasurement){
-		  if(jentry ==0)cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
+		  //if(jentry ==0)cout<<NMR_pr<<"!!!!!!!!!!!!!!!need to change the call to TE polarization calculation!!!!!!!!!!!\n";
 		  StripCanvas_1->cd();
 		  // temporary fix for separate time file
 		  //replace press_help with pressure variable from ROOT file//
