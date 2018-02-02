@@ -120,6 +120,7 @@ public :
    Double_t			HeP;
 
 
+
    Double_t			Qamp; // amplifier setting for Qcurve
    Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
    Long64_t	        time_offset;
@@ -297,6 +298,7 @@ public :
    NMRFastAna* fastAna; // the fast system
    NMR_DST *DST;// handles output
    std::string QcurveFileName ; // Qcurve file name
+   std::ofstream teout ;   // global teoutput file
 
 
 	TEana TE;
@@ -545,6 +547,7 @@ void NMRana::Loop()
 		 if(TEmeasurement){ SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 		 //cout<<NMR_pr<<"signal area    "<<SignalArea<<endl;
 		 //cout<<CalculateArea(NMR_RT_Corr_Fit)<<" temp    "<<CalculateArea(NMR_RT_Corr)<<"\n";
+
 		 }
 	      else  SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 
@@ -567,8 +570,15 @@ void NMRana::Loop()
 	     //warninghook
 	//end warninghook
 
+	  // write out csv file
+	  if(TEmeasurement) {
+		  Double_t temp_pol =TE.CalculateTEP("proton",.5,5.0027,HeP);
+		  //I am using jentry since ScanNuimber is always 0
+		  teout<<timel<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<SignalArea*FreqStep<<","<<temp_pol<<"\n";
+	  }
 
 	      // Convert to polarization
+
 	            SignalArea *=CalConst;
 
 	// now for every point in a TE we will calculate the polarization from the pressure
@@ -583,6 +593,7 @@ void NMRana::Loop()
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
 	  DST->FillTree(SignalArea,timel);
+
 
    }// end of entry loop
 
@@ -737,7 +748,7 @@ void NMRana::DrawHistos(){
    // DrawFitHisto();
 	// print out the different integrals;
 	// they are unnormalized
-	cout<<NMR_pr<< "*************   Integral of histo NMR1 "<<NMR1->Integral(low_id,high_id)<<endl;
+	cout<<NMR_pr<< "*************   IntegrGetdateal of histo NMR1 "<<NMR1->Integral(low_id,high_id)<<endl;
 	if(QC)cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
 
 	// writing DST file
@@ -1035,6 +1046,11 @@ int NMRana::OpenFile(TString rootfile){
      if(rootfile.Contains("TER") || rootfile.Contains("TEQ") ){
     	 TEmeasurement = true;
     	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
+    	 std::string tefile = NMR_ROOT+"/TE/TEglobal.csv";
+    	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
+
+    	 teout.open(tefile,ios::out | ios::app) ;
+
     	 // perform the TEfile read as well, so that we have the map
     	 // this is only used if we use the Yurov file and mesaurement
     	//  TE.ReadTE();
@@ -1071,7 +1087,12 @@ int NMRana::OpenChain(std::vector<TString> RootFileArray){
 	    	 TEmeasurement = true;
 	    	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
 	    	 // perform the TEfile read as well, so that we have the map
-	    	 TE.ReadTE();
+	    	 //TE.ReadTE();
+	    	 std::string tefile = NMR_ROOT+"/TE/TEglobal.csv";
+	    	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
+
+	    	 teout.open(tefile,ios::out | ios::app) ;
+
 	     }
 
 
@@ -1125,6 +1146,7 @@ void NMRana::Init(TTree *tree)
    fChain->SetBranchAddress("FreqCenter", &FreqCenter, &b_FreqCenter);
    fChain->SetBranchAddress("Temperature", &Temperature, &b_Temperature);
    fChain->SetBranchAddress("ScanPoints", &ScanPoints, &b_ScanPoints);
+   fChain->SetBranchAddress("ScanNumber", &ScanNumber, &b_ScanNumber);
    fChain->SetBranchAddress("ControllerV", &ControllerV, &b_ControllerV);
    fChain->SetBranchAddress("TuneV", &TuneV, &b_TuneV);
    fChain->SetBranchAddress("Offset", &Offset, &b_Offset);
@@ -1745,7 +1767,8 @@ void NMRana::SetTimeControl(Int_t main_input){
 TString NMRana::GetDate(TString input) {
 
 
-	TString timestring = input;
+	// TString timestring = input;
+	timestring = input;
     time_t time_test = timestring.Atoi()-2082844800; // calculated with offset since stupid labview uses jan-1-1904
     tm *ltm = localtime(&time_test);          //and unix uses jan-1-1970
 
