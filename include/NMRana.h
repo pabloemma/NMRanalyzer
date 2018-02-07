@@ -124,7 +124,7 @@ public :
    Double_t			Qamp; // amplifier setting for Qcurve
    Long64_t         timel; // note this time is down to 100musec, in order to deal only on the second level, strip the last 4 digits
    Long64_t	        time_offset;
-   std::vector<double>  *array;
+   std::vector<double>  *array = 0;
    std::vector<int>  xoffset ; // vector of offsert for Qcurve, filled by NMRfastana
    std::vector<double>  yoffset ; // vector of y offsert for Qcurve, filled by NMRfastana
 
@@ -378,6 +378,7 @@ NMRana::NMRana(){
     QfitPar[4]=0.;
     TotalEntries = 0;
     QCshift = true ; // default calculate Qcurve shift.
+    //array = new std::vector<double>(1000);
 
     // Now initialize and instantiate NMRFastANa
 
@@ -474,7 +475,8 @@ void NMRana::Loop()
       for (UInt_t j = 0; j < array->size(); ++j) {
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
-       	  DataTemp = array->at(j) / gain_array[int(Gain+.01)];  // take gain out
+       	  DataTemp = array->at(j);// / gain_array[int(Gain+.01)];  // take gain out
+       	  if(jentry<2)cout<<DataTemp<<endl;
           if(QCshift){
            	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
               Int_t shift = j-xoffset.at(jentry);
@@ -574,7 +576,7 @@ void NMRana::Loop()
 	  if(TEmeasurement) {
 		  Double_t temp_pol =TE.CalculateTEP("proton",.5,5.0027,HeP);
 		  //I am using jentry since ScanNuimber is always 0
-		  teout<<timel<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<SignalArea*FreqStep<<","<<temp_pol<<"\n";
+		  teout<<timel<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<SignalArea*FreqStep<<","<<CalculateArea(NMR_RT)*FreqStep<<","<<temp_pol<<"\n";
 	  }
 
 	      // Convert to polarization
@@ -593,7 +595,6 @@ void NMRana::Loop()
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
 	  DST->FillTree(SignalArea,timel);
-
 
    }// end of entry loop
 
@@ -1217,6 +1218,7 @@ void NMRana::Finish(){
 		cout<<NMR_pr<<" *"<<endl;
 		cout<<NMR_pr<< "***************************************************************"<<endl;
 		DST->WriteTree();
+		teout.close(); // close te file
 
 
 }
