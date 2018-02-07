@@ -476,7 +476,6 @@ void NMRana::Loop()
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
        	  DataTemp = array->at(j);// / gain_array[int(Gain+.01)];  // take gain out
-       	  if(jentry<2)cout<<DataTemp<<endl;
           if(QCshift){
            	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
               Int_t shift = j-xoffset.at(jentry);
@@ -502,7 +501,6 @@ void NMRana::Loop()
     		 // correct for the Qcurve shift
     		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp-xoffset.at(jentry)*FreqStep));
        		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
-       		 // NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
            		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
        		 NMR_RT_Corr_Fit->Fill(freq_temp,DataTemp- QcurTemp);
      		 // now take background out
