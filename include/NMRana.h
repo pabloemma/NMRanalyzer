@@ -377,7 +377,7 @@ NMRana::NMRana(){
     QfitPar[3]=0.;
     QfitPar[4]=0.;
     TotalEntries = 0;
-    QCshift = true ; // default calculate Qcurve shift.
+    QCshift = false ; // default calculate Qcurve shift.
     //array = new std::vector<double>(1000);
 
     // Now initialize and instantiate NMRFastANa
@@ -422,7 +422,7 @@ void NMRana::Loop()
 		TH1D* teHist = new TH1D("teHist", "teHist", ScanPoints, MinFreq, MaxFreq);
 		for(int j = 0; j < ScanPoints; ++j)
 		{
-			teHist->Fill(MinFreqR+j*FreqStep, array->at(j)/gain_array[int(Gain+0.01)]);
+			teHist->Fill(MinFreqR+j*FreqStep, array->at(j)/1.);
 		}
 //		cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
 		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
@@ -477,18 +477,7 @@ void NMRana::Loop()
     	  //renormailze signal by amplifier setting
        	  DataTemp = array->at(j);// / gain_array[int(Gain+.01)];  // take gain out
        	  if(jentry<2)cout<<DataTemp<<endl;
-          if(QCshift){
-           	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
-              Int_t shift = j-xoffset.at(jentry);
-           	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
-               if(shift<Qcurve_array.size() and shift >=0 ){ QcurTemp = Qcurve_array.at(shift);
-               DataTemp = DataTemp-yoffset.at(jentry); //subtract the fitted offset
-              }
-               else QcurTemp = 0.;
-          }
-          else if(Qcurve_array.size()!=0)QcurTemp = Qcurve_array.at(j);
-
-
+        	   if(Qcurve_array.size()!=0)QcurTemp = Qcurve_array.at(j);
         	  if(DEBUG==1)raw_histo->Fill(freq_temp,DataTemp);
 
     	  if(Qcurve_array.size()!=0) {
@@ -499,9 +488,8 @@ void NMRana::Loop()
 
        		 //NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
     		 // correct for the Qcurve shift
-    		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp-xoffset.at(jentry)*FreqStep));
-    		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
-       		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
+    		 NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+    		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
        		 NMR_RT_Corr_Fit->Fill(freq_temp,DataTemp- QcurTemp);
      		 // now take background out
      	  	  }
@@ -576,7 +564,7 @@ void NMRana::Loop()
 	  if(TEmeasurement) {
 		  Double_t temp_pol =TE.CalculateTEP("proton",.5,5.0027,HeP);
 		  //I am using jentry since ScanNuimber is always 0
-		  teout<<timel<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<SignalArea*FreqStep<<","<<CalculateArea(NMR_RT)*FreqStep<<","<<temp_pol<<"\n";
+		  teout<<timel<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<SignalArea*FreqStep<<","<<CalculateArea(NMR_RT_Corr)*FreqStep<<","<<temp_pol<<"\n";
 	  }
 
 	      // Convert to polarization
@@ -926,12 +914,6 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		cout<<"Qcurve File "<<QcurveFileName<<endl;
 
 		}
-		if(pos->first.find("QCSHIFT")!= std::string::npos){
-			// shift qcurve or not
-		Int_t help = std::stod(pos->second);
-		if(help == 1) QCshift = true;
-		else QCshift = false;
-		}
 
 
 	}
@@ -1024,7 +1006,7 @@ void NMRana::ReadQcurveParFile(std::string name){
 			cout<<file<<" ";
 			for (int l =0 ; l<5;l++){
 				cout<<"  "<<par[l]<<" ";
-				QfitPar[l] = par[l]/QcurveScale/gain_array[int(QcurveGain+.01)]; // normalize to gain
+				QfitPar[l] = par[l]/QcurveScale; // normalize to gain
 			} // normalzied to number of sweeps
 
 
@@ -1750,14 +1732,12 @@ void NMRana::FillQcurveArray(){
 	   //now we need to normalize the QCurve to the number of sweeps, which is nentries
 	   // historicif(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<Qamp<<"\n";
 
-	   if(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<gain_array[int(Gain+.01)]<<"\n";
-
 	   for (UInt_t j = 0; j < array->size(); ++j) {
 
-		   Qcurve_array.at(j)= Qcurve_array.at(j)/QcurveEntries/gain_array[int(Gain+.01)];
+		   Qcurve_array.at(j)= Qcurve_array.at(j)/QcurveEntries;
 
 	   }
-	   cout<<" nmr ana  "<<gain_array[int(Gain+.01)]<<"  "<<QcurveEntries<<" "<<ScanNumber<<endl;
+	   cout<<" nmr ana  "<<"  "<<QcurveEntries<<" "<<ScanNumber<<endl;
 
 
 
