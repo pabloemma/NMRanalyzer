@@ -424,7 +424,7 @@ void NMRana::Loop()
 		{
 			teHist->Fill(MinFreqR+j*FreqStep, array->at(j)/gain_array[int(Gain+0.01)]);
 		}
-//		cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
+		//cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
 		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
 		yoffset.push_back(fastAna->getYOffset()); // fill vector of xoffsets
 		//fastAna->plot(Form("res_%d.pdf", i));
@@ -485,6 +485,7 @@ void NMRana::Loop()
                DataTemp = DataTemp-yoffset.at(jentry); //subtract the fitted offset
               }
                else QcurTemp = 0.;
+               //cout<<"problem with shift"<<shift<<"  "<< "entry  "<<j<< "\n";
           }
           else if(Qcurve_array.size()!=0)QcurTemp = Qcurve_array.at(j);
 
@@ -500,8 +501,9 @@ void NMRana::Loop()
        		 //NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
     		 // correct for the Qcurve shift
     		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp-xoffset.at(jentry)*FreqStep));
-    		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
-       		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
+       		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+       		 // NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+           		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
        		 NMR_RT_Corr_Fit->Fill(freq_temp,DataTemp- QcurTemp);
      		 // now take background out
      	  	  }

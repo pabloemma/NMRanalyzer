@@ -130,17 +130,20 @@ double NMRFastAna::chisq(const double* par)
 	double chisq = 0.;
 	unsigned int refIndex = xoffset > 0 ? 0 : abs(xoffset);
 	unsigned int datIndex = xoffset > 0 ? abs(xoffset) : 0;
+	double nPoints = 0.;
 	while(refIndex < nScanPoints && datIndex < nScanPoints)
 	{
-		if(freq[datIndex] > freqMin && freq[datIndex] < freqMax && fabs(freq[datIndex] - freqCenter) > freqWin) 
+		if(freq[datIndex] > freqMin && freq[datIndex] < freqMax && fabs(freq[datIndex] - freqCenter) > freqWin)
+		{
+			nPoints = nPoints + 1.;
 			chisq = chisq + (dataAmp[datIndex] - yoffset - refAmp[refIndex])*(dataAmp[datIndex] - yoffset - refAmp[refIndex]);
-		
+		}
 		refIndex += sampleRate;
 		datIndex += sampleRate;
 	}
 
 	//std::cout << xoffset << "  " << yoffset << " : " << chisq << std::endl;
-	return chisq;
+	return chisq/nPoints;
 }
 
 void NMRFastAna::setQCurve(TH1D* ref)

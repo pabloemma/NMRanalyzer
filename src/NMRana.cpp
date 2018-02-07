@@ -19,7 +19,7 @@
 #include <cstdlib> // contaings getenv
 
 #include <iostream>
-#include "NMRana.h"
+#include <NMRana.h>
 #include "NMRana_main.h"
 
 #include "TEana.h"
