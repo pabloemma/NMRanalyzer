@@ -476,7 +476,6 @@ void NMRana::Loop()
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
        	  DataTemp = array->at(j);// / gain_array[int(Gain+.01)];  // take gain out
-       	  if(jentry<2)cout<<DataTemp<<endl;
         	   if(Qcurve_array.size()!=0)QcurTemp = Qcurve_array.at(j);
         	  if(DEBUG==1)raw_histo->Fill(freq_temp,DataTemp);
 
