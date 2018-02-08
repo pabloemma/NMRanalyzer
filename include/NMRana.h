@@ -299,6 +299,7 @@ public :
    NMR_DST *DST;// handles output
    std::string QcurveFileName ; // Qcurve file name
    std::ofstream teout ;   // global teoutput file
+   std::ofstream teout1 ;   // global teoutput file for temporary spectrum
 
 
 	TEana TE;
@@ -389,6 +390,7 @@ NMRana::NMRana(){
 
 
 
+
 }
 
 
@@ -396,7 +398,9 @@ NMRana::NMRana(){
 
 void NMRana::Loop()
 {
-   if (fChain == 0) return;
+
+
+	if (fChain == 0) return;
 
 
    	   // go to strip chart
@@ -483,7 +487,7 @@ void NMRana::Loop()
                if(shift<Qcurve_array.size() and shift >=0 ){ QcurTemp = Qcurve_array.at(shift);
                DataTemp = DataTemp-yoffset.at(jentry); //subtract the fitted offset
               }
-               else QcurTemp = 0.;
+               else QcurTemp = Qcurve_array.at(j); ;
                //cout<<"problem with shift"<<shift<<"  "<< "entry  "<<j<< "\n";
           }
           else if(Qcurve_array.size()!=0)QcurTemp = Qcurve_array.at(j);
@@ -591,10 +595,9 @@ void NMRana::Loop()
 	      Stripper(jentry); // draw all the strip charts
 
 
-
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
-	  DST->FillTree(SignalArea,timel);
+	  DST->FillTree(SignalArea,timel,NMR_RT_Corr_Fit);
 
    }// end of entry loop
 
@@ -1049,8 +1052,11 @@ int NMRana::OpenFile(TString rootfile){
     	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
     	 std::string tefile = NMR_ROOT+"/TE/TEglobal.csv";
     	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
+    	 std::string tefile1 = NMR_ROOT+"/TE/TEglobal_spectrum.csv";
+    	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
 
     	 teout.open(tefile,ios::out | ios::app) ;
+    	 teout1.open(tefile1,ios::out | ios::app) ;
 
     	 // perform the TEfile read as well, so that we have the map
     	 // this is only used if we use the Yurov file and mesaurement
@@ -1091,8 +1097,11 @@ int NMRana::OpenChain(std::vector<TString> RootFileArray){
 	    	 //TE.ReadTE();
 	    	 std::string tefile = NMR_ROOT+"/TE/TEglobal.csv";
 	    	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
+	    	 std::string tefile1 = NMR_ROOT+"/TE/TEglobal_spectrum.csv";
+	    	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
 
 	    	 teout.open(tefile,ios::out | ios::app) ;
+	    	 teout1.open(tefile,ios::out | ios::app) ;
 
 	     }
 
@@ -1219,7 +1228,7 @@ void NMRana::Finish(){
 		cout<<NMR_pr<< "***************************************************************"<<endl;
 		DST->WriteTree();
 		teout.close(); // close te file
-
+		teout1.close();
 
 }
 

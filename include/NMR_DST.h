@@ -15,6 +15,8 @@
 #include <TCanvas.h>
 #include <TFile.h>
 #include <TTree.h>
+#include <TH1D.h>
+
 
 
 #include <Math/Factory.h>
@@ -33,7 +35,7 @@ NMR_DST();
 	void AddBranches();
 	void CloseFile();
 	TTree * WriteTree();
-	void FillTree(Double_t ,Long64_t);
+	void FillTree(Double_t ,Long64_t, TH1D *);
 
 	Double_t area;    TFile *f1;
     TTree *Dtree;
@@ -43,6 +45,7 @@ private:
 	Int_t BranchCounter; // this keeps track of the number of branches we will have
     std::string DST_pr = "DST> ";
     Long64_t time;
+    TH1D *histo;
 
 
 };
@@ -77,13 +80,15 @@ void    NMR_DST::CreateTree(){
 void	NMR_DST::AddBranches()	{
 	Dtree->Branch("area",&area,"area/D");
 	Dtree->Branch("time",&time,"time/L");
+	Dtree->Branch("histo","TH1D",&histo);
 
 		Dtree->Print();
 
 	}
-void	NMR_DST::FillTree(Double_t ar ,Long64_t timel){
+void	NMR_DST::FillTree(Double_t ar ,Long64_t timel,TH1D *histol){
 		area = ar;
 		time = timel;
+		histo = histol;
 		Dtree->Fill();
 		//Dtree->Show(0);
 

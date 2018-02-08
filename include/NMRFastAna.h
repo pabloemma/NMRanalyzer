@@ -90,8 +90,8 @@ NMRFastAna::NMRFastAna()
 	//default configurations
 	freqCenter = 213.;
 	freqWin = 0.1;
-	freqMin = 213. - 0.5;
-	freqMax = 213. + 0.5;
+	freqMin = 213. - 0.4;
+	freqMax = 213. + 0.4;
 	sampleRate = 4;
 
 	xoffsetMin = -50;
@@ -117,7 +117,7 @@ void NMRFastAna::init()
 	minimizer = ROOT::Math::Factory::CreateMinimizer("Minuit2", "Combined");
 	minimizer->SetMaxFunctionCalls(1000000);
 	minimizer->SetMaxIterations(10000);
-	minimizer->SetTolerance(0.0001);
+	minimizer->SetTolerance(0.001);
 	minimizer->SetFunction(fcn);
 	minimizer->SetPrintLevel(0);
 }
