@@ -202,6 +202,7 @@ public :
    Bool_t QCshift; // if true calcuate the QCurve shift and subtract the shifted Curve
    Bool_t TXT ;//output to file
    TTree *QCUtree;
+   TTree *mytr;
    std::map<std::string,std::string> Parameters; // input parameters
    std::vector<Double_t> CalibConstantVector; // this hold the calculated calibration constants and will calculate mean and error
    Double_t CalibConstantMean;
@@ -297,6 +298,7 @@ public :
    TFile *QcurveFile; //
    NMRFastAna* fastAna; // the fast system
    NMR_DST *DST;// handles output
+   TFile *mydst; //DST file
    std::string QcurveFileName ; // Qcurve file name
    std::ofstream teout ;   // global teoutput file
    std::ofstream teout1 ;   // global teoutput file for temporary spectrum
@@ -384,9 +386,11 @@ NMRana::NMRana(){
     // Now initialize and instantiate NMRFastANa
 
 
-	cout<<NMR_pr<< "Everything initialized"<<endl;
+//	cout<<NMR_pr<< "Everything initialized"<<endl;
+//	mydst = new TFile("/home/klein/scratch/DST1.root","recreate");
+
     DST = new NMR_DST();
-    DST->OpenFile();
+    mytr = DST->OpenFile();
 
 
 
@@ -443,6 +447,8 @@ void NMRana::Loop()
 
    NMR_RT_Corr->Draw("HIST P");
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
+   //for (Long64_t jentry=0; jentry<3;jentry++) {
+	   //if(jentry ==3)break; // only do 3 loops
 	   NMR_RT->Reset();
 	   NMR_RT_Corr->Reset();
 	   NMR_RT_Corr_Fit->Reset();
@@ -597,8 +603,8 @@ void NMRana::Loop()
 
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
-	  DST->FillTree(SignalArea,timel,NMR_RT_Corr_Fit);
-
+	  //mytr->FillTree(SignalArea,timel,NMR_RT_Corr_Fit);
+	  mytr->Fill();
    }// end of entry loop
 
 
@@ -754,19 +760,6 @@ void NMRana::DrawHistos(){
 	// they are unnormalized
 	cout<<NMR_pr<< "*************   IntegrGetdateal of histo NMR1 "<<NMR1->Integral(low_id,high_id)<<endl;
 	if(QC)cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
-
-	// writing DST file
-	TFile *mydst = new TFile("/home/klein/scratch/DST1.root","recreate");
-	TTree *mytr = DST->WriteTree();
-	mytr->Print();
-	mytr->Write();
-	NMR1_NoQ->Write();
-	NMR1->Write();
-	NMR1_Qfit->Write();
-	Qcurve_histo->Write();
-	NMR_RT_Corr_Fit->Write();
-	mydst->Close();
-
 
 }
 
@@ -1226,7 +1219,27 @@ void NMRana::Finish(){
 		cout<<NMR_pr<<"                  Analysis finished"<<endl;
 		cout<<NMR_pr<<" *"<<endl;
 		cout<<NMR_pr<< "***************************************************************"<<endl;
-		DST->WriteTree();
+		//DST->WriteTree();
+		cout<<NMR_pr<< "Everything initialized"<<endl;
+		mydst = new TFile("/home/klein/scratch/DST1.root","recreate");
+
+
+		mydst->cd();
+	    mytr->Write();
+		mytr->Print();
+		NMR1_NoQ->Write();
+		NMR1->Write();
+		NMR1_Qfit->Write();
+		Qcurve_histo->Write();
+		NMR_RT_Corr_Fit->Write();
+		mydst->ls();
+		mydst->Write();
+		mydst->Write();
+		 Long64_t help = mydst->GetFileBytesWritten();
+		cout<<" tree file writing "<<help<<endl;
+
+		mydst->Close();
+
 		teout.close(); // close te file
 		teout1.close();
 
