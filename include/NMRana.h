@@ -390,7 +390,8 @@ NMRana::NMRana(){
 //	mydst = new TFile("/home/klein/scratch/DST1.root","recreate");
 
     DST = new NMR_DST();
-    mytr = DST->OpenFile();
+    //mytr = DST->OpenFile();
+    mytr = new TTree("Dtree","analyzed variables from NMRanalyzer");
 
 
 
@@ -1486,6 +1487,9 @@ void NMRana::SetupHistos(){
 	   if(QC) InitFastAna();
 
 
+		mytr->Branch("SignalArea",&SignalArea,"area/D");
+		mytr->Branch("timel",&timel,"timel/L");
+		mytr->Branch("NMR_RT_Corr_Fit","TH1D",&NMR_RT_Corr_Fit,128000,0);
 
 
 
