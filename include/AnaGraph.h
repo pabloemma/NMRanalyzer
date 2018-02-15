@@ -70,18 +70,13 @@ public:
 
 	Ana();
 	virtual ~Ana();
- virtual void FindPeak(TH1D* );
  virtual void FindOffset(TH1D* );
 
 	 static Double_t CombinedFit(Double_t *, Double_t *); // Gaus folded with Lorentzian distribution
-		Int_t FitSpectrum(TH1D *, Int_t  );
 
-	 static Double_t GausPeak(Double_t *, Double_t *);
-	 static Double_t Background2(Double_t *, Double_t *,Double_t *, Double_t *);
 //	 static Double_t BackSpline(Double_t *, Double_t *,Double_t *, Double_t *, TGraph *); // This will determine a spline back ground
 	 static Double_t BackSpline( TGraph *);
 	 TH1D* FitBackground(TH1D*); // this one gets called at every sweep event
-	 TH1D* FitBackground1(TH1D*); // this one gets called at the end by the signal histo
 	 void SubtractLinear(TH1D*,Int_t,Int_t,Int_t,Int_t); //
 	 void SetFitLimits(Double_t, Double_t, Double_t, Double_t);
 	 Double_t Background(Double_t *, Double_t *);
@@ -99,36 +94,6 @@ Ana::Ana(){
 
 Ana::~Ana(){
 	cout<<Ana_pr<<"Done with analysis \n\n\n";
-}
-void Ana::FindPeak(TH1D * Spectrum){
-	// this is from peaks.C at Cern
-	// Create new spectrum,we only assume one peak for the moment
-	//
-
-	npeaks = 3;
-	peakfind = true;
-	spec= new TSpectrum(npeaks,1.);
-	Int_t nfound = spec->Search(Spectrum,sigma=.02,"nobackground new",.5);
-	//cout<<"\n\n\n*******************************************\n";
-	//cout<<Ana_pr<<"Number of peaks found "<<nfound<<"\n";
-	// fill array with peak posistions
-
-	xpeaks = (Double_t *)(spec->GetPositionX());
-
-	//fit_low_overall = *xpeaks -.2;;
-	//fit_high_overall = *xpeaks +.2;
-	//fit_low_overall = *xpeaks -.2;;
-	//fit_high_overall = *xpeaks +.2;
-
-
-	if(*xpeaks < fit_limit[1] - .1 || *xpeaks > fit_limit[2] + .1 ){
-		cout<<Ana_pr<< "TSpectrum failed, assign peak to 212.98 \n";
-		*xpeaks = 212.982;
-		sigma = .018;
-		peakfind = false;
-	}
-
-
 }
 
 void Ana::FindOffset(TH1D *Spectrum ){
@@ -158,11 +123,6 @@ Double_t Ana::CombinedFit(Double_t *x, Double_t *par){
       return Lo*Ga;
 }
 
-Double_t Ana::GausPeak(Double_t *x, Double_t *par){
-	Double_t arg = 0;
-	if(par[2] !=0) arg = (x[0]-par[1])/par[2];
-	return par[0]*TMath::Exp(-.5*arg*arg);
-}
 
 // Quadratic background function
 Double_t Ana::Background(Double_t *x, Double_t *par) {
@@ -189,80 +149,15 @@ Double_t Ana::CopyBackground(Double_t *x, Double_t *par) {
 
 
 
-	   return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2)+par[3]*pow(x[0],3));
-	   //return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2));
+   return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2)+par[3]*pow(x[0],3));
 
 
 }
 
-int Ana::FitSpectrum(TH1D * Spectrum,Int_t NumberOfSpectra){
-	// function to fit spectrum with this needs to be called after Findpeak
-	// since it relies on finding the parameters.
-
-
-
-	   // correct for negative
-//		FindOffset(Spectrum);
-		FitBackground(Spectrum);
-
-    fit_low_overall = fit_limit[1];
-    fit_high_overall = fit_limit[2];
-
-	FitFcn =  new TF1("FitFcn",CombinedFit,fit_low_overall,fit_high_overall,6);
-
-	FitFcn->SetNpx(1000);
-	FitFcn->SetLineWidth(4);
-	FitFcn->SetLineColor(kMagenta);
-
-	FitGaus = new TF1("FitGaus",GausPeak,fit_low_overall,fit_high_overall,3);
-    FitGaus->SetParameters(1.,xpeaks[0],1.);
-
-
-
-	Spectrum->Fit("FitGaus","RE","C");
-
-	// lets fit the background
-	//FitBackground(Spectrum);
-
-
-	FitFcn->SetParameters(1,1,1,FitGaus->GetParameter(0),FitGaus->GetParameter(1),FitGaus->GetParameter(2));
-
-
-
-
-	Spectrum->Fit("FitFcn","MRE+","C");
-	//Spectrum->Draw();
-	FitFcn->Draw("SAME");
-	FitBck->Draw("SAME");
-	BckFct1->Draw("SAME");
-
-
-
-
-
-
-	   // draw the legend
-	   TLegend *legend=new TLegend(0.6,0.65,0.88,0.85);
-	   legend->SetTextFont(72);
-	   legend->SetTextSize(0.04);
-	   legend->AddEntry(Spectrum,"NMR corrected","lpe");
-	   legend->AddEntry(FitBck,"Background fit","l");
-	   legend->AddEntry(FitGaus,"Gaus fit","l");
-	   legend->AddEntry(FitFcn,"Global Fit","l");
-	   legend->Draw();
-
-
-
-
-
-
-
-	return 1;
-}
 
 void Ana::makeTF1(){
 	// this is so that I can pass parameters to the background fit
-	FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],4);
+	FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],3);
 }
 
 
@@ -301,9 +196,6 @@ void Ana::makeTF1(){
  		spectrum->Fill(spectrum1->GetBinCenter(k),spectrum1->GetBinContent(k));
  	}
 */
-	    for(Int_t k=0;k<spectrum->GetNbinsX();k++){
-	    	spectrum->SetBinError(k,.0001);
-	   	   }
 
 
 	 //ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Fumili2"); // faster minimizer
@@ -333,19 +225,18 @@ void Ana::makeTF1(){
 	reject2 = fit_limit[1];
 
 	// the upper limit of the lower background window we choose
-	spectrum->Fit(FitBck,"RE0");
+	spectrum->Fit(FitBck,"RE0Q");
 	FitBck->GetParameters(&bck_par[0]);
 	// now we fit the whole spectrum with the new variables
 	reject1 = fit_limit[1];
 	reject2 = fit_limit[2];
-	spectrum->Fit(FitBck,"RE0"); // parameter Q for quiet
+	spectrum->Fit(FitBck,"RE0Q"); // parameter Q for quiet
 	FitBck->GetParameters(&bck_par[0]);
 
 
 	// Create new function to subtract from spectrum
 	// need to do this since otherwise it only subtracts in the range defined by the fit range
-	FitBckCopy = new TF1("FitBckCopy",CopyBackground,fit_limit[0],fit_limit[3],4);
-	//FitBckCopy = new TF1("FitBckCopy",CopyBackground,fit_limit[0],fit_limit[3],3);
+	FitBckCopy = new TF1("FitBckCopy",CopyBackground,fit_limit[0],fit_limit[3],3);
 	FitBckCopy->SetParameters(bck_par);
 // 	now subtract the background
 	spectrum->Add(FitBckCopy,-1.);
@@ -360,77 +251,6 @@ void Ana::makeTF1(){
 
     return spectrum;
 }
-TH1D* Ana::FitBackground1(TH1D *spectrum1){
-		//TH1D* Ana::FitBackground(TH1D *spectrum){
-		// this just determines the backgtound parameters of the spectrum
-		// Currently it is a simple 2degree polynomial
-
-	   //check for offset
-	/*	Double_t offset = spectrum->GetBinContent(spectrum->GetMinimumBin());
-	    if(offset<0.){
-	    for(Int_t k=0;k<spectrum->GetNbinsX();k++){
-	    	spectrum->AddBinContent(k,-1.*offset);
-	   	   }
-	    }
-	*/
-			// check if spectrum exists, if yes delete so that we do not get mem leaks
-
-		// First copy spectrum into new histo, so we do not overwrite stuff
-
-
-		Int_t nchan = spectrum1->GetNbinsX();
-	 	TH1D *spectrum = new TH1D("spectrum","Spectrum for background subtraction ",nchan,spectrum1->GetBinCenter(0),spectrum1->GetBinCenter(nchan-1));
-	 	// delete spectrum and recreate it so no memery leak; stupid way
-
-	 	spectrum->Sumw2();
-	 	// Now fille the new histo with the signal noq histo gram
-	 	// first get number of channels in NMR1_NoQ
-
-	 	for (Int_t k=0 ; k < spectrum1->GetNbinsX(); k++){
-
-	 		spectrum->Fill(spectrum1->GetBinCenter(k),spectrum1->GetBinContent(k));
-	 	}
-
-
-
-		 ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Fumili2"); // faster minimizer
-		makeTF1();
-		FitBck->SetNpx(1000);
-		FitBck->SetLineWidth(4);
-		FitBck->SetLineColor(kYellow);
-
-	// first we try to get starting pararemets by fitting the background only
-		// to the lower background area
-		reject1 = fit_limit[0];
-		reject2 = fit_limit[1];
-
-		// the upper limit of the lower background window we choose
-		spectrum->Fit(FitBck,"RE0Q");
-		FitBck->GetParameters(&bck_par[0]);
-		// now we fit the whole spectrum with the new variables
-		reject1 = fit_limit[1];
-		reject2 = fit_limit[2];
-		spectrum->Fit(FitBck,"RE0Q"); // parameter Q for quiet
-		FitBck->GetParameters(&bck_par[0]);
-
-
-		// Create new function to subtract from spectrum
-		// need to do this since otherwise it only subtracts in the range defined by the fit range
-		FitBckCopy = new TF1("FitBckCopy",CopyBackground,fit_limit[0],fit_limit[3],4);
-		FitBckCopy->SetParameters(bck_par);
-	// 	now subtract the background
-		spectrum->Add(FitBckCopy,-1.);
-
-
-		//TF1 *fhelp = new TF1("fhelp","[0]+[1]*x+[2]*x*x",fit_limit[0],fit_limit[3]);
-	//	TF1 *BckFct = new TF1("BckFct","[0]+[1]*x+[2]*x*x + [3]*pow(x,3)",	spectrum->GetXaxis()->GetXmin(),	spectrum->GetXaxis()->GetXmax());
-	//	BckFct->SetParameters(bck_par);
-
-	//    BckFct1 = (TF1*)BckFct->Clone("BckFct1");
-
-
-	    return spectrum;
-	}
 
 Double_t Ana::BackSpline(TGraph *gr1){
 	TCanvas * chelp = new TCanvas();

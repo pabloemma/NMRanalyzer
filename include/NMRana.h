@@ -65,7 +65,7 @@
 
 
 
-#include "Ana.h"
+#include "AnaGraph.h"
 #include "TEana.h"
 #include "NMRFastAna.h"  //Kun's Qcurve hifting class
 #include "NMR_DST.h"
@@ -210,7 +210,7 @@ public :
 
 
    std::string  NMR_ROOT ; // top directory of NMR system, needs to be defined thorugh enviro variable $NMR_ROOT
-
+   TString DstFile;
    // define structure for qcurve parameters
    // needed for reading in the csv file.
 
@@ -387,11 +387,10 @@ NMRana::NMRana(){
 
 
 //	cout<<NMR_pr<< "Everything initialized"<<endl;
-//	mydst = new TFile("/home/klein/scratch/DST1.root","recreate");
+//	mydst = new TFile(DstFile,"recreate");
 
-    DST = new NMR_DST();
+ //   DST = new NMR_DST();
     //mytr = DST->OpenFile();
-    mytr = new TTree("Dtree","analyzed variables from NMRanalyzer");
 
 
 
@@ -436,6 +435,8 @@ void NMRana::Loop()
 		//cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
 		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
 		yoffset.push_back(fastAna->getYOffset()); // fill vector of xoffsets
+		//xoffset.push_back(0.); // fill vector of xoffsets
+		//yoffset.push_back(0.); // fill vector of xoffsets
 		//fastAna->plot(Form("res_%d.pdf", i));
 		// fill array of offsets
 		delete teHist;
@@ -445,11 +446,19 @@ void NMRana::Loop()
    RTCanvas->cd(1);
    NMR_RT->Draw("HIST P");
    RTCanvas->cd(2);
-
+   Int_t counter_per=0;
    NMR_RT_Corr->Draw("HIST P");
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
-   //for (Long64_t jentry=0; jentry<3;jentry++) {
+   //for (Long64_t jentry=0; jentry<20;jentry++) {
 	   //if(jentry ==3)break; // only do 3 loops
+	   //tell how much has been analyzed
+	   Int_t modnum = 100;
+	   if(jentry%modnum == 0){
+
+		   Int_t percent= counter_per*modnum*100/nentries;
+		   cout<<NMR_pr<<percent <<"  percent of total data analyzed  \n";
+		   counter_per++;
+	   }
 	   NMR_RT->Reset();
 	   NMR_RT_Corr->Reset();
 	   NMR_RT_Corr_Fit->Reset();
@@ -546,7 +555,9 @@ void NMRana::Loop()
 	  NMR_RT->Draw("HIST P");
 	  RTCanvas->cd(2);
 	  // copy histo so that we can fit the background without affecting the original hist
-
+           for(Int_t ihelp=1;ihelp<= NMR_RT_Corr_Fit->GetNbinsX(); ihelp++){
+        	   NMR_RT_Corr_Fit->SetBinError(ihelp, 0.1);
+           }
 		   NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
 		 //SubtractLinear(NMR_RT_Corr,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4);
 		  //temp->Draw("HIST P");
@@ -719,7 +730,8 @@ void NMRana::DrawHistos(){
 	NMR1->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
 	NMR1->Draw("HIST ");
 	 if(!QC) {
-		NMR1_B = FitBackground1(NMR1); //
+			//NMR1_B = FitBackground1(NMR1); //
+			NMR1_B = FitBackground(NMR1); //
 		NMR1_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
 		NMR1_B->SetLineColor(2);
 		NMR1_B->Draw("HIST  SAME");
@@ -1056,6 +1068,17 @@ int NMRana::OpenFile(TString rootfile){
     	 // this is only used if we use the Yurov file and mesaurement
     	//  TE.ReadTE();
      }
+     // make the DST file
+     Int_t posc =rootfile.First('.');
+     DstFile = rootfile;
+     DstFile.Insert(posc,'D',3);
+     DstFile.Insert(posc+1,'S',3);
+     DstFile.Insert(posc+2,'T',3);
+
+     cout<<posc<<"  "<<DstFile<<endl;
+	 mydst = new TFile(DstFile,"recreate");
+	 mytr = new TTree("Dtree","analyzed variables from NMRanalyzer");
+
 
 
      f = new TFile(rootfile);
@@ -1222,7 +1245,7 @@ void NMRana::Finish(){
 		cout<<NMR_pr<< "***************************************************************"<<endl;
 		//DST->WriteTree();
 		cout<<NMR_pr<< "Everything initialized"<<endl;
-		mydst = new TFile("/home/klein/scratch/DST1.root","recreate");
+		//mydst = new TFile(DstFile,"recreate");
 
 
 		mydst->cd();
@@ -1490,6 +1513,8 @@ void NMRana::SetupHistos(){
 		mytr->Branch("SignalArea",&SignalArea,"area/D");
 		mytr->Branch("timel",&timel,"timel/L");
 		mytr->Branch("NMR_RT_Corr_Fit","TH1D",&NMR_RT_Corr_Fit,128000,0);
+		mytr->Branch("NMR_RT_Corr","TH1D",&NMR_RT_Corr,128000,0);
+		mytr->Branch("NMR_RT","TH1D",&NMR_RT,128000,0);
 
 
 
