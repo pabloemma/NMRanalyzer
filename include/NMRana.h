@@ -47,6 +47,7 @@
 #include <TChain.h>
 #include <TFile.h>
 #include <TH1D.h>
+#include <TGraph.h>
 #include <TCanvas.h>
 #include <TDatime.h>
 #include <TStyle.h>  // so we can use gStyle
@@ -65,7 +66,7 @@
 
 
 
-#include "AnaGraph.h"
+#include "AnaGraph1.h"
 #include "TEana.h"
 #include "NMRFastAna.h"  //Kun's Qcurve hifting class
 #include "NMR_DST.h"
@@ -279,6 +280,7 @@ public :
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
    TF1		 *Qfit; // The Qcurve Fit function determin ed from QCana and read in from Qcurve.txt filk
    //
+   TGraph    *FitGraph;  // new background fit attempt
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
    TCanvas	 *StripCanvas;   // shows polarization vs time
    TCanvas	 *StripCanvas_1; // for TE measurement shows the calibration constant over time.
@@ -448,6 +450,8 @@ void NMRana::Loop()
    RTCanvas->cd(2);
    Int_t counter_per=0;
    NMR_RT_Corr->Draw("HIST P");
+   RTCanvas->cd(3);
+   //FitGraph->Draw();
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
    //for (Long64_t jentry=0; jentry<20;jentry++) {
 	   //if(jentry ==3)break; // only do 3 loops
@@ -462,6 +466,8 @@ void NMRana::Loop()
 	   NMR_RT->Reset();
 	   NMR_RT_Corr->Reset();
 	   NMR_RT_Corr_Fit->Reset();
+	   NMR1_Qfit->Reset();
+	   //FitGraph->Clear();
 
 	   Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
@@ -559,6 +565,9 @@ void NMRana::Loop()
         	   NMR_RT_Corr_Fit->SetBinError(ihelp, 0.1);
            }
 		   NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
+		   NMR1_Qfit = FitBackground(NMR1_Qfit);
+			  // FitGraph = NewFitBackground(NMR_RT_Corr);
+			  TF1 * FitBckFunc = NewFitBackground(NMR1_Qfit);
 		 //SubtractLinear(NMR_RT_Corr,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4);
 		  //temp->Draw("HIST P");
 		 		 //SignalArea = CalculateArea(temp);
@@ -585,6 +594,11 @@ void NMRana::Loop()
 		   }*/
 
 	  NMR_RT_Corr_Fit->Draw("HIST P");
+	  RTCanvas->cd(3);
+	  NMR_RT_Corr->Draw("HIST P");
+
+	  FitBckFunc->Draw("SAME");
+
 
 
 	  RTCanvas->Modified();
@@ -1346,6 +1360,8 @@ void NMRana::SetupHistos(){
 	   NMR_RT_Corr_Fit->SetLineColor(kBlue-2);
 	   NMR_RT_Corr_Fit->SetLineWidth(4);
 	   NMR_RT_Corr_Fit->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
+//	   Double_t xgr[1000], ygr[1000];
+//	   FitGraph = new TGraph(401,xgr,ygr);
 
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   	  // low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
@@ -1515,6 +1531,7 @@ void NMRana::SetupHistos(){
 		mytr->Branch("NMR_RT_Corr_Fit","TH1D",&NMR_RT_Corr_Fit,128000,0);
 		mytr->Branch("NMR_RT_Corr","TH1D",&NMR_RT_Corr,128000,0);
 		mytr->Branch("NMR_RT","TH1D",&NMR_RT,128000,0);
+		mytr->Branch("NMR1_Qfit","TH1D",&NMR1_Qfit,128000,0);
 
 
 
@@ -1572,7 +1589,7 @@ void NMRana::SetupCanvas(){
 	RTCanvas->SetGrid();
 	RTCanvas->SetFillColor(23);
 	RTCanvas->SetFrameFillColor(16);
-	RTCanvas->Divide(1,2);
+	RTCanvas->Divide(1,3);
 
 
 
