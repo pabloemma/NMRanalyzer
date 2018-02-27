@@ -631,6 +631,7 @@ void NMRana::Loop()
 
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
+
 	  //mytr->FillTree(SignalArea,timel,NMR_RT_Corr_Fit);
 	  mytr->Fill();
    }// end of entry loop
