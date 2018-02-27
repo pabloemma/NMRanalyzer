@@ -112,9 +112,9 @@ Double_t Ana::Background(Double_t *x, Double_t *par) {
 	     return 0;
 	 }
 
-   //return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2));
+   return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2));
 		//return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2)+par[3]*pow(x[0],2));
-		return (par[0] + par[1]*x[0]);
+		//return (par[0] + par[1]*x[0]);
 
 
 }
@@ -129,9 +129,9 @@ Double_t Ana::Background_1(Double_t *x, Double_t *par) {
 	     return 0;
 	 }
 
-  // return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2));
+   return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2));
 		//return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2)+par[3]*pow(x[0],2));
-		return (par[0] + par[1]*x[0]);
+		//return (par[0] + par[1]*x[0]);
 
 
 
@@ -147,7 +147,8 @@ Double_t Ana::CopyBackground(Double_t *x, Double_t *par) {
 
 
 	//return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2)+par[3]*pow(x[0],2));
-	return (par[0] + par[1]*x[0]);
+	return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2));
+	//return (par[0] + par[1]*x[0]);
 
 
 }
@@ -156,12 +157,12 @@ Double_t Ana::CopyBackground(Double_t *x, Double_t *par) {
 void Ana::makeTF1(){
 	// this is so that I can pass parameters to the background fit
 	//FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],4);
-	FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],2);
+	FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],3);
 }
 void Ana::makeTF11(){
 	// this is so that I can pass parameters to the background fit
 	//ff1 = new TF1("ff1",this,&Ana::Background,fit_limit[0],fit_limit[3],4);
-	ff1 = new TF1("ff1",this,&Ana::Background,fit_limit[0],fit_limit[3],2);
+	ff1 = new TF1("ff1",this,&Ana::Background_1,fit_limit[0],fit_limit[3],3);
 
 }
 
@@ -199,7 +200,7 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 	ROOT::Math::MinimizerOptions::SetDefaultMaxFunctionCalls(1000000);
 	ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(0);
 
-	gr1->Fit("ff1","REWF0Q");
+	gr1->Fit("ff1","REWF0");
 	return ff1;
 }
 	/*
@@ -289,22 +290,22 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 
 // first we try to get starting pararemets by fitting the background only
 	// to the lower background area
-	reject1 = fit_limit[0];
-	reject2 = fit_limit[1];
+	reject1 = fit_limit[1];
+	reject2 = fit_limit[2];
 
 	// the upper limit of the lower background window we choose
 	spectrum->Fit(FitBck,"RE0Q");
 	FitBck->GetParameters(&bck_par[0]);
 	// now we fit the whole spectrum with the new variables
-	reject1 = fit_limit[1];
+/*	reject1 = fit_limit[1];
 	reject2 = fit_limit[2];
 	spectrum->Fit(FitBck,"RE0Q"); // parameter Q for quiet
 	FitBck->GetParameters(&bck_par[0]);
-
+*/
 
 	// Create new function to subtract from spectrum
 	// need to do this since otherwise it only subtracts in the range defined by the fit range
-	FitBckCopy = new TF1("FitBckCopy",CopyBackground,fit_limit[0],fit_limit[3],2);
+	FitBckCopy = new TF1("FitBckCopy",CopyBackground,fit_limit[0],fit_limit[3],3);
 	FitBckCopy->SetParameters(bck_par);
 // 	now subtract the background
 	spectrum->Add(FitBckCopy,-1.);

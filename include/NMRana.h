@@ -564,10 +564,12 @@ void NMRana::Loop()
            for(Int_t ihelp=1;ihelp<= NMR_RT_Corr_Fit->GetNbinsX(); ihelp++){
         	   NMR_RT_Corr_Fit->SetBinError(ihelp, 0.1);
            }
-		   NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
-		   NMR1_Qfit = FitBackground(NMR1_Qfit);
+		   //NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
+		   //NMR1_Qfit = FitBackground(NMR1_Qfit);
 			  // FitGraph = NewFitBackground(NMR_RT_Corr);
 			  TF1 * FitBckFunc = NewFitBackground(NMR1_Qfit);
+			  //NMR1_Qfit->Add(FitBckFunc,-1.);
+
 		 //SubtractLinear(NMR_RT_Corr,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4);
 		  //temp->Draw("HIST P");
 		 		 //SignalArea = CalculateArea(temp);
