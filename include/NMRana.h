@@ -47,6 +47,7 @@
 #include <TChain.h>
 #include <TFile.h>
 #include <TH1D.h>
+#include <TGraph.h>
 #include <TCanvas.h>
 #include <TDatime.h>
 #include <TStyle.h>  // so we can use gStyle
@@ -65,7 +66,7 @@
 
 
 
-#include "Ana.h"
+#include "AnaGraph1.h"
 #include "TEana.h"
 #include "NMRFastAna.h"  //Kun's Qcurve hifting class
 #include "NMR_DST.h"
@@ -202,6 +203,7 @@ public :
    Bool_t QCshift; // if true calcuate the QCurve shift and subtract the shifted Curve
    Bool_t TXT ;//output to file
    TTree *QCUtree;
+   TTree *mytr;
    std::map<std::string,std::string> Parameters; // input parameters
    std::vector<Double_t> CalibConstantVector; // this hold the calculated calibration constants and will calculate mean and error
    Double_t CalibConstantMean;
@@ -209,7 +211,7 @@ public :
 
 
    std::string  NMR_ROOT ; // top directory of NMR system, needs to be defined thorugh enviro variable $NMR_ROOT
-
+   TString DstFile;
    // define structure for qcurve parameters
    // needed for reading in the csv file.
 
@@ -278,6 +280,7 @@ public :
    TGraph    *Background; // this is the background I determine from the signal thorugh a spline
    TF1		 *Qfit; // The Qcurve Fit function determin ed from QCana and read in from Qcurve.txt filk
    //
+   TGraph    *FitGraph;  // new background fit attempt
    TCanvas	 *GeneralCanvas;  // has the signal and polarization vs time on it
    TCanvas	 *StripCanvas;   // shows polarization vs time
    TCanvas	 *StripCanvas_1; // for TE measurement shows the calibration constant over time.
@@ -297,8 +300,10 @@ public :
    TFile *QcurveFile; //
    NMRFastAna* fastAna; // the fast system
    NMR_DST *DST;// handles output
+   TFile *mydst; //DST file
    std::string QcurveFileName ; // Qcurve file name
    std::ofstream teout ;   // global teoutput file
+   std::ofstream teout1 ;   // global teoutput file for temporary spectrum
 
 
 	TEana TE;
@@ -377,15 +382,18 @@ NMRana::NMRana(){
     QfitPar[3]=0.;
     QfitPar[4]=0.;
     TotalEntries = 0;
-    QCshift = false ; // default calculate Qcurve shift.
+    QCshift = true ; // default calculate Qcurve shift.
     //array = new std::vector<double>(1000);
 
     // Now initialize and instantiate NMRFastANa
 
 
-	cout<<NMR_pr<< "Everything initialized"<<endl;
-    DST = new NMR_DST();
-    DST->OpenFile();
+//	cout<<NMR_pr<< "Everything initialized"<<endl;
+//	mydst = new TFile(DstFile,"recreate");
+
+ //   DST = new NMR_DST();
+    //mytr = DST->OpenFile();
+
 
 
 
@@ -396,7 +404,9 @@ NMRana::NMRana(){
 
 void NMRana::Loop()
 {
-   if (fChain == 0) return;
+
+
+	if (fChain == 0) return;
 
 
    	   // go to strip chart
@@ -422,11 +432,13 @@ void NMRana::Loop()
 		TH1D* teHist = new TH1D("teHist", "teHist", ScanPoints, MinFreq, MaxFreq);
 		for(int j = 0; j < ScanPoints; ++j)
 		{
-			teHist->Fill(MinFreqR+j*FreqStep, array->at(j)/1.);
+			teHist->Fill(MinFreqR+j*FreqStep, array->at(j)/gain_array[int(Gain+0.01)]);
 		}
-//		cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
+		//cout << "Loop " << i << ": xOffset = " << fastAna->getXOffset(teHist) << ", yOffset = " << fastAna->getYOffset() << endl;
 		xoffset.push_back(fastAna->getXOffset(teHist)); // fill vector of xoffsets
 		yoffset.push_back(fastAna->getYOffset()); // fill vector of xoffsets
+		//xoffset.push_back(0.); // fill vector of xoffsets
+		//yoffset.push_back(0.); // fill vector of xoffsets
 		//fastAna->plot(Form("res_%d.pdf", i));
 		// fill array of offsets
 		delete teHist;
@@ -436,12 +448,26 @@ void NMRana::Loop()
    RTCanvas->cd(1);
    NMR_RT->Draw("HIST P");
    RTCanvas->cd(2);
-
+   Int_t counter_per=0;
    NMR_RT_Corr->Draw("HIST P");
+   RTCanvas->cd(3);
+   //FitGraph->Draw();
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
+   //for (Long64_t jentry=0; jentry<20;jentry++) {
+	   //if(jentry ==3)break; // only do 3 loops
+	   //tell how much has been analyzed
+	   Int_t modnum = 100;
+	   if(jentry%modnum == 0){
+
+		   Int_t percent= counter_per*modnum*100/nentries;
+		   cout<<NMR_pr<<percent <<"  percent of total data analyzed  \n";
+		   counter_per++;
+	   }
 	   NMR_RT->Reset();
 	   NMR_RT_Corr->Reset();
 	   NMR_RT_Corr_Fit->Reset();
+	   NMR1_Qfit->Reset();
+	   //FitGraph->Clear();
 
 	   Long64_t ientry = LoadTree(jentry);
       if (ientry < 0) break;
@@ -476,7 +502,19 @@ void NMRana::Loop()
     	  // subtract QCurve if existing
     	  //renormailze signal by amplifier setting
        	  DataTemp = array->at(j);// / gain_array[int(Gain+.01)];  // take gain out
-        	   if(Qcurve_array.size()!=0)QcurTemp = Qcurve_array.at(j);
+          if(QCshift){
+           	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
+              Int_t shift = j-xoffset.at(jentry);
+           	  // now shift the qcurve. the j has to be shifted by xoffset(jentry); however make sure we do not go beyond the bumdary
+               if(shift<Qcurve_array.size() and shift >=0 ){ QcurTemp = Qcurve_array.at(shift);
+               DataTemp = DataTemp-yoffset.at(jentry); //subtract the fitted offset
+              }
+               else QcurTemp = Qcurve_array.at(j); ;
+               //cout<<"problem with shift"<<shift<<"  "<< "entry  "<<j<< "\n";
+          }
+          else if(Qcurve_array.size()!=0)QcurTemp = Qcurve_array.at(j);
+
+
         	  if(DEBUG==1)raw_histo->Fill(freq_temp,DataTemp);
 
     	  if(Qcurve_array.size()!=0) {
@@ -487,8 +525,9 @@ void NMRana::Loop()
 
        		 //NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
     		 // correct for the Qcurve shift
-    		 NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
-    		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
+    		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp-xoffset.at(jentry)*FreqStep));
+       		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+           		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
        		 NMR_RT_Corr_Fit->Fill(freq_temp,DataTemp- QcurTemp);
      		 // now take background out
      	  	  }
@@ -522,8 +561,15 @@ void NMRana::Loop()
 	  NMR_RT->Draw("HIST P");
 	  RTCanvas->cd(2);
 	  // copy histo so that we can fit the background without affecting the original hist
+           for(Int_t ihelp=1;ihelp<= NMR_RT_Corr_Fit->GetNbinsX(); ihelp++){
+        	   NMR_RT_Corr_Fit->SetBinError(ihelp, 0.1);
+           }
+		   //NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
+		   //NMR1_Qfit = FitBackground(NMR1_Qfit);
+			  // FitGraph = NewFitBackground(NMR_RT_Corr);
+			  TF1 * FitBckFunc = NewFitBackground(NMR1_Qfit);
+			  //NMR1_Qfit->Add(FitBckFunc,-1.);
 
-		   NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
 		 //SubtractLinear(NMR_RT_Corr,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4);
 		  //temp->Draw("HIST P");
 		 		 //SignalArea = CalculateArea(temp);
@@ -550,6 +596,11 @@ void NMRana::Loop()
 		   }*/
 
 	  NMR_RT_Corr_Fit->Draw("HIST P");
+	  RTCanvas->cd(3);
+	  NMR_RT_Corr->Draw("HIST P");
+
+	  FitBckFunc->Draw("SAME");
+
 
 
 	  RTCanvas->Modified();
@@ -563,7 +614,7 @@ void NMRana::Loop()
 	  if(TEmeasurement) {
 		  Double_t temp_pol =TE.CalculateTEP("proton",.5,5.0027,HeP);
 		  //I am using jentry since ScanNuimber is always 0
-		  teout<<timel<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<SignalArea*FreqStep<<","<<CalculateArea(NMR_RT_Corr)*FreqStep<<","<<temp_pol<<"\n";
+		  teout<<timel<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<SignalArea*FreqStep<<","<<CalculateArea(NMR_RT)*FreqStep<<","<<temp_pol<<"\n";
 	  }
 
 	      // Convert to polarization
@@ -578,11 +629,11 @@ void NMRana::Loop()
 	      Stripper(jentry); // draw all the strip charts
 
 
-
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
 
-	  DST->FillTree(SignalArea,timel);
 
+	  //mytr->FillTree(SignalArea,timel,NMR_RT_Corr_Fit);
+	  mytr->Fill();
    }// end of entry loop
 
 
@@ -696,7 +747,8 @@ void NMRana::DrawHistos(){
 	NMR1->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
 	NMR1->Draw("HIST ");
 	 if(!QC) {
-		NMR1_B = FitBackground1(NMR1); //
+			//NMR1_B = FitBackground1(NMR1); //
+			NMR1_B = FitBackground(NMR1); //
 		NMR1_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
 		NMR1_B->SetLineColor(2);
 		NMR1_B->Draw("HIST  SAME");
@@ -738,19 +790,6 @@ void NMRana::DrawHistos(){
 	// they are unnormalized
 	cout<<NMR_pr<< "*************   IntegrGetdateal of histo NMR1 "<<NMR1->Integral(low_id,high_id)<<endl;
 	if(QC)cout<<NMR_pr<< "*************   Integral of histo NMR1_NoQ  "<<NMR1_NoQ->Integral(low_id,high_id)<<endl;
-
-	// writing DST file
-	TFile *mydst = new TFile("/home/klein/scratch/DST1.root","recreate");
-	TTree *mytr = DST->WriteTree();
-	mytr->Print();
-	mytr->Write();
-	NMR1_NoQ->Write();
-	NMR1->Write();
-	NMR1_Qfit->Write();
-	Qcurve_histo->Write();
-	NMR_RT_Corr_Fit->Write();
-	mydst->Close();
-
 
 }
 
@@ -913,6 +952,12 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		cout<<"Qcurve File "<<QcurveFileName<<endl;
 
 		}
+		if(pos->first.find("QCSHIFT")!= std::string::npos){
+			// shift qcurve or not
+		Int_t help = std::stod(pos->second);
+		if(help == 1) QCshift = true;
+		else QCshift = false;
+		}
 
 
 	}
@@ -1005,7 +1050,7 @@ void NMRana::ReadQcurveParFile(std::string name){
 			cout<<file<<" ";
 			for (int l =0 ; l<5;l++){
 				cout<<"  "<<par[l]<<" ";
-				QfitPar[l] = par[l]/QcurveScale; // normalize to gain
+				QfitPar[l] = par[l]/QcurveScale/gain_array[int(QcurveGain+.01)]; // normalize to gain
 			} // normalzied to number of sweeps
 
 
@@ -1030,13 +1075,27 @@ int NMRana::OpenFile(TString rootfile){
     	 cout <<NMR_pr<< "\n\n this is a TE measurement \n\n\n";
     	 std::string tefile = NMR_ROOT+"/TE/TEglobal.csv";
     	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
+    	 std::string tefile1 = NMR_ROOT+"/TE/TEglobal_spectrum.csv";
+    	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
 
     	 teout.open(tefile,ios::out | ios::app) ;
+    	 teout1.open(tefile1,ios::out | ios::app) ;
 
     	 // perform the TEfile read as well, so that we have the map
     	 // this is only used if we use the Yurov file and mesaurement
     	//  TE.ReadTE();
      }
+     // make the DST file
+     Int_t posc =rootfile.First('.');
+     DstFile = rootfile;
+     DstFile.Insert(posc,'D',3);
+     DstFile.Insert(posc+1,'S',3);
+     DstFile.Insert(posc+2,'T',3);
+
+     cout<<posc<<"  "<<DstFile<<endl;
+	 mydst = new TFile(DstFile,"recreate");
+	 mytr = new TTree("Dtree","analyzed variables from NMRanalyzer");
+
 
 
      f = new TFile(rootfile);
@@ -1072,8 +1131,11 @@ int NMRana::OpenChain(std::vector<TString> RootFileArray){
 	    	 //TE.ReadTE();
 	    	 std::string tefile = NMR_ROOT+"/TE/TEglobal.csv";
 	    	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
+	    	 std::string tefile1 = NMR_ROOT+"/TE/TEglobal_spectrum.csv";
+	    	 cout<< NMR_pr<<"Opening TE global csv  file"<<tefile<< "\n";
 
 	    	 teout.open(tefile,ios::out | ios::app) ;
+	    	 teout1.open(tefile,ios::out | ios::app) ;
 
 	     }
 
@@ -1198,9 +1260,29 @@ void NMRana::Finish(){
 		cout<<NMR_pr<<"                  Analysis finished"<<endl;
 		cout<<NMR_pr<<" *"<<endl;
 		cout<<NMR_pr<< "***************************************************************"<<endl;
-		DST->WriteTree();
-		teout.close(); // close te file
+		//DST->WriteTree();
+		cout<<NMR_pr<< "Everything initialized"<<endl;
+		//mydst = new TFile(DstFile,"recreate");
 
+
+		mydst->cd();
+	    mytr->Write();
+		mytr->Print();
+		NMR1_NoQ->Write();
+		NMR1->Write();
+		NMR1_Qfit->Write();
+		Qcurve_histo->Write();
+		NMR_RT_Corr_Fit->Write();
+		mydst->ls();
+		mydst->Write();
+		mydst->Write();
+		 Long64_t help = mydst->GetFileBytesWritten();
+		cout<<" tree file writing "<<help<<endl;
+
+		mydst->Close();
+
+		teout.close(); // close te file
+		teout1.close();
 
 }
 
@@ -1281,6 +1363,8 @@ void NMRana::SetupHistos(){
 	   NMR_RT_Corr_Fit->SetLineColor(kBlue-2);
 	   NMR_RT_Corr_Fit->SetLineWidth(4);
 	   NMR_RT_Corr_Fit->GetXaxis()->SetRangeUser(fit_x1,fit_x4);
+//	   Double_t xgr[1000], ygr[1000];
+//	   FitGraph = new TGraph(401,xgr,ygr);
 
 	   // Determine the Integration or summation limits for peak in terms of channels.
 	   	  // low_id = NMR1->GetXaxis()->FindBin(LowArea_X);
@@ -1445,6 +1529,12 @@ void NMRana::SetupHistos(){
 	   if(QC) InitFastAna();
 
 
+		mytr->Branch("SignalArea",&SignalArea,"area/D");
+		mytr->Branch("timel",&timel,"timel/L");
+		mytr->Branch("NMR_RT_Corr_Fit","TH1D",&NMR_RT_Corr_Fit,128000,0);
+		mytr->Branch("NMR_RT_Corr","TH1D",&NMR_RT_Corr,128000,0);
+		mytr->Branch("NMR_RT","TH1D",&NMR_RT,128000,0);
+		mytr->Branch("NMR1_Qfit","TH1D",&NMR1_Qfit,128000,0);
 
 
 
@@ -1502,7 +1592,7 @@ void NMRana::SetupCanvas(){
 	RTCanvas->SetGrid();
 	RTCanvas->SetFillColor(23);
 	RTCanvas->SetFrameFillColor(16);
-	RTCanvas->Divide(1,2);
+	RTCanvas->Divide(1,3);
 
 
 
@@ -1731,12 +1821,14 @@ void NMRana::FillQcurveArray(){
 	   //now we need to normalize the QCurve to the number of sweeps, which is nentries
 	   // historicif(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<Qamp<<"\n";
 
+	   if(DEBUG==1)cout<<NMR_pr<<"FillQcurve>  "<<" qamp"<<gain_array[int(Gain+.01)]<<"\n";
+
 	   for (UInt_t j = 0; j < array->size(); ++j) {
 
-		   Qcurve_array.at(j)= Qcurve_array.at(j)/QcurveEntries;
+		   Qcurve_array.at(j)= Qcurve_array.at(j)/QcurveEntries/gain_array[int(Gain+.01)];
 
 	   }
-	   cout<<" nmr ana  "<<"  "<<QcurveEntries<<" "<<ScanNumber<<endl;
+	   cout<<" nmr ana  "<<gain_array[int(Gain+.01)]<<"  "<<QcurveEntries<<" "<<ScanNumber<<endl;
 
 
 

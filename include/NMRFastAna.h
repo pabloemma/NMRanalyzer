@@ -90,8 +90,8 @@ NMRFastAna::NMRFastAna()
 	//default configurations
 	freqCenter = 213.;
 	freqWin = 0.1;
-	freqMin = 213. - 0.5;
-	freqMax = 213. + 0.5;
+	freqMin = 213. - 0.4;
+	freqMax = 213. + 0.4;
 	sampleRate = 4;
 
 	xoffsetMin = -50;
@@ -117,7 +117,7 @@ void NMRFastAna::init()
 	minimizer = ROOT::Math::Factory::CreateMinimizer("Minuit2", "Combined");
 	minimizer->SetMaxFunctionCalls(1000000);
 	minimizer->SetMaxIterations(10000);
-	minimizer->SetTolerance(0.0001);
+	minimizer->SetTolerance(0.001);
 	minimizer->SetFunction(fcn);
 	minimizer->SetPrintLevel(0);
 }
@@ -130,17 +130,20 @@ double NMRFastAna::chisq(const double* par)
 	double chisq = 0.;
 	unsigned int refIndex = xoffset > 0 ? 0 : abs(xoffset);
 	unsigned int datIndex = xoffset > 0 ? abs(xoffset) : 0;
+	double nPoints = 0.;
 	while(refIndex < nScanPoints && datIndex < nScanPoints)
 	{
-		if(freq[datIndex] > freqMin && freq[datIndex] < freqMax && fabs(freq[datIndex] - freqCenter) > freqWin) 
+		if(freq[datIndex] > freqMin && freq[datIndex] < freqMax && fabs(freq[datIndex] - freqCenter) > freqWin)
+		{
+			nPoints = nPoints + 1.;
 			chisq = chisq + (dataAmp[datIndex] - yoffset - refAmp[refIndex])*(dataAmp[datIndex] - yoffset - refAmp[refIndex]);
-		
+		}
 		refIndex += sampleRate;
 		datIndex += sampleRate;
 	}
 
 	//std::cout << xoffset << "  " << yoffset << " : " << chisq << std::endl;
-	return chisq;
+	return chisq/nPoints;
 }
 
 void NMRFastAna::setQCurve(TH1D* ref)
