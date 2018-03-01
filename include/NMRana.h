@@ -520,14 +520,14 @@ void NMRana::Loop()
     	  if(Qcurve_array.size()!=0) {
     		 NMR1_NoQ->Fill(freq_temp,DataTemp);
 
-
+             // cout<<" data  "<<DataTemp<<"  Qcurve  "<<QcurTemp<<"\n";
     		 NMR1->Fill(freq_temp,DataTemp- QcurTemp);
 
        		 //NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
     		 // correct for the Qcurve shift
     		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp-xoffset.at(jentry)*FreqStep));
-       		 else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
-           		 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
+       		     else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
+           	 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
        		 NMR_RT_Corr_Fit->Fill(freq_temp,DataTemp- QcurTemp);
      		 // now take background out
      	  	  }
@@ -566,8 +566,8 @@ void NMRana::Loop()
            }
 		   //NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
 		   //NMR1_Qfit = FitBackground(NMR1_Qfit);
-			  // FitGraph = NewFitBackground(NMR_RT_Corr);
-			  TF1 * FitBckFunc = NewFitBackground(NMR1_Qfit);
+			   //FitGraph = NewFitBackground(NMR_RT_Corr);
+			  TF1 * FitBckFunc = NewFitBackground(NMR_RT_Corr_Fit);
 			  //NMR1_Qfit->Add(FitBckFunc,-1.);
 
 		 //SubtractLinear(NMR_RT_Corr,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4);
@@ -579,12 +579,12 @@ void NMRana::Loop()
 
 
 
-		 if(TEmeasurement){ SignalArea = CalculateArea(NMR_RT_Corr_Fit);
+		 if(TEmeasurement){ SignalArea = CalculateArea(NMR_RT_Corr);
 		 //cout<<NMR_pr<<"signal area    "<<SignalArea<<endl;
 		 //cout<<CalculateArea(NMR_RT_Corr_Fit)<<" temp    "<<CalculateArea(NMR_RT_Corr)<<"\n";
 
 		 }
-	      else  SignalArea = CalculateArea(NMR_RT_Corr_Fit);
+	      else  SignalArea = CalculateArea(NMR_RT_Corr);
 
 
       //if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);
@@ -614,7 +614,7 @@ void NMRana::Loop()
 	  if(TEmeasurement) {
 		  Double_t temp_pol =TE.CalculateTEP("proton",.5,5.0027,HeP);
 		  //I am using jentry since ScanNuimber is always 0
-		  teout<<timel<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<SignalArea*FreqStep<<","<<CalculateArea(NMR_RT)*FreqStep<<","<<temp_pol<<"\n";
+		  teout<<timel/10000<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<CalculateArea(NMR1_Qfit)*FreqStep<<","<<CalculateArea(NMR_RT_Corr)*FreqStep<<","<<temp_pol<<"\n";
 	  }
 
 	      // Convert to polarization
@@ -1122,6 +1122,26 @@ int NMRana::OpenChain(std::vector<TString> RootFileArray){
 			NMRchain->Add(RootFileArray[pos]);
 
 		}
+
+
+
+		Int_t posc =RootFileArray[0].First('.');
+
+
+
+
+		DstFile =RootFileArray[0] ;
+	     DstFile.Insert(posc,'D',3);
+	     DstFile.Insert(posc+1,'S',3);
+	     DstFile.Insert(posc+2,'T',3);
+	     DstFile.Insert(posc+3,'G',3);
+
+	     cout<<posc<<"  "<<DstFile<<endl;
+		 mydst = new TFile(DstFile,"recreate");
+		 mytr = new TTree("Dtree","analyzed variables from NMRanalyzer");
+
+
+
 
 	     if(RootFileArray[0].Contains("TER") || RootFileArray[0].Contains("TEQ") ){
 

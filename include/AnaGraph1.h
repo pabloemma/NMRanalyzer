@@ -48,7 +48,7 @@ public:
 	TF1 *FitBckCopy; // copy of background fit
 	TF1 *BckFct; // function from background fit
 	TF1 *BckFct1; // copy of function from background fit
-	TF1 *ff1;
+	TF1 *ff1, *ff2;
 
 
 	Int_t npeaks;	//number of peaks to find
@@ -157,12 +157,14 @@ Double_t Ana::CopyBackground(Double_t *x, Double_t *par) {
 void Ana::makeTF1(){
 	// this is so that I can pass parameters to the background fit
 	//FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],4);
-	FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],3);
+	//FitBck = new TF1("FitBck",this,&Ana::Background,fit_limit[0],fit_limit[3],3);
+	FitBck = new TF1("FitBck", "pol2", fit_limit[0], fit_limit[3]);
 }
 void Ana::makeTF11(){
 	// this is so that I can pass parameters to the background fit
 	//ff1 = new TF1("ff1",this,&Ana::Background,fit_limit[0],fit_limit[3],4);
-	ff1 = new TF1("ff1",this,&Ana::Background_1,fit_limit[0],fit_limit[3],3);
+	//ff1 = new TF1("ff1",this,&Ana::Background_1,fit_limit[0],fit_limit[3],3);
+	ff1 = new TF1("pol2", "pol2", fit_limit[0], fit_limit[3]);
 
 }
 
@@ -177,20 +179,25 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 	// get info on histo
     Double_t dataAmp[1000] , freq[1000];
 	Int_t nchan = spectrum->GetNbinsX();
-	for(Int_t k=1; k<=nchan;k++){
-		dataAmp[k]=(spectrum->GetBinContent(k));
-		freq[k]=(spectrum->GetBinCenter(k));
-	}
-	//Now create Graph
 	reject1 = fit_limit[1];
 	reject2 = fit_limit[2];
+    Int_t counter =0;
+	for(Int_t k=1; k<=nchan;k++){
+		Double_t freq_temp = (spectrum->GetBinCenter(k));
+		if(freq_temp < reject1 || freq_temp >reject2 ){
+		     freq[counter]=freq_temp;
+		     dataAmp[counter]=(spectrum->GetBinContent(k));
+		     counter++;
+		}
+	}
+	//Now create Graph
     makeTF11();
 	//ff1 = new TF1("ff1",Background,fit_limit[0],fit_limit[3],3);
-	TGraph *gr1 = new TGraph(nchan,freq,dataAmp);
+	TGraph *gr1 = new TGraph(counter,freq,dataAmp);
 //
 
 	//Now comes the fit part
-
+/*
 	ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2","Minimize");
 	ROOT::Math::MinimizerOptions::SetDefaultStrategy(2);
 	//ROOT::Math::MinimizerOptions::SetDefaultTolerance(.0001);
@@ -198,10 +205,23 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 	ROOT::Math::MinimizerOptions::SetDefaultPrecision(1.e-10);
 	ROOT::Math::MinimizerOptions::SetDefaultMaxIterations(100000);
 	ROOT::Math::MinimizerOptions::SetDefaultMaxFunctionCalls(1000000);
-	ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(0);
+	//ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(0);
+	 *
+	 */
 
-	gr1->Fit("ff1","REWF0");
-	return ff1;
+	gr1->Fit(ff1,"");
+
+
+	ff1->GetParameters(&bck_par[0]);
+	// Create new function to subtract from spectrum
+	// need to do this since otherwise it only subtracts in the range defined by the fit range
+	ff2 = new TF1("ff2", "pol2", fit_limit[0], fit_limit[3]);
+	ff2->SetParameters(bck_par);
+
+	// Now do background subtraction
+	spectrum->Add(ff2,-1.);
+
+	return ff2;
 }
 	/*
 
