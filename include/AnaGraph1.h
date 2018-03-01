@@ -48,7 +48,7 @@ public:
 	TF1 *FitBckCopy; // copy of background fit
 	TF1 *BckFct; // function from background fit
 	TF1 *BckFct1; // copy of function from background fit
-	TF1 *ff1, *ff2;
+	TF1 *ff1, *ff2,*ff3,*ff4;
 
 
 	Int_t npeaks;	//number of peaks to find
@@ -101,16 +101,16 @@ Ana::~Ana(){
 
 
 // Quadratic background function
-Double_t Ana::Background(Double_t *x, Double_t *par) {
+ Double_t Ana::Background(Double_t *x, Double_t *par) {
 	// new version with point rejection, the idea being that
 	// I will not fit background in the peak area but on left and right side of it
 	// see fit descrition in Root reference manual
 	// 3rd degree polynomial
 
-		if(x[0]>reject1  && x[0] < reject2){
-	     TF1::RejectPoint();
-	     return 0;
-	 }
+//		if(x[0]>reject1  && x[0] < reject2){
+//	     TF1::RejectPoint();
+//	     return 0;
+//	 }
 
    return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2));
 		//return (par[0] + par[1]*x[0] + par[2]*pow(x[0],2)+par[3]*pow(x[0],2));
@@ -192,7 +192,6 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 	}
 	//Now create Graph
     makeTF11();
-	//ff1 = new TF1("ff1",Background,fit_limit[0],fit_limit[3],3);
 	TGraph *gr1 = new TGraph(counter,freq,dataAmp);
 //
 
@@ -209,7 +208,8 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 	 *
 	 */
 
-	gr1->Fit(ff1,"");
+	//gr1->Fit(ff1,"");
+	gr1->Fit(ff3,"");
 
 
 	ff1->GetParameters(&bck_par[0]);
