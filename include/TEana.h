@@ -390,7 +390,8 @@ void TEana::ShowDistribution(std::vector<Double_t> CalibConstantVector){
 	Double_t width =     TMath::RMS(CalibConstantVector.begin(),CalibConstantVector.end());
 	cout<<"\n\n\n"<<TEana_pr<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
     cout<<TEana_pr<<" mean of calibration constant  " <<mean<<"    +/- "<<width <<"\n";
-	cout<<TEana_pr<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n";
+    cout<<TEana_pr<<" First and Last calib calculation  "<<CalibConstantVector.at(0)<<"  "<<CalibConstantVector.at(CalibConstantVector.size()-1)<<"\n";
+    cout<<TEana_pr<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n";
 
 	// Now we can create the histogram and plot it
 	Double_t xlow = mean-5*width;

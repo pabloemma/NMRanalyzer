@@ -579,12 +579,12 @@ void NMRana::Loop()
 
 
 
-		 if(TEmeasurement){ SignalArea = CalculateArea(NMR_RT_Corr);
+		 if(TEmeasurement){ SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 		 //cout<<NMR_pr<<"signal area    "<<SignalArea<<endl;
 		 //cout<<CalculateArea(NMR_RT_Corr_Fit)<<" temp    "<<CalculateArea(NMR_RT_Corr)<<"\n";
 
 		 }
-	      else  SignalArea = CalculateArea(NMR_RT_Corr);
+	      else  SignalArea = CalculateArea(NMR_RT_Corr_Fit);
 
 
       //if(TEmeasurement)temp->GetYaxis()->SetRangeUser(-.00005,.0007);

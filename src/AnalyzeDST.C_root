@@ -23,12 +23,12 @@ TH1D * NMR_RT_Corr =0;
 TH1D * NMR_RT =0;
 TH1D * NMR_Copy =0;
 TH1D * NMR1_Qfit = 0;
-//TH1D *integ1= new TH1D("integ1","area distribution",200,0.0002,.001);
-//TH1D *integ2 = new TH1D("integ2","area distribution",200,0.0002,.001);
-//TH1D *integ3 = new TH1D("integ3","area distribution Qfit",200,0.0002,.001);
-TH1D *integ1= new TH1D("integ1","area distribution",200,0.135,.145);
-TH1D *integ2 = new TH1D("integ2","area distribution",200,0.135,.145);
-TH1D *integ3 = new TH1D("integ3","area distribution Qfit",200,0.135,.145);
+TH1D *integ1= new TH1D("integ1","area distribution",200,0.0004,.0008);
+TH1D *integ2 = new TH1D("integ2","area distribution",200,0.0004,.0008);
+TH1D *integ3 = new TH1D("integ3","area distribution Qfit",200,0.0002,.001);
+//TH1D *integ1= new TH1D("integ1","area distribution",200,0.150,.151);
+//TH1D *integ2 = new TH1D("integ2","area distribution",200,0.135,.145);
+//TH1D *integ3 = new TH1D("integ3","area distribution Qfit",200,0.135,.145);
 
 
 Double_t *SignalArea =0; // calculated signal area
@@ -94,7 +94,7 @@ TCanvas * c1 = new TCanvas("c1","Analysis of DST",500,50,800,800);
          integ1->Fill((NMR_RT_Corr_Fit->Integral(119,301))*.002);
          integ2->Fill((NMR_RT_Corr->Integral(90,424))*.002);
          integ3->Fill((NMR1_Qfit->Integral(119,301))*.002);
-	 cout<<NMR_RT_Corr->Integral(119,301)*.002<<"\n";
+	 cout<<NMR_RT_Corr_Fit->Integral(119,301)*.002<<"\n";
 
 	// cout<<"integral"  <<temp<<endl;
 
