@@ -202,12 +202,19 @@ public :
    Bool_t FitLimit;
    Bool_t QCshift; // if true calcuate the QCurve shift and subtract the shifted Curve
    Bool_t TXT ;//output to file
+   Bool_t Ave ; // we average over TE sweeps
+   Bool_t Reached_Average;// flag we set when we have formed an average
+   	   	   	   	   	      // this is needed for caluclating the calib constant in stripper
+
    TTree *QCUtree;
    TTree *mytr;
    std::map<std::string,std::string> Parameters; // input parameters
    std::vector<Double_t> CalibConstantVector; // this hold the calculated calibration constants and will calculate mean and error
    Double_t CalibConstantMean;
    Double_t CalibConstantMeanError;
+
+   Int_t AverageNumber ; // number of TE sweeps to average over
+
 
 
    std::string  NMR_ROOT ; // top directory of NMR system, needs to be defined thorugh enviro variable $NMR_ROOT
@@ -383,6 +390,7 @@ NMRana::NMRana(){
     QfitPar[4]=0.;
     TotalEntries = 0;
     QCshift = true ; // default calculate Qcurve shift.
+    Ave = false; // Default we do not average over TE measurement
     //array = new std::vector<double>(1000);
 
     // Now initialize and instantiate NMRFastANa
@@ -452,10 +460,13 @@ void NMRana::Loop()
    NMR_RT_Corr->Draw("HIST P");
    RTCanvas->cd(3);
    //FitGraph->Draw();
+
+   Int_t help_counter = 0; // this counter is reset whenever we reach the averagenumber for averaging over TE signal
    for (Long64_t jentry=0; jentry<nentries;jentry++) {
    //for (Long64_t jentry=0; jentry<20;jentry++) {
 	   //if(jentry ==3)break; // only do 3 loops
 	   //tell how much has been analyzed
+	   Reached_Average = false;
 	   Int_t modnum = 100;
 	   if(jentry%modnum == 0){
 
@@ -463,10 +474,14 @@ void NMRana::Loop()
 		   cout<<NMR_pr<<percent <<"  percent of total data analyzed  \n";
 		   counter_per++;
 	   }
-	   NMR_RT->Reset();
-	   NMR_RT_Corr->Reset();
-	   NMR_RT_Corr_Fit->Reset();
-	   NMR1_Qfit->Reset();
+
+	   // reset the histos every
+	   if(Ave && help_counter ==0){
+		   NMR_RT->Reset();
+		   NMR_RT_Corr->Reset();
+		   NMR_RT_Corr_Fit->Reset();
+		   NMR1_Qfit->Reset();
+	   }
 	   //FitGraph->Clear();
 
 	   Long64_t ientry = LoadTree(jentry);
@@ -527,8 +542,8 @@ void NMRana::Loop()
     		 // correct for the Qcurve shift
     		 if(QCshift) NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp-xoffset.at(jentry)*FreqStep));
        		     else NMR1_Qfit->Fill(freq_temp, DataTemp-Qfit->Eval(freq_temp));
-           	 NMR_RT_Corr->Fill(freq_temp,DataTemp- QcurTemp);
-       		 NMR_RT_Corr_Fit->Fill(freq_temp,DataTemp- QcurTemp);
+           	 NMR_RT_Corr->Fill(freq_temp,(DataTemp- QcurTemp));
+       		 NMR_RT_Corr_Fit->Fill(freq_temp,(DataTemp- QcurTemp));
      		 // now take background out
      	  	  }
     	  else{
@@ -557,17 +572,24 @@ void NMRana::Loop()
 
 
 // draw the signal histogram
-	  RTCanvas->cd(1);
-	  NMR_RT->Draw("HIST P");
-	  RTCanvas->cd(2);
+      // only do this for the average number
+      if(Ave && help_counter == AverageNumber-1) {
+
+    	  // rescale histos by averagenumber
+
+
+
+	   RTCanvas->cd(1);
+	   NMR_RT->Draw("HIST P");
+	   RTCanvas->cd(2);
 	  // copy histo so that we can fit the background without affecting the original hist
            for(Int_t ihelp=1;ihelp<= NMR_RT_Corr_Fit->GetNbinsX(); ihelp++){
         	   NMR_RT_Corr_Fit->SetBinError(ihelp, 0.1);
            }
-		   //NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
 		   //NMR1_Qfit = FitBackground(NMR1_Qfit);
 			   //FitGraph = NewFitBackground(NMR_RT_Corr);
-			  TF1 * FitBckFunc = NewFitBackground(NMR_RT_Corr_Fit);
+			  TF1 * FitBckFunc = NewFitBackground(NMR_RT_Corr);
+			   //NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
 			  //NMR1_Qfit->Add(FitBckFunc,-1.);
 
 		 //SubtractLinear(NMR_RT_Corr,Ifit_x1, Ifit_x2,Ifit_x3,Ifit_x4);
@@ -595,18 +617,30 @@ void NMRana::Loop()
 
 		   }*/
 
-	  NMR_RT_Corr_Fit->Draw("HIST P");
-	  RTCanvas->cd(3);
-	  NMR_RT_Corr->Draw("HIST P");
+	   NMR_RT_Corr_Fit->Draw("HIST P");
+	   RTCanvas->cd(3);
+	   NMR_RT_Corr->Draw("HIST P");
 
-	  FitBckFunc->Draw("SAME");
-
-
-
-	  RTCanvas->Modified();
-	  RTCanvas->Update();
+	   FitBckFunc->Draw("SAME");
 
 
+
+	   RTCanvas->Modified();
+	   RTCanvas->Update();
+
+	   // scale histos
+	   NMR_RT_Corr_Fit->Scale(1./Double_t(AverageNumber));
+	   NMR_RT_Corr->Scale(1./Double_t(AverageNumber));
+	   NMR1_Qfit->Scale(1./Double_t(AverageNumber));
+
+	   mytr->Fill();
+
+
+      // reset the help_counter
+	   help_counter = -1;
+	   Reached_Average = true;
+      }
+      help_counter++;
 	     //warninghook
 	//end warninghook
 
@@ -626,14 +660,13 @@ void NMRana::Loop()
 	// so that calib*area = polarization of the reL SIGNAL
 	// at the end we will calculate an average caibration constant with a deviation
 
-	      Stripper(jentry); // draw all the strip charts
 
 
 	  if(DEBUG ==2)cout<<NMR_pr<<timel<<"another one \n";
+	   Stripper(jentry); // draw all the strip charts
 
 
 	  //mytr->FillTree(SignalArea,timel,NMR_RT_Corr_Fit);
-	  mytr->Fill();
    }// end of entry loop
 
 
@@ -950,6 +983,14 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 		QC=true;
 
 		cout<<"Qcurve File "<<QcurveFileName<<endl;
+
+		}
+		if(pos->first.find("AVERAGE")!= std::string::npos){
+			// amplifier setting for QCurve
+		AverageNumber = std::stoi(pos->second);
+		Ave = true;
+
+		cout<<"We are averaging over  "<<AverageNumber<<endl;
 
 		}
 		if(pos->first.find("QCSHIFT")!= std::string::npos){
@@ -1940,15 +1981,24 @@ void NMRana::Stripper(Long64_t jentry){
 
 		  // give a pressure if there is none
 		  //if( HeP==0.0 ) HeP = 5.5 ; //pressure in Torr
-		  CalibConstant = TE.CalculateTEP("proton",.5,5.0027,HeP) ; // needs to change to ROOTfile pressure
-		  CalibConstant = CalibConstant/SignalArea;
-		  CalibConstantVector.push_back(CalibConstant);
-		  CalibTime->SetBinContent(jentry,CalibConstant);
-		  CalibTime ->GetXaxis()->SetRange(jentry-StripLength,jentry+20);
-		  StripCanvas_1->Clear();
-		  CalibTime->Draw();
-		  StripCanvas_1->Modified();
-		  StripCanvas_1->Update();
+		  // take care of the averaging
+		  // we can only calculate the calib constant when we have an average
+		  // otherwise signal area will be 0
+		  // this is because of the averaging we have to do, so we only fill when we havae reached a full average.
+
+		  if(Reached_Average){
+
+			  CalibConstant = TE.CalculateTEP("proton",.5,5.0027,HeP) ; // needs to change to ROOTfile pressure
+//			  cout<<" calib constant"<<CalibConstant<<"   area"<<SignalArea<<"\n";
+			  CalibConstant = CalibConstant/SignalArea*AverageNumber;
+			  CalibConstantVector.push_back(CalibConstant);
+			  CalibTime->SetBinContent(jentry,CalibConstant);
+			  CalibTime ->GetXaxis()->SetRange(jentry-StripLength,jentry+20);
+			  StripCanvas_1->Clear();
+			  CalibTime->Draw();
+			  StripCanvas_1->Modified();
+			  StripCanvas_1->Update();
+		  }
 
 		  StripCanvas_2->cd();
 		  PressTime->SetBinContent(jentry,HeP);

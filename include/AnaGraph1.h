@@ -196,20 +196,20 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 //
 
 	//Now comes the fit part
-/*
+
 	ROOT::Math::MinimizerOptions::SetDefaultMinimizer("Minuit2","Minimize");
 	ROOT::Math::MinimizerOptions::SetDefaultStrategy(2);
 	//ROOT::Math::MinimizerOptions::SetDefaultTolerance(.0001);
-	ROOT::Math::MinimizerOptions::SetDefaultTolerance(.001);
+	ROOT::Math::MinimizerOptions::SetDefaultTolerance(.0001);
 	ROOT::Math::MinimizerOptions::SetDefaultPrecision(1.e-10);
 	ROOT::Math::MinimizerOptions::SetDefaultMaxIterations(100000);
 	ROOT::Math::MinimizerOptions::SetDefaultMaxFunctionCalls(1000000);
 	//ROOT::Math::MinimizerOptions::SetDefaultPrintLevel(0);
-	 *
-	 */
+
+
 
 	//gr1->Fit(ff1,"");
-	gr1->Fit(ff3,"");
+	gr1->Fit(ff1,"RE0");
 
 
 	ff1->GetParameters(&bck_par[0]);

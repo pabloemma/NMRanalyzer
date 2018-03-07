@@ -7,7 +7,7 @@
 
 
 #include <unistd.h>
-void AnalyzeDST(TString DSTfile){
+void AnalyzeDST(TString DSTfile, Double_t ave=1.){
 
 // this analyzes DST files produced by NMRana
 // Currently the DST file has a few hist saved at the end and one TRee
@@ -17,18 +17,27 @@ void AnalyzeDST(TString DSTfile){
 TFile *f1 = new TFile(DSTfile,"r"); // only open for read
 
 // bocl kf definitions
+// set integral limits:
+Double_t xmin = 212.8;
+Double_t xmax = 213.2;
+
+
+
 TH1D * NMR_RT_Corr_Fit =0;
 
 TH1D * NMR_RT_Corr =0;
 TH1D * NMR_RT =0;
 TH1D * NMR_Copy =0;
 TH1D * NMR1_Qfit = 0;
-TH1D *integ1= new TH1D("integ1","area distribution",200,0.0004,.0008);
-TH1D *integ2 = new TH1D("integ2","area distribution",200,0.0004,.0008);
-TH1D *integ3 = new TH1D("integ3","area distribution Qfit",200,0.0002,.001);
-//TH1D *integ1= new TH1D("integ1","area distribution",200,0.150,.151);
-//TH1D *integ2 = new TH1D("integ2","area distribution",200,0.135,.145);
-//TH1D *integ3 = new TH1D("integ3","area distribution Qfit",200,0.135,.145);
+/* 
+TH1D *integ1= new TH1D("integ1","area distribution RT_CORR_FIT ",200,0.0004,.0008);
+TH1D *integ2 = new TH1D("integ2","area distribution RT_Corr",200,0.0004,.0008);
+TH1D *integ3 = new TH1D("integ3","area distribution Qfit",200,0.0004,.0008);
+*/
+
+TH1D *integ1= new TH1D("integ1","area distribution",200,0.145,.155);
+TH1D *integ2 = new TH1D("integ2","area distribution",200,0.135,.145);
+TH1D *integ3 = new TH1D("integ3","area distribution Qfit",200,0.135,.145);
 
 
 Double_t *SignalArea =0; // calculated signal area
@@ -58,11 +67,16 @@ TCanvas * c1 = new TCanvas("c1","Analysis of DST",500,50,800,800);
 	for(int i = 0; i < nentries; ++i){
 	//for(int i = 0; i < 50; ++i){
 	//for(int i = 0; i < 10; ++i){
+	
 	 NMR_RT_Corr_Fit->Reset();
 	 NMR_RT_Corr->Reset();
 	 NMR_RT->Reset();
 	 NMR1_Qfit->Reset();
 	 Dtree->GetEntry(i);
+	 // get channel number
+	Int_t low_chan = NMR_RT_Corr->GetXaxis()->FindBin(xmin);
+	Int_t high_chan = NMR_RT_Corr->GetXaxis()->FindBin(xmax);
+
 //	 cout<<i<<endl;
 	 c1->cd(1);
 	 NMR_RT_Corr_Fit->Draw("HIST P");
@@ -91,10 +105,10 @@ TCanvas * c1 = new TCanvas("c1","Analysis of DST",500,50,800,800);
 	 //NMR_RT->Draw("HIST P SAME");
 	 //
 	 //now intergrate the area and multiply with channel width
-         integ1->Fill((NMR_RT_Corr_Fit->Integral(119,301))*.002);
-         integ2->Fill((NMR_RT_Corr->Integral(90,424))*.002);
-         integ3->Fill((NMR1_Qfit->Integral(119,301))*.002);
-	 cout<<NMR_RT_Corr_Fit->Integral(119,301)*.002<<"\n";
+         integ1->Fill((NMR_RT_Corr_Fit->Integral(low_chan,high_chan))*.002/ave);
+         integ2->Fill((NMR_RT_Corr->Integral(low_chan,high_chan))*.002/ave);
+         integ3->Fill((NMR1_Qfit->Integral(low_chan,high_chan))*.002/ave);
+	 cout<<NMR_RT_Corr_Fit->Integral(low_chan,high_chan)*.002/ave<<"\n";
 
 	// cout<<"integral"  <<temp<<endl;
 
@@ -104,7 +118,7 @@ TCanvas * c1 = new TCanvas("c1","Analysis of DST",500,50,800,800);
 
 	 }
 TCanvas * c2 = new TCanvas("c2","Integral of DST",10,50,800,800);
-	c2->Divide(1,2);
+	c2->Divide(1,3);
 	c2->cd(1);
 		 integ1->SetMarkerStyle(22);
 	 integ1->SetMarkerSize(.6);
@@ -114,8 +128,9 @@ TCanvas * c2 = new TCanvas("c2","Integral of DST",10,50,800,800);
 	integ1->Draw("HIST ");
 	c2->cd(2);
 	integ2->Draw("HIST ");
+	c2->cd(3);
 	integ3->SetLineColor(1);
-	integ3->Draw("HIST SAME");
+	integ3->Draw("HIST");
 	  c2->Modified();
 	  c2->Update();
 
