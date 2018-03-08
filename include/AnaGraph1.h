@@ -35,7 +35,7 @@ private:
 	 Double_t  fit_low_overall; // fit limits
 	 Double_t fit_high_overall;
      Double_t fit_limit[4]; ; // these are the limits for the background fit
-     Double_t reject1, reject2;// the lower and upper limits of what backrgound fit rejects.
+     Double_t reject0,reject1, reject2,reject3;// the lower and upper limits of what backrgound fit rejects.
 public:
 	std::string Ana_pr ="Ana_ana> ";
 
@@ -179,12 +179,14 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 	// get info on histo
     Double_t dataAmp[1000] , freq[1000];
 	Int_t nchan = spectrum->GetNbinsX();
+	reject0 = fit_limit[0];
 	reject1 = fit_limit[1];
 	reject2 = fit_limit[2];
+	reject3 = fit_limit[3];
     Int_t counter =0;
 	for(Int_t k=1; k<=nchan;k++){
 		Double_t freq_temp = (spectrum->GetBinCenter(k));
-		if(freq_temp < reject1 || freq_temp >reject2 ){
+		if( (freq_temp > reject0 && freq_temp < reject1) || (freq_temp >reject2 && freq_temp < reject3) ){
 		     freq[counter]=freq_temp;
 		     dataAmp[counter]=(spectrum->GetBinContent(k));
 		     counter++;
@@ -209,7 +211,7 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 
 
 	//gr1->Fit(ff1,"");
-	gr1->Fit(ff1,"RE0");
+	gr1->Fit(ff1,"");
 
 
 	ff1->GetParameters(&bck_par[0]);

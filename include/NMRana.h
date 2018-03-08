@@ -390,7 +390,8 @@ NMRana::NMRana(){
     QfitPar[4]=0.;
     TotalEntries = 0;
     QCshift = true ; // default calculate Qcurve shift.
-    Ave = false; // Default we do not average over TE measurement
+    Ave = true; // Default we do average over  measurement
+    AverageNumber =1;
     //array = new std::vector<double>(1000);
 
     // Now initialize and instantiate NMRFastANa
@@ -588,7 +589,7 @@ void NMRana::Loop()
            }
 		   //NMR1_Qfit = FitBackground(NMR1_Qfit);
 			   //FitGraph = NewFitBackground(NMR_RT_Corr);
-			  TF1 * FitBckFunc = NewFitBackground(NMR_RT_Corr);
+			  TF1 * FitBckFunc = NewFitBackground(NMR_RT_Corr_Fit);
 			   //NMR_RT_Corr_Fit = FitBackground(NMR_RT_Corr_Fit);
 			  //NMR1_Qfit->Add(FitBckFunc,-1.);
 
