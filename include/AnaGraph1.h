@@ -211,7 +211,7 @@ TF1 *Ana::NewFitBackground(TH1D *spectrum){
 
 
 	//gr1->Fit(ff1,"");
-	gr1->Fit(ff1,"");
+	gr1->Fit(ff1,"Q");
 
 
 	ff1->GetParameters(&bck_par[0]);

@@ -29,7 +29,7 @@ TH1D * NMR_RT_Corr =0;
 TH1D * NMR_RT =0;
 TH1D * NMR_Copy =0;
 TH1D * NMR1_Qfit = 0;
-/* 
+/*
 TH1D *integ1= new TH1D("integ1","area distribution RT_CORR_FIT ",200,0.0004,.0008);
 TH1D *integ2 = new TH1D("integ2","area distribution RT_Corr",200,0.0004,.0008);
 TH1D *integ3 = new TH1D("integ3","area distribution Qfit",200,0.0004,.0008);
