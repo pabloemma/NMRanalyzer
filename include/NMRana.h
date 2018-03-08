@@ -780,13 +780,6 @@ void NMRana::DrawHistos(){
 
 	NMR1->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
 	NMR1->Draw("HIST ");
-	 if(!QC) {
-			//NMR1_B = FitBackground1(NMR1); //
-			NMR1_B = FitBackground(NMR1); //
-		NMR1_B->GetXaxis()->SetRangeUser(FreqCenter*.9986,FreqCenter*1.0014); //set it to same axis as the next histogram
-		NMR1_B->SetLineColor(2);
-		NMR1_B->Draw("HIST  SAME");
-	 }
 	//
 		if(QC) {
 			Qcurve_histo_shifted->Draw("HIST  SAME"); //
