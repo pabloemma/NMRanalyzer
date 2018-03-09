@@ -799,7 +799,6 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 	// the format of the file is  name , value
 	// example: Qcurve   Qcurve.root
-	char temp_string[132];
 	std::string temp;
 	std::string string1, string2;
 	std::string temp_file;
@@ -831,7 +830,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 
 		if(pos->first.find("ANATEXT")!= std::string::npos){
 			// amplifier setting for QCurve
-		std:;string filenamestring = pos->second;
+		std::string filenamestring = pos->second;
 		analysis_text_file = filenamestring.c_str();
 		cout<<endl;
 		cout<<endl;
@@ -962,7 +961,7 @@ void NMRana::ReadQcurveParFile(std::string name){
 	// MS puts line breaks in, which getline won't understand.
 
 	// open tune file
-	std::string file;	Double_t coil;
+	std::string file;
 	Double_t par[5];
 	std::string dummy;
 	std::string filename = NMR_ROOT+"/QC_files/"+name;
@@ -1310,9 +1309,6 @@ void NMRana::SetupHistos(){
 	   //gROOT->cd(); //this prevents from histos being deleted once files are closed
 	   if (fChain == 0) return;
 
-	   Long64_t nentries = fChain->GetEntriesFast();
-
-	   Long64_t nbytes = 0, nb = 0;
 
 	   Long64_t ientry = LoadTree(0);
 
@@ -1658,12 +1654,7 @@ Double_t NMRana::CalculateArea(TH1D *histo){
 	//  limits given by AreaSetLimits in the main program
 	// the area is calculated as sum i_low to i_high (a(i)*binwidth)
 
-	Double_t sum1 = 0.;
-
-
-		//Double_t sum = histo->Integral(histo->FindBin(fit_x2),histo->FindBin(fit_x3));
-    Double_t sum11 =0;
-    // determine sum of channels from low channel to high channel as determined from read in.
+	   // determine sum of channels from low channel to high channel as determined from read in.
     Double_t sum = histo->Integral(low_id,high_id);
     //cout<< histo->Integral(low_id,high_id) <<"  "<<(high_id-low_id+1)*CurveOffset<<"  "<<sum<<endl;
 
@@ -1896,16 +1887,6 @@ void NMRana::Stripper(Long64_t jentry){
 		  StripCanvas_1->cd();
 		  // temporary fix for separate time file
 		  //replace press_help with pressure variable from ROOT file//
-		  Double_t press_help =5.5;
-/*		  if( Control==0) {
-			  Double_t press_help  = TE.FindPofT(root_time.tv_sec); // here we find the nearest time stamp in the Yuorv file and return
-		  }
-		  	  	  	  	  	  	  	  	  	  	  	  	  	  // the corresponding pressure
-		  else{
-			  Double_t press_help = 5.5;
-		  }
-*/
-
 		  // give a pressure if there is none
 		  //if( HeP==0.0 ) HeP = 5.5 ; //pressure in Torr
 		  // take care of the averaging

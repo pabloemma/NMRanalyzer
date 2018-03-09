@@ -225,10 +225,11 @@ void TEana::CalculatePlots(){
 	Int_t npoints = 2000;
 	Double_t press = .05;
 	Double_t p_step = .001;
-	Double_t lowTlimit;
+/*	Double_t lowTlimit;
 	Double_t highTlimit;
 	lowTlimit = CalcT(press);
 	highTlimit = CalcT(press+p_step*npoints);
+	*/
 
 	// need to do this with TGraph
 	Double_t *Temp_array = new Double_t[npoints];
@@ -283,8 +284,7 @@ Double_t TEana::CalculateTEP(std::string particle ,Double_t spin, Double_t field
 	Double_t TEPol;
 
 	//
-	Double_t fact; // calculates the constants
-	Double_t brill; //Brillouin function
+	Double_t fact =0.; // calculates the constants
 	Double_t Temp = CalcT(pressure); // get temperature from calculation
 	Double_t arg1 = (2.*spin+1.)/(2.*spin);
 	Double_t arg2 = (1.)/(2.*spin);
@@ -309,7 +309,7 @@ Double_t TEana::CalcT(Double_t pressure){
 	// Calculates Temp as a function of pressure in Torr
 	// follows Journal of Physical and Chemical Ref. Data 27, 1217 (1998)
 	//
-	Double_t temp;
+	Double_t temp =0.;
 	Double_t pa = pressure*133.322; // convert pressure into pascal
 	if(pressure>.0009 && pressure<.826)
 		temp = lowT->Eval(pa,0,"S");  //cubic spline
