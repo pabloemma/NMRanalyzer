@@ -811,7 +811,7 @@ void NMRana::ReadParameterFile(TString ParameterFile){
 	ParFile.open(ParameterFile);
 	// check if found and opened
 	if(!ParFile.is_open()){
-		cout<<"error with parameter file "<<ParameterFile<<" \n";
+		cout<<"error with parameter file, most likely wrong path   "<<ParameterFile<<" \n";
 		cout<< " will terminate \n";
 		exit(EXIT_FAILURE);
 	}
@@ -972,7 +972,7 @@ void NMRana::ReadQcurveParFile(std::string name){
 
 	std::ifstream Qpar(filename);
 	if(!Qpar.is_open()){
-		cout<<NMR_pr<<"Cannot find the QCurve parameter file from QCana \n, will abort \n ";
+		cout<<NMR_pr<<"Cannot find the QCurve parameter file   "<<filename<<"   from QCana \n, will abort \n ";
 		exit(EXIT_FAILURE);
 	}
 

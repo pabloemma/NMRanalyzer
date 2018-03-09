@@ -10,6 +10,9 @@
 #define NMRana_cxx
 #define TEana_cxx
 
+#include <pwd.h>
+#include <dirent.h>
+
 
 #include <unistd.h>  // to get gnu getoption
 #include <ctime> // to manipulate time
@@ -115,8 +118,18 @@ int main(Int_t argc,char *argv[],char *envp[] ) {
 				cout<<"NMR_main"<<" This means that the program does not find the directory where the par files and qc curve etc are located \n";
 				cout<<"NMR_main"<<" You should have a directory, which has the following subdirectories: NMR_par,QC_files, TE_files \n";
 				cout<<"NMR_main"<<" I define one for you, but most likely this will bomb and you have to go into the main code and change the line around line 118 \n";
-				//std::string env_p1="/Volumes/macsmall/nmrwork/";
-				//NMR_ROOT= env_p1;
+
+		   		const char *homedir;
+		    		;
+		    		if ((homedir = getenv("HOME")) == NULL) {
+		    			homedir = getpwuid(getuid())->pw_dir;
+		    		}
+		        std::string str_tem(homedir);
+		    	TString directory = str_tem+"/nmrwork/";
+
+
+				setenv(env_p, directory,0);
+				NMR_ROOT= env_p;
 				cout<<"NMR_main"<<NMR_ROOT<<"   this is what I define for you \n";
 						//cout<< " You must define it now; Good bye  \n" <<endl;
 						//exit(EXIT_FAILURE);
