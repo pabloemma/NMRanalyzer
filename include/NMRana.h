@@ -596,16 +596,20 @@ void NMRana::Loop()
       // reset the help_counter
 	   help_counter = -1;
 	   Reached_Average = true;
+
+
+	   // fill the csv file
+	   if(TEmeasurement) {
+			  Double_t temp_pol =TE.CalculateTEP("proton",.5,5.0027,HeP);
+			  teout<<timel/10000<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<CalculateArea(NMR_RT_Corr_Fit)*FreqStep<<","<<CalculateArea(NMR_RT_Corr)*FreqStep<<","<<temp_pol<<"\n";
+		  }
+
       }
       help_counter++;
 	     //warninghook
 	//end warninghook
 
 	  // write out csv file
-	  if(TEmeasurement) {
-		  Double_t temp_pol =TE.CalculateTEP("proton",.5,5.0027,HeP);
-		  teout<<timel/10000<<","<< ScanNumber<<","<<HeT<<",1.,1.,"<<CalculateArea(NMR1_Qfit)*FreqStep<<","<<CalculateArea(NMR_RT_Corr)*FreqStep<<","<<temp_pol<<"\n";
-	  }
 
 	      // Convert to polarization
 
